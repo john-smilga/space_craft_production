@@ -16,7 +16,7 @@ const ADMIN_ONLY_ROUTES = [
 // Get JWT secret from environment variable
 // In production, set NEXT_PUBLIC_JWT_SECRET to match Django's SECRET_KEY
 // For development, using Django's default SECRET_KEY
-const JWT_SECRET = process.env.NEXT_PUBLIC_JWT_SECRET || 'django-insecure-(nl9duwutv_#%h%j7k3bni&r*!$b==1y6k6%7#)4j+xlc8go5(';
+const JWT_SECRET = process.env.NEXT_PUBLIC_JWT_SECRET || 'secret-key';
 
 /**
  * Validates JWT token and returns payload if valid, null if invalid
