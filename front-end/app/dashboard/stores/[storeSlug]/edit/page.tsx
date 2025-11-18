@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useRequireAdmin } from '@/hooks/useRequireAdmin';
 import { useFetch } from '@/hooks/useFetch';
 import { useMutation } from '@/hooks/useMutation';
 import api from '@/lib/axios';
@@ -20,9 +21,14 @@ interface UpdateStoreVariables {
 }
 
 export default function EditStorePage() {
+  const isAdmin = useRequireAdmin();
   const router = useRouter();
   const params = useParams();
   const storeSlug = params?.storeSlug as string;
+
+  if (!isAdmin) {
+    return null; // Redirecting via useRequireAdmin
+  }
 
   const { data, loading, error } = useFetch<StoreResponse>(storeSlug ? `/stores/${storeSlug}/` : null);
   const store = data?.store || null;

@@ -3,6 +3,7 @@ import api from '@/lib/axios';
 import type { PlanogramResponse, LayoutItem } from '@/types/planograms';
 import { usePlanogramFormStore } from '@/stores/planogramFormStore';
 import { usePlanogramLayoutStore } from '@/stores/planogramLayoutStore';
+import { useRouter, useParams } from 'next/navigation';
 
 interface UpdatePlanogramVariables {
   name?: string;
@@ -15,7 +16,10 @@ interface UpdatePlanogramVariables {
 }
 
 export function usePlanogramForm(planogramSlug: string, planogramData: PlanogramResponse | null, refetchPlanogram: () => Promise<void>, fetchAvailableProducts: (overridePlanogram?: PlanogramResponse['planogram']) => Promise<void>) {
-  const { name, isEditingName, selectedDisplay, season, shelfCount, selectedCategoryIds, setName, setIsEditingName, setSelectedDisplay, setSeason, setShelfCount, setSelectedCategoryIds } = usePlanogramFormStore();
+  const { name, selectedDisplay, season, shelfCount, selectedCategoryIds, setName, setSelectedDisplay, setSeason, setShelfCount, setSelectedCategoryIds } = usePlanogramFormStore();
+  const router = useRouter();
+  const params = useParams();
+  const projectSlug = params?.projectSlug as string;
 
   // Update planogram mutation
   const updatePlanogramMutation = useMutation<PlanogramResponse, UpdatePlanogramVariables>(
@@ -45,35 +49,21 @@ export function usePlanogramForm(planogramSlug: string, planogramData: Planogram
     }
   };
 
-  // Handle name save
-  const handleSaveName = async () => {
-    if (!name.trim()) {
-      return;
-    }
-
-    if (name === planogramData?.planogram.name) {
-      setIsEditingName(false);
-      return;
-    }
-
-    const result = await updatePlanogramMutation.mutate({ name });
-    if (result.data) {
-      await refetchPlanogram();
-      setIsEditingName(false);
-    }
-  };
-
-  const handleCancelEditName = () => {
-    setIsEditingName(false);
-    setName(planogramData?.planogram.name || '');
-    updatePlanogramMutation.reset();
-  };
-
   // Handle regenerate button click
   const handleRegenerate = async () => {
     if (!planogramData?.planogram) return;
 
+    // Validate name is not empty
+    if (!name || !name.trim()) {
+      return;
+    }
+
     const updates: UpdatePlanogramVariables = {};
+
+    // Include name if it changed
+    if (name.trim() !== planogramData.planogram.name) {
+      updates.name = name.trim();
+    }
 
     // Only include fields that have changed
     if (selectedDisplay) {
@@ -106,6 +96,9 @@ export function usePlanogramForm(planogramSlug: string, planogramData: Planogram
         const updatedPlanogram = result.data.planogram;
 
         // Update state directly from the response
+        if (updatedPlanogram.name) {
+          setName(updatedPlanogram.name);
+        }
         if (updatedPlanogram.display?.id) {
           setSelectedDisplay(updatedPlanogram.display.id.toString());
         }
@@ -123,6 +116,11 @@ export function usePlanogramForm(planogramSlug: string, planogramData: Planogram
 
         // Refetch to get latest state
         await refetchPlanogram();
+
+        // Update URL if slug changed (slug is generated from name)
+        if (updatedPlanogram.slug && updatedPlanogram.slug !== planogramSlug) {
+          router.push(`/dashboard/projects/${projectSlug}/planograms/${updatedPlanogram.slug}`);
+        }
       }
     }
   };
@@ -150,8 +148,6 @@ export function usePlanogramForm(planogramSlug: string, planogramData: Planogram
     updatePlanogramMutation,
     deleteMutation,
     handleSaveLayout,
-    handleSaveName,
-    handleCancelEditName,
     handleRegenerate,
     handleDisplayChange,
   };

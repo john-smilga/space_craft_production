@@ -1,4 +1,4 @@
-import type { UnplacedItem } from '@/types/planograms';
+import type { AvailableItem } from '@/types/planograms';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -8,14 +8,14 @@ import { Separator } from '@/components/ui/separator';
 interface ItemMenuProps {
   itemId: string;
   itemName: string;
-  unplacedItems: UnplacedItem[];
-  onReplace: (oldItemId: string, newItem: UnplacedItem) => void;
+  unplacedItems: AvailableItem[];
+  onReplace: (oldItemId: string, newItem: AvailableItem) => void;
   onRemove: (itemId: string) => void;
   onClose: () => void;
 }
 
 export default function ItemMenu({ itemId, itemName, unplacedItems, onReplace, onRemove, onClose }: ItemMenuProps) {
-  const handleReplace = (newItem: UnplacedItem) => {
+  const handleReplace = (newItem: AvailableItem) => {
     onReplace(itemId, newItem);
     onClose();
   };

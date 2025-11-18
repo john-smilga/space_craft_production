@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useFetch } from '@/hooks/useFetch';
+import { useRequireAdmin } from '@/hooks/useRequireAdmin';
 import EmptyState from '@/components/EmptyState';
 import type { User } from '@/types/auth';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,9 +14,14 @@ interface UsersResponse {
 }
 
 export default function UsersPage() {
+  const isAdmin = useRequireAdmin();
   const router = useRouter();
   const { data, loading, error } = useFetch<UsersResponse>('/users/');
   const users = data?.users || [];
+
+  if (!isAdmin) {
+    return null; // Redirecting via useRequireAdmin
+  }
 
   const handleUserClick = (userSlug: string) => {
     router.push(`/dashboard/users/${userSlug}`);

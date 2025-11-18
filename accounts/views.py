@@ -93,7 +93,13 @@ def register(request):
         response = Response({
             'user': get_user_data(user)
         })
-        response.set_cookie('jwt', str(refresh.access_token), httponly=True, samesite='Lax')
+        response.set_cookie(
+            settings.SIMPLE_JWT['AUTH_COOKIE'],
+            str(refresh.access_token),
+            httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+            samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+            secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE']
+        )
         return response
         
     except User.DoesNotExist:
@@ -122,7 +128,13 @@ def login(request):
         response = Response({
             'user': get_user_data(user)
         })
-        response.set_cookie('jwt', str(refresh.access_token), httponly=True, samesite='Lax')
+        response.set_cookie(
+            settings.SIMPLE_JWT['AUTH_COOKIE'],
+            str(refresh.access_token),
+            httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+            samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+            secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE']
+        )
         return response
         
     except User.DoesNotExist:
@@ -183,7 +195,7 @@ def invite_user(request):
     token = user.generate_invitation_token()
     
     # Generate invitation link
-    frontend_url = 'http://localhost:3000'
+    frontend_url = settings.FRONTEND_URL
     invitation_link = f"{frontend_url}/register?token={token}"
     
     return Response({

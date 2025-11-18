@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
+import { useRequireAdmin } from '@/hooks/useRequireAdmin';
 import { useMutation } from '@/hooks/useMutation';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,12 @@ interface InviteVariables {
 }
 
 export default function InviteUserPage() {
+  const isAdmin = useRequireAdmin();
   const { user } = useAuthStore();
+
+  if (!isAdmin) {
+    return null; // Redirecting via useRequireAdmin
+  }
   const [email, setEmail] = useState('');
   const [success, setSuccess] = useState<{ link: string; token: string } | null>(null);
 

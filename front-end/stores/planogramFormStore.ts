@@ -50,7 +50,7 @@ export const usePlanogramFormStore = create<PlanogramFormState>()(
       initializeForm: (data) =>
         set(
           (state) => ({
-            name: data.name !== undefined && !state.isEditingName ? data.name : state.name,
+            name: data.name !== undefined ? data.name : state.name,
             selectedDisplay: data.display_id || state.selectedDisplay,
             season: data.season || state.season,
             shelfCount: data.shelf_count && data.shelf_count > 0 ? data.shelf_count : state.shelfCount || 1,

@@ -192,14 +192,17 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'AUTH_COOKIE': 'jwt',
     'AUTH_COOKIE_HTTP_ONLY': True,
-    'AUTH_COOKIE_SAMESITE': 'Lax',
-    'AUTH_COOKIE_SECURE': os.getenv('AUTH_COOKIE_SECURE', 'True') == 'True',  # True in production with HTTPS
+    'AUTH_COOKIE_SAMESITE': 'None',  # None for cross-domain cookies (requires Secure=True)
+    'AUTH_COOKIE_SECURE': os.getenv('AUTH_COOKIE_SECURE', 'True') == 'True',  # Must be True with SameSite=None
 }
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Frontend URL for generating links (invitations, etc.)
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 
 # Logging configuration
 LOGGING = {

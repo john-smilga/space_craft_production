@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useRequireAdmin } from '@/hooks/useRequireAdmin';
 import { useMutation } from '@/hooks/useMutation';
 import api from '@/lib/axios';
 import type { StoreResponse } from '@/types/stores';
@@ -19,7 +20,12 @@ interface CreateStoreVariables {
 }
 
 export default function CreateStorePage() {
+  const isAdmin = useRequireAdmin();
   const router = useRouter();
+
+  if (!isAdmin) {
+    return null; // Redirecting via useRequireAdmin
+  }
   const [name, setName] = useState('First Store Tampa');
   const [storeCode, setStoreCode] = useState('TAMPA-001');
   const [address, setAddress] = useState('123 Main Street,\nTampa, FL 33602');

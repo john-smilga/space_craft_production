@@ -3,8 +3,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
 export default function Home() {
-  // Note: Authenticated users are redirected to /dashboard via proxy.ts (server-side)
-  // This page only renders for unauthenticated users
+  // Authentication is handled client-side via AuthenticatedLayout component
   return (
     <div className='flex min-h-screen items-center justify-center bg-gray-50 px-4'>
       <div className='max-w-4xl w-full grid md:grid-cols-2 gap-8 items-center'>

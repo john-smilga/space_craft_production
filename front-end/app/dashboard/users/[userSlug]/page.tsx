@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useFetch } from '@/hooks/useFetch';
+import { useRequireAdmin } from '@/hooks/useRequireAdmin';
 import { useMutation } from '@/hooks/useMutation';
 import api from '@/lib/axios';
 import type { User } from '@/types/auth';
@@ -31,10 +32,15 @@ function UserField({ label, children }: UserFieldProps) {
 }
 
 export default function UserDetailPage() {
+  const isAdmin = useRequireAdmin();
   const router = useRouter();
   const params = useParams();
   const userSlug = params?.userSlug as string;
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  if (!isAdmin) {
+    return null; // Redirecting via useRequireAdmin
+  }
 
   const { data, loading, error } = useFetch<UserResponse>(userSlug ? `/users/${userSlug}/` : null);
   const user = data?.user || null;
