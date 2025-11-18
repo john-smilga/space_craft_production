@@ -1,0 +1,5 @@
+{
+    "python.defaultInterpreterPath": "/path/to/your/poetry/virtualenv/bin/python",
+    "python.terminal.activateEnvironment": true
+}
+
