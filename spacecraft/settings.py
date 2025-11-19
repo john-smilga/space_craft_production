@@ -192,8 +192,11 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'AUTH_COOKIE': 'jwt',
     'AUTH_COOKIE_HTTP_ONLY': True,
-    'AUTH_COOKIE_SAMESITE': 'None',  # None for cross-domain cookies (requires Secure=True)
-    'AUTH_COOKIE_SECURE': os.getenv('AUTH_COOKIE_SECURE', 'True') == 'True',  # Must be True with SameSite=None
+    # Use env var if set, otherwise fallback based on DEBUG mode
+    # Local dev: Lax + Secure=False (works with HTTP)
+    # Production: None + Secure=True (requires HTTPS)
+    'AUTH_COOKIE_SAMESITE': os.getenv('AUTH_COOKIE_SAMESITE', 'Lax' if DEBUG else 'None'),
+    'AUTH_COOKIE_SECURE': os.getenv('AUTH_COOKIE_SECURE', 'False' if DEBUG else 'True') == 'True',
 }
 
 # CORS Settings
