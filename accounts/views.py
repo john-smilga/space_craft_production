@@ -110,21 +110,45 @@ def register(request):
 @permission_classes([AllowAny])
 def login(request):
     """Login existing user"""
+    import logging
+    logger = logging.getLogger('accounts')
+    
+    logger.info('=== LOGIN ATTEMPT ===')
+    logger.info(f'Request method: {request.method}')
+    logger.info(f'Request content type: {request.content_type}')
+    logger.info(f'Request data type: {type(request.data)}')
+    logger.info(f'Request data: {request.data}')
+    
     email = request.data.get('email')
     password = request.data.get('password')
     
+    logger.info(f'Extracted email: {email}')
+    logger.info(f'Extracted password: {"***" if password else None}')
+    
     if not email or not password:
+        logger.warning(f'Missing email or password - email: {email}, password: {"present" if password else "missing"}')
         return Response({'error': 'Email and password are required'}, status=400)
     
     try:
+        logger.info(f'Looking up user with email: {email}')
         user = User.objects.get(email=email)
-        if not user.check_password(password):
+        logger.info(f'User found: {user.username} (id: {user.id}, active: {user.is_active})')
+        
+        password_check = user.check_password(password)
+        logger.info(f'Password check result: {password_check}')
+        
+        if not password_check:
+            logger.warning(f'Password check failed for user: {email}')
             return Response({'error': 'Invalid credentials'}, status=401)
         
         if not user.is_active:
+            logger.warning(f'User is not active: {email}')
             return Response({'error': 'Account is not active'}, status=401)
         
+        logger.info(f'Generating token for user: {user.username}')
         refresh = get_token_for_user(user)
+        logger.info('Token generated successfully')
+        
         response = Response({
             'user': get_user_data(user)
         })
@@ -135,10 +159,15 @@ def login(request):
             samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
             secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE']
         )
+        logger.info('Login successful, returning response')
         return response
         
     except User.DoesNotExist:
+        logger.warning(f'User not found with email: {email}')
         return Response({'error': 'Invalid credentials'}, status=401)
+    except Exception as e:
+        logger.error(f'Unexpected error during login: {e}', exc_info=True)
+        return Response({'error': 'An error occurred during login'}, status=500)
 
 
 @api_view(['POST'])
