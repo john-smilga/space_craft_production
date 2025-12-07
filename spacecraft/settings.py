@@ -195,8 +195,10 @@ SIMPLE_JWT = {
     # Use env var if set, otherwise fallback based on DEBUG mode
     # Local dev: Lax + Secure=False (works with HTTP)
     # Production: None + Secure=True (requires HTTPS)
-    'AUTH_COOKIE_SAMESITE': os.getenv('AUTH_COOKIE_SAMESITE', 'Lax' if DEBUG else 'None'),
-    'AUTH_COOKIE_SECURE': os.getenv('AUTH_COOKIE_SECURE', 'False' if DEBUG else 'True') == 'True',
+    'AUTH_COOKIE_SAMESITE': os.getenv('AUTH_COOKIE_SAMESITE') or ('Lax' if DEBUG else 'None'),
+    'AUTH_COOKIE_SECURE': (
+        (os.getenv('AUTH_COOKIE_SECURE') or ('False' if DEBUG else 'True')).lower() == 'true'
+    ),
 }
 
 # CORS Settings
