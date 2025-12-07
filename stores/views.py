@@ -2,7 +2,10 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+import logging
 from .models import Store
+
+logger = logging.getLogger('stores')
 
 
 def get_store_data(store):
@@ -29,6 +32,14 @@ def get_store_data(store):
 @permission_classes([IsAuthenticated])
 def list_or_create_stores(request):
     """List all stores or create a new store (all users can view, admin can create)"""
+    logger.info(
+        f"list_or_create_stores called. "
+        f"User: {request.user.username} (id: {request.user.id}), "
+        f"Method: {request.method}, "
+        f"Origin: {request.META.get('HTTP_ORIGIN', 'No Origin')}, "
+        f"Has cookies: {bool(request.COOKIES)}"
+    )
+    
     if not request.user.company:
         return Response({'error': 'User is not associated with a company'}, status=400)
     

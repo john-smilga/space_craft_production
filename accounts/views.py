@@ -152,13 +152,42 @@ def login(request):
         response = Response({
             'user': get_user_data(user)
         })
+        
+        # Log cookie settings before setting
+        cookie_name = settings.SIMPLE_JWT['AUTH_COOKIE']
+        cookie_settings = {
+            'name': cookie_name,
+            'httponly': settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
+            'samesite': settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+            'secure': settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
+        }
+        logger.info(f'Setting cookie with settings: {cookie_settings}')
+        
         response.set_cookie(
-            settings.SIMPLE_JWT['AUTH_COOKIE'],
+            cookie_name,
             str(refresh.access_token),
             httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
             samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
             secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE']
         )
+        
+        # Log cookie after setting to verify it's in response
+        cookie_in_response = cookie_name in response.cookies
+        cookie_obj = response.cookies.get(cookie_name) if cookie_in_response else None
+        logger.info(
+            f'Cookie set in response: {cookie_in_response}, '
+            f'Response cookies: {list(response.cookies.keys())}, '
+            f'Cookie value length: {len(str(refresh.access_token))}'
+        )
+        if cookie_obj:
+            # Django Morsel stores attributes as dict keys, not attributes
+            logger.info(
+                f'Cookie object details: HttpOnly={cookie_obj.get("httponly", False)}, '
+                f'Secure={cookie_obj.get("secure", False)}, '
+                f'SameSite={cookie_obj.get("samesite", "Not Set")}, '
+                f'Path={cookie_obj.get("path", "/")}'
+            )
+        
         logger.info('Login successful, returning response')
         return response
         
