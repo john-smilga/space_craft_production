@@ -21,22 +21,20 @@ export default function PlanogramFormFields() {
   return (
     <>
       {/* Season Selector */}
-      {season && (
-        <div className='lg:col-span-2 space-y-2'>
-          <Label>Season</Label>
-          <Select value={season} onValueChange={setSeason}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='spring'>Spring</SelectItem>
-              <SelectItem value='summer'>Summer</SelectItem>
-              <SelectItem value='fall'>Fall</SelectItem>
-              <SelectItem value='winter'>Winter</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <div className='lg:col-span-2 space-y-2'>
+        <Label>Season</Label>
+        <Select value={season} onValueChange={setSeason}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='spring'>Spring</SelectItem>
+            <SelectItem value='summer'>Summer</SelectItem>
+            <SelectItem value='fall'>Fall</SelectItem>
+            <SelectItem value='winter'>Winter</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Shelf Count Select */}
       <div className='lg:col-span-2 space-y-2'>
@@ -56,7 +54,7 @@ export default function PlanogramFormFields() {
       </div>
 
       {/* Display Selector */}
-      {selectedDisplay && (companyDisplays.length > 0 || standardDisplays.length > 0) && (
+      {(companyDisplays.length > 0 || standardDisplays.length > 0) && (
         <div className='lg:col-span-5 space-y-2'>
           <div className='flex items-center gap-12'>
             <Label>Display</Label>

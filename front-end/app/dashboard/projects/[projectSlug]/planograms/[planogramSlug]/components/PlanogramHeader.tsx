@@ -3,12 +3,12 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import type { PlanogramResponse } from '@/types/planograms';
+import type { Planogram } from '@/features/planogram/types';
 import { usePlanogramStore, useAIOverviewMutation } from '@/features/planogram';
 import PlanogramDownloadButton from './PlanogramDownloadButton';
 
 interface PlanogramHeaderProps {
-  planogram: PlanogramResponse['planogram'] | null;
+  planogram: Planogram | null;
 }
 
 export default function PlanogramHeader({ planogram }: PlanogramHeaderProps) {

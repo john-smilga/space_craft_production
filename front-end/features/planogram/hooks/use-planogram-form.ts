@@ -35,13 +35,19 @@ export function usePlanogramForm(
     // Set flag to skip next initialization to prevent flashing
     setSkipNextInitialization(true);
 
+    if (!planogramData?.planogram) {
+      return;
+    }
+
+    const { name, width_in, height_in, shelf_count } = planogramData.planogram;
+
     try {
       await updateMutation.mutateAsync({
         slug: planogramSlug,
-        name: planogramData?.planogram.name!,
-        width_in: planogramData?.planogram.width_in!,
-        height_in: planogramData?.planogram.height_in!,
-        shelf_count: planogramData?.planogram.shelf_count!,
+        name,
+        width_in,
+        height_in,
+        shelf_count,
         layout,
         preserve_layout: true,
       });

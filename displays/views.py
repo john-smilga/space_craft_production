@@ -82,7 +82,7 @@ class DisplayViewSet(SlugLookupMixin, BaseViewSet):
             {"value": choice[0], "label": choice[1]} for choice in Display.TYPE_CHOICES
         ]
         serializer = DisplayTypeSerializer(types_data, many=True)
-        return Response({"types": serializer.data})
+        return Response(serializer.data)
 
     @action(detail=False, methods=["get"], url_path="standards")
     def standards(self, request: Request) -> Response:
@@ -91,4 +91,4 @@ class DisplayViewSet(SlugLookupMixin, BaseViewSet):
             "type", "name"
         )
         serializer = DisplaySerializer(standards, many=True)
-        return Response({"standards": serializer.data})
+        return Response(serializer.data)

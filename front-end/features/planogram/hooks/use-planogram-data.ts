@@ -6,6 +6,8 @@ import type { DisplaysResponse, StandardDisplaysResponse } from '@/features/disp
 import type { AvailableItem } from '../types';
 import type { SelectableCategoriesResponse } from '@/types/categories';
 import { usePlanogramStore } from '../store';
+import { PlanogramDetailResponseSchema } from '../schemas/planogram-detail-response-schema';
+import { AvailableProductsResponseSchema } from '../schemas/available-products-response-schema';
 
 export function usePlanogramData(planogramSlug: string | null) {
   const initializeForm = usePlanogramStore.use.initializeForm();
@@ -21,7 +23,13 @@ export function usePlanogramData(planogramSlug: string | null) {
         throw new Error('Planogram slug is required');
       }
       const { data } = await api.get(`/planograms/${planogramSlug}/`);
-      return data;
+      // Validate response structure matches expected format
+      try {
+        return PlanogramDetailResponseSchema.parse(data);
+      } catch (error) {
+        console.error('Planogram response validation failed:', error);
+        throw new Error('Invalid planogram response format');
+      }
     },
     enabled: !!planogramSlug,
     staleTime: 1000 * 60 * 5,
@@ -42,10 +50,10 @@ export function usePlanogramData(planogramSlug: string | null) {
     queryKey: ['standard-displays'],
     queryFn: async (): Promise<StandardDisplaysResponse> => {
       const { data } = await api.get('/displays/standards/');
-      return data;
+      return data as StandardDisplaysResponse;
     },
   });
-  const standardDisplays = standardsData?.standards || [];
+  const standardDisplays = ((standardsData as StandardDisplaysResponse)?.standards) || (Array.isArray(standardsData) ? standardsData : []);
 
   // Fetch leaf categories (categories that have products directly as children, not subcategories)
   const leafCategoriesQuery = useQuery({
@@ -77,10 +85,13 @@ export function usePlanogramData(planogramSlug: string | null) {
       try {
         const categoryIdsStr = categoryIds.join(',');
         const response = await api.get(`/products/by-categories/?category_ids=${categoryIdsStr}&season=${currentSeason}`);
-        const products = response.data.products || [];
+
+        // Validate response structure
+        const validatedResponse = AvailableProductsResponseSchema.parse(response.data);
+        const products = validatedResponse.products || [];
 
         // Convert to AvailableItem format
-        const items: AvailableItem[] = products.map((product: { id: number; name: string; category?: string; color?: string; overall_score?: number; margin?: number; pack_width_in: number; pack_height_in: number }) => ({
+        const items: AvailableItem[] = products.map((product) => ({
           id: product.id,
           name: product.name,
           category: product.category || 'Unknown',

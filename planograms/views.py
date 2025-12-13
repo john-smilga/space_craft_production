@@ -63,7 +63,7 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
 
         layout = get_or_compute_layout(instance)
 
-        return Response({"planogram": planogram_data, "layout": layout})
+        return Response({**planogram_data, "layout": layout})
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Create a new planogram."""
@@ -123,7 +123,7 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         planogram_data = output_serializer.data
         layout = get_or_compute_layout(planogram)
 
-        return Response({"planogram": planogram_data, "layout": layout})
+        return Response({**planogram_data, "layout": layout})
 
     @action(detail=True, methods=["post"], url_path="layout")
     def save_layout(self, request: Request, slug: str = None) -> Response:

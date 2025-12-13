@@ -23,7 +23,7 @@ export function usePlanogramQuery(slug: string | null) {
 
   // Initialize form and layouts when data changes
   useEffect(() => {
-    if (query.data?.planogram) {
+    if (query.data) {
       const planogram = query.data.planogram;
       const displayId = planogram.display?.id?.toString() || undefined;
 

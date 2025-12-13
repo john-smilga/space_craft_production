@@ -116,7 +116,7 @@ def register(request: Request) -> Response:
         refresh = RefreshToken.for_user(user)
 
         serializer = UserSerializer(user)
-        response = Response({"user": serializer.data})
+        response = Response(serializer.data)
         response.set_cookie(
             settings.SIMPLE_JWT["AUTH_COOKIE"],
             str(refresh.access_token),
@@ -161,7 +161,7 @@ def login(request: Request) -> Response:
         refresh = get_token_for_user(user)
 
         user_serializer = UserSerializer(user)
-        response = Response({"user": user_serializer.data})
+        response = Response(user_serializer.data)
 
         response.set_cookie(
             settings.SIMPLE_JWT["AUTH_COOKIE"],
@@ -307,4 +307,4 @@ class UserViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         request.user.save()
 
         serializer = UserSerializer(request.user)
-        return Response({"user": serializer.data})
+        return Response(serializer.data)

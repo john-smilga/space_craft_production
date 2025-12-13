@@ -10,7 +10,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCreateProjectMutation, useUpdateProjectMutation, useProjectQuery } from '../../queries';
 import { useStoresQuery } from '@/features/stores';
 import { NoStoresAlert } from '../no-stores-alert/no-stores-alert';
-import type { Project } from '../../types';
 
 interface ProjectFormProps {
   projectSlug?: string;

@@ -91,8 +91,8 @@ class TestRegister:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert "user" in response.data
-        assert response.data["user"]["username"] == "newusername"
+        assert "username" in response.data
+        assert response.data["username"] == "newusername"
         assert "jwt" in response.cookies
 
         user.refresh_from_db()
@@ -170,8 +170,8 @@ class TestLogin:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert "user" in response.data
-        assert response.data["user"]["email"] == user.email
+        assert "email" in response.data
+        assert response.data["email"] == user.email
         assert "jwt" in response.cookies
 
     def test_login_with_invalid_password(self, api_client):
@@ -430,6 +430,7 @@ class TestUserViewSetUpdateUsername:
         )
 
         assert response.status_code == status.HTTP_200_OK
+        assert response.data["username"] == "newusername"
         admin_user.refresh_from_db()
         assert admin_user.username == "newusername"
 

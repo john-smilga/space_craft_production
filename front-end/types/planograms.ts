@@ -50,21 +50,16 @@ export interface Planogram {
     id: number;
     username: string;
   } | null;
+  layout?: GridResponse;
 }
 
 export interface PlanogramsResponse {
   planograms: Planogram[];
 }
 
-export interface PlanogramResponse {
-  planogram: Planogram;
-  layout?: GridResponse;
-}
+export type PlanogramResponse = Planogram;
 
-export interface PlanogramDetailResponse {
-  planogram: Planogram;
-  layout?: GridResponse;
-}
+export type PlanogramDetailResponse = Planogram;
 
 export type PlanogramCreateResponse = Planogram;
 

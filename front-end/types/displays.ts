@@ -40,10 +40,6 @@ export interface DisplayResponse {
   display: Display;
 }
 
-export interface DisplayTypesResponse {
-  types: DisplayTypeOption[];
-}
+export type DisplayTypesResponse = DisplayTypeOption[];
 
-export interface StandardDisplaysResponse {
-  standards: Display[]; // Standard displays are Display objects with display_category='standard'
-}
+export type StandardDisplaysResponse = Display[];

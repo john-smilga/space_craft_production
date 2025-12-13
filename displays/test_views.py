@@ -200,11 +200,11 @@ class TestDisplayViewSetTypes:
         response = authenticated_client.get("/api/displays/types/")
 
         assert response.status_code == status.HTTP_200_OK
-        assert "types" in response.data
-        assert len(response.data["types"]) > 0
+        assert isinstance(response.data, list)
+        assert len(response.data) > 0
 
         # Check structure
-        first_type = response.data["types"][0]
+        first_type = response.data[0]
         assert "value" in first_type
         assert "label" in first_type
 
@@ -224,8 +224,8 @@ class TestDisplayViewSetStandards:
         response = authenticated_client.get("/api/displays/standards/")
 
         assert response.status_code == status.HTTP_200_OK
-        assert "standards" in response.data
-        assert len(response.data["standards"]) == 3 + existing_standards
+        assert isinstance(response.data, list)
+        assert len(response.data) == 3 + existing_standards
 
     def test_standards_only_includes_standard_category(
         self, authenticated_client, company, user
@@ -242,5 +242,5 @@ class TestDisplayViewSetStandards:
 
         assert response.status_code == status.HTTP_200_OK
         assert (
-            len(response.data["standards"]) == 2 + existing_standards
+            len(response.data) == 2 + existing_standards
         )  # Only standard + existing, not custom

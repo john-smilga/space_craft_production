@@ -1,348 +1,335 @@
-# Data Format Consistency Fix - Step by Step Plan
+# Planogram Page - Form and Products Sidebar Fix - Step by Step Plan
 
 ## Overview
 
-This document outlines a systematic approach to fix data format inconsistencies between the Django backend API and Next.js frontend.
+The planogram detail page is missing two critical components:
+1. **Edit Form** (name, season, shelf count, display selection, categories)
+2. **Available Products Sidebar** (right sidebar showing products to add)
+
+These components are defined in code but not displaying due to:
+- Form components not rendering (likely store initialization or rendering logic issue)
+- Products sidebar not showing products (API response mismatch or fetch logic issue)
+
+This plan fixes both issues systematically.
 
 ---
 
-## Issues Identified
+## Root Cause Analysis
 
-### Critical Issues
+### Issue 1: Form Components Missing
 
-1. **Response Wrapping Inconsistency** - Some endpoints wrap responses (`{display: Display}`), others return bare objects
-2. **Planogram Create vs Update Mismatch** - POST returns bare object, PUT returns wrapped
-3. **`/users/me/` Response** - Returns bare User, but login/register return `{user: User}`
-4. **Missing Response Validation** - Frontend doesn't validate API responses with Zod schemas
+**Components involved:**
+- `PlanogramNameField.tsx` - Uses `usePlanogramStore.use.name()` to get/set name
+- `PlanogramFormFields.tsx` - Uses store for season, shelf_count, display selection
+- `PlanogramCategoriesSelector.tsx` - Uses store for selected categories
+- `PlanogramActions.tsx` - Regenerate and Explore Products buttons
 
-### Medium Priority
+**Root cause:** The Zustand store `usePlanogramStore` is likely not properly initialized with form data when the page loads. The `initializeForm()` function in `usePlanogramData` hook sets the store values, but there may be timing issues or the store selectors aren't working properly.
 
-5. **Decimal Fields** - Backend returns strings, frontend expects numbers
-6. **Special Endpoints** - `/displays/types/` and `/displays/standards/` use non-standard wrapping
+### Issue 2: Available Products Sidebar Empty
+
+**Component involved:**
+- `AvailableProductsSidebar.tsx` - Displays `availableItems` from store
+
+**Root cause:** The `fetchAvailableProducts()` function in `usePlanogramData` hook is called on mount, but:
+1. The API endpoint `/products/by-categories/` may be returning data in unexpected format
+2. The response mapping from `product.overall_score` to `score` field may not match actual API response
+3. The sidebar visibility flag may not be set to open
 
 ---
 
-## Step 1: Document Current API Contracts
+## Step 1: Verify and Fix Store Initialization
 
-**Goal**: Create a reference document of current API behavior
+**Goal:** Ensure Zustand store is properly initialized with planogram data
 
 ### Tasks
 
-- [ ] 1.1 Create `api-contracts.md` documenting all endpoints:
-  - Request method, URL, and body format
-  - Response format (wrapped vs unwrapped)
-  - Required vs optional fields
+- [ ] 1.1 **Check planogram-slice.ts store definition**
+  - Verify `initializeForm()` action exists and is correct
+  - Check selector hooks (`use.name()`, `use.season()`, etc.) are properly typed
+  - Verify initial state values
 
-- [ ] 1.2 Add examples for each endpoint showing actual request/response JSON
+- [ ] 1.2 **Check usePlanogramData hook**
+  - Verify `planogramQuery.data?.planogram` is being accessed correctly
+  - Check timing of `initializeForm()` call relative to data fetch
+  - Ensure dependencies in useEffect are correct to avoid skipping initialization
 
-### Files to Review
-- `accounts/views.py`
-- `stores/views.py`
-- `projects/views.py`
-- `displays/views.py`
-- `planograms/views.py`
+- [ ] 1.3 **Add console logging to debug**
+  - Log when planogram data is fetched
+  - Log when initializeForm is called
+  - Log store state after initialization
+  - Temporarily add to understand data flow
 
----
-
-## Step 2: Standardize Backend Response Format
-
-**Goal**: Make all single-object responses consistent
-
-### Decision: Use UNWRAPPED responses for simplicity
-
-**Rationale**: DRF's default pattern is unwrapped responses. Pagination already uses `{count, next, previous, results}`. Changing to unwrapped is simpler.
-
-### Tasks
-
-- [ ] 2.1 **Fix `/users/me/` endpoint** (`accounts/views.py`)
-  - Keep returning bare `User` object (matches unwrapped pattern)
-  - Document this is intentional
-
-- [ ] 2.2 **Fix auth endpoints** (`accounts/views.py`)
-  - Change login response from `{"user": {...}}` to bare User object
-  - Change register response from `{"user": {...}}` to bare User object
-  - Update frontend to match
-
-- [ ] 2.3 **Fix display endpoints** (`displays/views.py`)
-  - Change POST `/displays/` response to bare Display (if currently wrapped)
-  - Change `/displays/types/` from `{"types": [...]}` to bare array
-  - Change `/displays/standards/` from `{"standards": [...]}` to bare array
-
-- [ ] 2.4 **Fix planogram endpoints** (`planograms/views.py`)
-  - Change GET `/planograms/{slug}/` from `{"planogram": {...}, "layout": {...}}` to `{...planogram, layout: {...}}`
-  - Keep POST returning bare Planogram
-  - Change PUT to return bare Planogram (currently wrapped)
-
-### Files to Modify
-- `accounts/views.py` - lines 119, 164, 203
-- `displays/views.py` - lines 62, 85, 94
-- `planograms/views.py` - lines 66, 110
+**Files to Review:**
+- `front-end/features/planogram/store/planogram-slice.ts`
+- `front-end/features/planogram/hooks/use-planogram-data.ts`
+- `front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/page.tsx`
 
 ---
 
-## Step 3: Add Backend API Tests
+## Step 2: Verify Form Component Rendering
 
-**Goal**: Ensure response formats are correct and prevent regressions
+**Goal:** Ensure form components render when store is initialized
 
 ### Tasks
 
-- [ ] 3.1 **Create/update test files** for each app:
-  - `accounts/test_views.py` - Test auth and user endpoints
-  - `stores/test_views.py` - Test store CRUD
-  - `projects/test_views.py` - Test project CRUD
-  - `displays/test_views.py` - Test display CRUD + special endpoints
-  - `planograms/test_views.py` - Test planogram CRUD
+- [ ] 2.1 **Check PlanogramNameField rendering**
+  - Verify `usePlanogramStore.use.name()` hook selector is working
+  - Check if FormField component is properly accepting/displaying value
+  - Verify onChange handler is correctly updating store
 
-- [ ] 3.2 **Test response structure assertions**:
-  ```python
-  def test_create_store_response_format(self):
-      response = self.client.post('/api/stores/', data)
-      # Assert response is NOT wrapped
-      self.assertIn('id', response.data)
-      self.assertIn('name', response.data)
-      self.assertNotIn('store', response.data)  # Not wrapped
-  ```
+- [ ] 2.2 **Check PlanogramFormFields rendering**
+  - Verify all three field selectors (season, shelfCount, display) work
+  - Check if Select components are rendering options
+  - Test onChange handlers
 
-- [ ] 3.3 **Test required fields are present**:
-  ```python
-  def test_store_response_has_required_fields(self):
-      response = self.client.get('/api/stores/ABC123/')
-      required_fields = ['id', 'name', 'store_code', 'slug', 'address', 'created_at']
-      for field in required_fields:
-          self.assertIn(field, response.data)
-  ```
+- [ ] 2.3 **Check PlanogramCategoriesSelector rendering**
+  - Verify categories are fetched via `leafCategoriesQuery`
+  - Check if multi-select dropdown displays categories
+  - Verify selected categories display as badges
 
-- [ ] 3.4 **Run all backend tests**:
-  ```bash
-  python manage.py test
-  pytest
-  ```
+- [ ] 2.4 **Test form in browser**
+  - Open planogram page and check browser DevTools
+  - Look for JavaScript errors in console
+  - Check if form fields exist in DOM but hidden (CSS issue)
+  - Check if data is present in store but not in components
 
-### Files to Create/Modify
-- `accounts/test_views.py`
-- `stores/test_views.py`
-- `projects/test_views.py`
-- `displays/test_views.py`
-- `planograms/test_views.py`
+**Files to Review:**
+- `front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramNameField.tsx`
+- `front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramFormFields.tsx`
+- `front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramCategoriesSelector.tsx`
+- `front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramActions.tsx`
 
 ---
 
-## Step 4: Update Frontend Type Definitions
+## Step 3: Verify Available Products API and Response Handling
 
-**Goal**: Ensure TypeScript types match actual API responses
+**Goal:** Ensure products are fetched correctly from API and stored in Zustand
 
 ### Tasks
 
-- [ ] 4.1 **Review and update type files**:
-  - `front-end/types/auth.ts`
-  - `front-end/types/stores.ts`
-  - `front-end/types/projects.ts`
-  - `front-end/types/displays.ts`
-  - `front-end/types/planograms.ts`
+- [ ] 3.1 **Check API endpoint and request format**
+  - Verify `/products/by-categories/` endpoint exists and works
+  - Check query params: `category_ids` (comma-separated) and `season`
+  - Test endpoint manually with curl or Postman
 
-- [ ] 4.2 **Update feature-specific types**:
-  - `front-end/features/*/types.ts`
+- [ ] 3.2 **Verify API response format**
+  - Get actual response from `/products/by-categories/` endpoint
+  - Check if response has `products` key (current expectation: `response.data.products`)
+  - Check product field names: `overall_score`, `margin`, `pack_width_in`, etc.
+  - Compare with actual API response structure
 
-- [ ] 4.3 **Handle decimal fields** - Add type coercion or use `string` type:
-  ```typescript
-  // Option A: Accept both
-  width_in: number | string;
+- [ ] 3.3 **Check fetchAvailableProducts logic**
+  - Verify function is called in useEffect
+  - Check if planogram.category_ids is non-empty
+  - Check try/catch error handling
+  - Add console logging to track execution
 
-  // Option B: Transform in Zod schema
-  width_in: z.coerce.number()
-  ```
+- [ ] 3.4 **Check store persistence**
+  - Verify `setAvailableItems()` action properly sets store.availableItems
+  - Verify `setLoadingAvailableItems()` properly tracks loading state
+  - Check Zustand store selector `availableItems` in sidebar component
 
-### Files to Modify
-- `front-end/types/*.ts`
-- `front-end/features/*/types.ts`
+- [ ] 3.5 **Check sidebar visibility**
+  - Verify sidebar is opening with `availableProductsSidebarOpen` flag
+  - Check if "Explore Products" button in actions sets this flag
+  - Verify sidebar render conditions
+
+**Files to Review:**
+- `front-end/features/planogram/hooks/use-planogram-data.ts` (lines 60-103)
+- `front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/AvailableProductsSidebar.tsx` (lines 1-60)
+- Backend: `/products/by-categories/` endpoint in Django views
 
 ---
 
-## Step 5: Add Zod Response Validation to Mutations
+## Step 4: Fix Data Type Mismatches (API Contract Issue)
 
-**Goal**: Validate all API responses to catch format issues early
-
-### Tasks
-
-- [ ] 5.1 **Create Zod schemas for API responses**:
-  - `front-end/features/stores/schemas/store-response-schema.ts`
-  - `front-end/features/projects/schemas/project-response-schema.ts`
-  - `front-end/features/displays/schemas/display-response-schema.ts`
-  - `front-end/features/planogram/schemas/planogram-response-schema.ts`
-
-- [ ] 5.2 **Update mutations to validate responses**:
-  ```typescript
-  // Before
-  return response.data;
-
-  // After
-  return storeResponseSchema.parse(response.data);
-  ```
-
-- [ ] 5.3 **Add response validation to queries**:
-  - Validate list responses match `PaginatedResponse<T>` schema
-  - Validate single-object responses match entity schema
-
-### Files to Create/Modify
-- `front-end/features/*/schemas/*-response-schema.ts` (new)
-- `front-end/features/*/queries/use-*-mutation.ts`
-- `front-end/features/*/queries/use-*-query.ts`
-
----
-
-## Step 6: Update Frontend Mutations for New Response Format
-
-**Goal**: Ensure frontend correctly handles standardized responses
+**Goal:** Fix data format issues identified in api-contracts.md
 
 ### Tasks
 
-- [ ] 6.1 **Update auth mutations** (`front-end/features/auth/`):
-  - Update login mutation to expect bare User (not `{user: User}`)
-  - Update register mutation similarly
+- [ ] 4.1 **Check /displays/standards/ endpoint response**
+  - Current format: `{"standards": [...]}`
+  - Expected format: bare array `[...]`
+  - Fix in backend OR adjust frontend parsing
 
-- [ ] 6.2 **Update planogram mutations**:
-  - Remove manual unwrapping: `response.data.planogram` → `response.data`
-  - `front-end/features/planogram/queries/use-update-planogram-mutation.ts`
+- [ ] 4.2 **Check /displays/types/ endpoint response**
+  - Current format: `{"types": [...]}`
+  - Expected format: bare array `[...]`
+  - Fix in backend OR adjust frontend parsing
 
-- [ ] 6.3 **Update display queries**:
-  - Handle `/displays/types/` returning bare array
-  - Handle `/displays/standards/` returning bare array
+- [ ] 4.3 **Check /planograms/{slug}/ endpoint response**
+  - Current format: `{"planogram": {...}, "layout": {...}}`
+  - Expected format: Merged object with both planogram and layout fields
+  - Fix in backend OR adjust frontend response handling (currently: `planogramQuery.data?.planogram`)
 
-### Files to Modify
-- `front-end/features/auth/queries/use-login-mutation.ts`
-- `front-end/features/auth/queries/use-register-mutation.ts`
-- `front-end/features/planogram/queries/use-update-planogram-mutation.ts`
-- `front-end/features/planogram/queries/use-planogram-query.ts`
-- `front-end/features/displays/queries/use-display-types-query.ts`
+- [ ] 4.4 **Check /products/by-categories/ response format**
+  - Determine actual response structure
+  - Update `fetchAvailableProducts()` to match actual format
+  - May need to adjust from `response.data.products` to different accessor
+
+**Files to Review:**
+- Backend API endpoints (Django views)
+- `front-end/features/planogram/hooks/use-planogram-data.ts`
+- `front-end/features/displays/queries/use-displays-query.ts`
 - `front-end/features/displays/queries/use-standard-displays-query.ts`
 
 ---
 
-## Step 7: Add Frontend Tests
+## Step 5: Add Type Validation with Zod (Optional but Recommended)
 
-**Goal**: Ensure frontend correctly handles API responses
+**Goal:** Add runtime validation to catch API response format issues
 
 ### Tasks
 
-- [ ] 7.1 **Create API mock utilities**:
-  - `front-end/lib/test-utils/api-mocks.ts`
-  - Define mock responses matching actual API format
+- [ ] 5.1 **Create Zod schemas for API responses**
+  - `front-end/features/planogram/schemas/planogram-detail-response-schema.ts`
+  - `front-end/features/products/schemas/available-products-response-schema.ts`
+  - Define expected structure to catch mismatches
 
-- [ ] 7.2 **Add mutation tests**:
-  ```typescript
-  // front-end/features/stores/queries/__tests__/use-create-store-mutation.test.ts
-  it('correctly parses store creation response', async () => {
-    // Mock API response (bare object)
-    mockApi.post('/stores/').reply(201, { id: 1, name: 'Test', ... });
+- [ ] 5.2 **Update hooks to validate responses**
+  - Use `schema.parse()` in `usePlanogramData` to validate planogram response
+  - Use `schema.parse()` in `fetchAvailableProducts` to validate products response
+  - Add error handling for validation failures
 
-    const { result } = renderHook(() => useCreateStoreMutation());
-    await result.current.mutateAsync({ name: 'Test', ... });
-
-    expect(result.current.data).toMatchObject({ id: 1, name: 'Test' });
-  });
-  ```
-
-- [ ] 7.3 **Add query tests**:
-  - Test paginated responses are correctly parsed
-  - Test single-object responses are correctly parsed
-
-- [ ] 7.4 **Run frontend tests**:
-  ```bash
-  cd front-end && npm test
-  ```
-
-### Files to Create
-- `front-end/features/*/queries/__tests__/*.test.ts`
-- `front-end/lib/test-utils/api-mocks.ts`
+**Files to Create/Modify:**
+- `front-end/features/planogram/schemas/planogram-detail-response-schema.ts`
+- `front-end/features/products/schemas/available-products-response-schema.ts`
+- `front-end/features/planogram/hooks/use-planogram-data.ts`
 
 ---
 
-## Step 8: Integration Testing
+## Step 6: Test and Debug
 
-**Goal**: Verify end-to-end data flow works correctly
+**Goal:** Verify all components work correctly
 
 ### Tasks
 
-- [ ] 8.1 **Manual testing checklist**:
-  - [ ] Login flow works
-  - [ ] Register flow works
-  - [ ] Create/edit/delete stores works
-  - [ ] Create/edit/delete projects works
-  - [ ] Create/edit/delete displays works
-  - [ ] Create/edit/delete planograms works
-  - [ ] Planogram layout save/load works
+- [ ] 6.1 **Manual browser testing**
+  - Load planogram page
+  - Check if form fields are visible and populated
+  - Check if you can edit form fields and store updates
+  - Check if "Explore Products" button opens sidebar
+  - Check if products appear in sidebar
 
-- [ ] 8.2 **Test error scenarios**:
-  - [ ] Validation errors are displayed correctly
-  - [ ] Network errors are handled gracefully
-  - [ ] 404 errors show appropriate messages
+- [ ] 6.2 **Check browser DevTools**
+  - Console: No JavaScript errors
+  - Network: API calls returning correct status (200)
+  - Network: Response payloads match expectations
+  - Application: Zustand store state correct
 
-- [ ] 8.3 **Run full test suite**:
-  ```bash
-  # Backend
-  python manage.py test
-  pytest --cov
+- [ ] 6.3 **Test specific workflows**
+  - [ ] Load planogram → Form visible with data populated
+  - [ ] Edit name field → Store updates, component re-renders
+  - [ ] Change season → Available products refetch
+  - [ ] Click "Explore Products" → Sidebar opens
+  - [ ] Select product quantity → Store updates
+  - [ ] Select shelf → targetRowId updates
+  - [ ] Click "Add Items" → Products added to grid
 
-  # Frontend
-  cd front-end && npm test && npm run build
-  ```
+- [ ] 6.4 **Edge cases**
+  - [ ] Planogram with no categories selected
+  - [ ] Planogram with invalid display ID
+  - [ ] API returns empty products list
+  - [ ] Network error during product fetch
 
 ---
 
-## Step 9: Documentation & Cleanup
+## Step 7: Implementation Summary
 
-**Goal**: Document changes and clean up
+**What Will Change:**
 
-### Tasks
+1. **Form Components** - No code changes needed if store initialization is working
+2. **Store Initialization** - May need timing/dependency fixes in useEffect
+3. **API Response Handling** - Update parsers to match actual API response format
+4. **Zod Validation** - Add schemas for runtime validation (recommended)
+5. **Sidebar Visibility** - Ensure "Explore Products" button opens sidebar correctly
 
-- [ ] 9.1 **Update API documentation**:
-  - Document standardized response format
-  - Add examples for each endpoint
+**Expected Outcome:**
 
-- [ ] 9.2 **Remove this file** (`steps.md`) after completion
-
-- [ ] 9.3 **Commit changes** with clear message:
-  ```
-  fix: standardize API response format between backend and frontend
-
-  - Standardized all single-object responses to use unwrapped format
-  - Added Zod validation for API responses in frontend
-  - Added comprehensive API tests for response format
-  - Fixed decimal field type handling
-  ```
+- Form fields (Name, Season, Shelf Count, Display, Categories) are visible and editable
+- Form values populate from loaded planogram data
+- "Explore Products" button opens right sidebar
+- Available products sidebar shows list of products (name, score, margin, width)
+- Can select products and add to grid
 
 ---
 
 ## Execution Order
 
 ```
-Step 1 (Document) ─┬─> Step 2 (Backend fixes) ──> Step 3 (Backend tests)
-                   │
-                   └─> Step 4 (Frontend types) ──> Step 5 (Zod schemas) ──> Step 6 (Mutations)
-                                                                                    │
-                                                                                    v
-                                              Step 7 (Frontend tests) ──> Step 8 (Integration)
-                                                                                    │
-                                                                                    v
-                                                                          Step 9 (Cleanup)
+Step 1: Verify Store Init
+    ├─ Check store definition
+    ├─ Check hook implementation
+    └─ Debug via console logs
+
+Step 2: Test Form Rendering
+    ├─ Verify each component
+    ├─ Browser DevTools inspection
+    └─ Identify rendering issues
+
+Step 3: Test Products Fetch
+    ├─ Verify API endpoint
+    ├─ Check response format
+    ├─ Debug fetch logic
+    └─ Check store persistence
+
+Step 4: Fix Data Type Mismatches
+    ├─ Identify format issues (backend vs frontend expectations)
+    └─ Fix either backend or frontend parsers
+
+Step 5: Add Zod Validation (Optional)
+    ├─ Create schemas
+    └─ Integrate into hooks
+
+Step 6: Full Testing
+    ├─ Manual browser testing
+    ├─ DevTools verification
+    ├─ Workflow testing
+    └─ Edge case testing
+
+Step 7: Commit Changes
 ```
 
-**Estimated file changes**: ~25-30 files
-**Risk level**: Medium (API contract changes require coordinated frontend/backend updates)
+---
+
+## Critical Files Summary
+
+**Frontend Components:**
+- `/front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/page.tsx` - Main page
+- `/front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramNameField.tsx`
+- `/front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramFormFields.tsx`
+- `/front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramCategoriesSelector.tsx`
+- `/front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/AvailableProductsSidebar.tsx`
+
+**Frontend State & Hooks:**
+- `/front-end/features/planogram/store/planogram-slice.ts` - Zustand store
+- `/front-end/features/planogram/hooks/use-planogram-data.ts` - Data fetching and initialization
+- `/front-end/features/planogram/types.ts` - TypeScript types
+
+**Backend Endpoints:**
+- `GET /planograms/{slug}/` - Fetch planogram details
+- `GET /products/by-categories/` - Fetch products by category
+- `GET /displays/` - Fetch custom displays
+- `GET /displays/standards/` - Fetch standard displays
+- `GET /categories/leaf/` - Fetch leaf categories
 
 ---
 
 ## Rollback Plan
 
 If issues arise:
-1. Revert backend changes first (git revert)
-2. Revert frontend changes
-3. Re-run tests to verify original behavior
+1. Revert store changes (git revert)
+2. Revert API response parser changes
+3. Verify form and products appear again
+4. Re-run tests
 
 ---
 
 ## Notes
 
-- All response format changes should be made atomically (backend + frontend together)
-- Test each endpoint after changes before moving to next
-- Keep old response format tests as regression tests
+- The planogram page is already fully built and components exist in code
+- Issue is likely integration/initialization, not missing components
+- Start with debugging existing code rather than rewriting
+- Use browser DevTools Network tab to inspect API responses
+- Check Zustand store state in browser extensions (Redux DevTools works with Zustand)

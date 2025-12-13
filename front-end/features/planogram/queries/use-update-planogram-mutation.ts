@@ -23,14 +23,14 @@ export function useUpdatePlanogramMutation() {
     async (variables) => {
       const { slug, ...data } = variables;
       const response = await api.put(`/planograms/${slug}/`, data);
-      return response.data.planogram;
+      return response.data;
     },
     {
       successMessage: 'Planogram updated successfully',
       errorMessage: 'Failed to update planogram',
       invalidateQueries: [['planograms']],
       onSuccess: (data) => {
-        queryClient.setQueryData(['planograms', data.slug], { planogram: data });
+        queryClient.setQueryData(['planograms', data.slug], data);
         queryClient.invalidateQueries({ queryKey: ['planograms', data.slug] });
       },
     }
