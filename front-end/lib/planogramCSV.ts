@@ -20,7 +20,11 @@ export function generatePlanogramCSV(planogram: Planogram | null | undefined, la
   const depthIn = planogram.display?.depth_in ?? planogram.depth_in;
   const dimensions = widthIn && heightIn ? `${widthIn}"×${heightIn}"${depthIn ? `×${depthIn}"` : ''}` : 'N/A';
 
-  rows.push([`"${planogram.name.replace(/"/g, '""')}"`, `"${planogram.project.name.replace(/"/g, '""')}"`, planogram.season_display || planogram.season, `"${categories.replace(/"/g, '""')}"`, `"${displayName.replace(/"/g, '""')}"`, dimensions, planogram.shelf_count.toString(), planogram.shelf_spacing?.toString() || 'N/A'].join(','));
+  const projectName = planogram.project?.name || planogram.project_name || 'Unknown';
+  const seasonDisplay = planogram.season_display || planogram.season || 'N/A';
+  const shelfCount = planogram.shelf_count ?? 'N/A';
+  const shelfSpacing = planogram.shelf_spacing?.toString() || 'N/A';
+  rows.push([`"${planogram.name.replace(/"/g, '""')}"`, `"${projectName.replace(/"/g, '""')}"`, seasonDisplay, `"${categories.replace(/"/g, '""')}"`, `"${displayName.replace(/"/g, '""')}"`, dimensions, shelfCount.toString(), shelfSpacing].join(','));
 
   // Empty row
   rows.push('');

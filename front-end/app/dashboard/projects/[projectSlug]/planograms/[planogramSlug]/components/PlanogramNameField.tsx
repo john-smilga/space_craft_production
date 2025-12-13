@@ -1,10 +1,11 @@
 'use client';
 
 import { FormField } from '@/components/ui/form-field';
-import { usePlanogramFormStore } from '@/stores/planogramFormStore';
+import { usePlanogramStore } from '@/features/planogram';
 
 export default function PlanogramNameField() {
-  const { name, setName } = usePlanogramFormStore();
+  const name = usePlanogramStore.use.name();
+  const setName = usePlanogramStore.use.setName();
 
   return (
     <FormField

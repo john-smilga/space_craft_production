@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import GridLayout, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { usePlanogramData } from '../hooks/usePlanogramData';
+import { usePlanogramData } from '@/features/planogram';
 import { useParams } from 'next/navigation';
 
 const GridLayoutWithProvider = WidthProvider(GridLayout);

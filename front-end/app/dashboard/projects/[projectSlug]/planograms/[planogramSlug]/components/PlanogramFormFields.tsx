@@ -3,18 +3,20 @@
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { usePlanogramFormStore } from '@/stores/planogramFormStore';
-import { usePlanogramData } from '../hooks/usePlanogramData';
-import { usePlanogramForm } from '../hooks/usePlanogramForm';
+import { usePlanogramStore, usePlanogramData, usePlanogramForm } from '@/features/planogram';
 import { useParams } from 'next/navigation';
 
 export default function PlanogramFormFields() {
   const params = useParams();
   const planogramSlug = params?.planogramSlug as string;
 
-  const { season, shelfCount, selectedDisplay, setSeason, setShelfCount } = usePlanogramFormStore();
+  const season = usePlanogramStore.use.season();
+  const shelfCount = usePlanogramStore.use.shelfCount();
+  const selectedDisplay = usePlanogramStore.use.selectedDisplay();
+  const setSeason = usePlanogramStore.use.setSeason();
+  const setShelfCount = usePlanogramStore.use.setShelfCount();
   const { planogramData, companyDisplays, standardDisplays, refetchPlanogram, fetchAvailableProducts } = usePlanogramData(planogramSlug);
-  const { handleDisplayChange } = usePlanogramForm(planogramSlug, planogramData, refetchPlanogram, fetchAvailableProducts);
+  const { handleDisplayChange } = usePlanogramForm(planogramSlug, planogramData ?? null, refetchPlanogram, fetchAvailableProducts);
 
   return (
     <>
@@ -76,7 +78,7 @@ export default function PlanogramFormFields() {
                 })
                 .map((display) => (
                   <SelectItem key={display.id} value={display.id.toString()}>
-                    [{display.display_category.charAt(0).toUpperCase() + display.display_category.slice(1)}] {display.name} ({display.type_display}) - {display.width_in}" × {display.height_in}" × {display.depth_in}"
+                    [{display.display_category.charAt(0).toUpperCase() + display.display_category.slice(1)}] {display.name} ({display.type_display}) - {display.width_in}&quot; × {display.height_in}&quot; × {display.depth_in}&quot;
                   </SelectItem>
                 ))}
             </SelectContent>

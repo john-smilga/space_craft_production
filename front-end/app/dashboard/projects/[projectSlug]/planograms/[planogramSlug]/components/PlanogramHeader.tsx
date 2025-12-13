@@ -4,8 +4,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { PlanogramResponse } from '@/types/planograms';
-import { usePlanogramAIStore } from '@/stores/planogramAIStore';
-import { useAIOverview } from '../hooks/useAIOverview';
+import { usePlanogramStore, useAIOverviewMutation } from '@/features/planogram';
 import PlanogramDownloadButton from './PlanogramDownloadButton';
 
 interface PlanogramHeaderProps {
@@ -16,13 +15,13 @@ export default function PlanogramHeader({ planogram }: PlanogramHeaderProps) {
   const params = useParams();
   const planogramSlug = params?.planogramSlug as string;
 
-  const { setDialogOpen, loading: aiLoading, reset } = usePlanogramAIStore();
-  const { fetchAIOverview } = useAIOverview();
+  const setAIDialogOpen = usePlanogramStore.use.setAIDialogOpen();
+  const aiLoading = usePlanogramStore.use.aiLoading();
+  const aiMutation = useAIOverviewMutation();
 
   const handleAIOverview = async () => {
-    setDialogOpen(true);
-    reset();
-    await fetchAIOverview(planogramSlug);
+    setAIDialogOpen(true);
+    await aiMutation.mutateAsync({ slug: planogramSlug });
   };
 
   if (!planogram) {

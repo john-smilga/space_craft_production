@@ -1,130 +1,94 @@
-from rest_framework.decorators import api_view, permission_classes
+"""Views for displays app."""
+
+from typing import Any
+
+from django.db.models import Q, QuerySet
+from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
-from .models import Display
+
+from common.mixins import SlugLookupMixin
+from common.viewsets import BaseViewSet
+from displays.models import Display
+from displays.serializers import (
+    DisplayCreateSerializer,
+    DisplayListSerializer,
+    DisplaySerializer,
+    DisplayTypeSerializer,
+    DisplayUpdateSerializer,
+)
 
 
-def get_display_data(display):
-    """Helper function to get display data"""
-    data = {
-        'id': display.id,
-        'name': display.name,
-        'type': display.type,
-        'type_display': display.get_type_display(),
-        'width_in': float(display.width_in),
-        'height_in': float(display.height_in),
-        'depth_in': float(display.depth_in) if display.depth_in else None,
-        'shelf_count': display.shelf_count,
-        'shelf_spacing': float(display.shelf_spacing) if display.shelf_spacing else None,
-        'slug': display.slug,
-        'display_category': display.display_category,
-        'company': {
-            'id': display.company.id,
-            'name': display.company.name,
-        } if display.company else None,
-        'created_at': display.created_at.isoformat() if display.created_at else None,
-        'created_by': {
-            'id': display.created_by.id,
-            'username': display.created_by.username,
-        } if display.created_by else None,
-    }
-    
-    return data
+class DisplayViewSet(SlugLookupMixin, BaseViewSet):
+    """ViewSet for Display CRUD operations."""
 
+    queryset = Display.objects.select_related("company", "created_by").all()
+    permission_classes = [IsAuthenticated]
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_display_types(request):
-    """Get available display types (choices from model)"""
-    return Response({
-        'types': [{'value': choice[0], 'label': choice[1]} for choice in Display.TYPE_CHOICES]
-    })
+    def get_serializer_class(self) -> type:
+        """Return appropriate serializer based on action."""
+        if self.action == "list":
+            return DisplayListSerializer
+        elif self.action == "create":
+            return DisplayCreateSerializer
+        elif self.action in ["update", "partial_update"]:
+            return DisplayUpdateSerializer
+        return DisplaySerializer
 
+    def get_queryset(self) -> QuerySet:
+        """Get displays filtered by company (custom only) plus standards."""
+        queryset = super().get_queryset()
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_standard_displays(request):
-    """Get standard display templates (displays with display_category='standard', available to all companies)"""
-    standards = Display.objects.filter(display_category='standard').order_by('type', 'name')
-    return Response({
-        'standards': [get_display_data(standard) for standard in standards]
-    })
+        if not self.request.user.is_authenticated:
+            return queryset.none()
 
+        if hasattr(self.request.user, "company") and self.request.user.company:
+            return queryset.filter(
+                Q(company=self.request.user.company) | Q(company__isnull=True)
+            ).order_by("-created_at")
 
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def list_or_create_displays(request):
-    """List all displays or create a new display (all authenticated users can view and create)"""
-    if not request.user.company:
-        return Response({'error': 'User is not associated with a company'}, status=400)
-    
-    if request.method == 'GET':
-        displays = Display.objects.filter(company=request.user.company).order_by('-created_at')
-        return Response({
-            'displays': [get_display_data(display) for display in displays]
-        })
-    
-    elif request.method == 'POST':
-        name = request.data.get('name')
-        display_type = request.data.get('type')
-        width_in = request.data.get('width_in')
-        height_in = request.data.get('height_in')
-        depth_in = request.data.get('depth_in')
-        shelf_count = request.data.get('shelf_count')
-        shelf_spacing = request.data.get('shelf_spacing')
-        
-        if not name or not display_type or width_in is None or height_in is None or depth_in is None or shelf_count is None:
-            return Response({'error': 'Name, type, width_in, height_in, depth_in, and shelf_count are required'}, status=400)
-        
-        # Validate type is a valid choice
-        valid_types = [choice[0] for choice in Display.TYPE_CHOICES]
-        if display_type not in valid_types:
-            return Response({'error': f'Invalid type. Must be one of: {", ".join(valid_types)}'}, status=400)
-        
-        display = Display.objects.create(
-            name=name,
-            type=display_type,
-            width_in=width_in,
-            height_in=height_in,
-            depth_in=depth_in,
-            shelf_count=shelf_count,
-            shelf_spacing=shelf_spacing,
-            company=request.user.company,
-            created_by=request.user,
+        return queryset.filter(company__isnull=True).order_by("-created_at")
+
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        """Create a new custom display."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        display = serializer.save(company=request.user.company, created_by=request.user)
+
+        output_serializer = DisplaySerializer(display)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        """Delete a display (cannot delete standard displays)."""
+        instance = self.get_object()
+
+        if instance.display_category == "standard":
+            return Response(
+                {
+                    "error": "Standard displays cannot be deleted via API. Please use the admin panel."
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        return super().destroy(request, *args, **kwargs)
+
+    @action(detail=False, methods=["get"], url_path="types")
+    def types(self, request: Request) -> Response:
+        """Get available display types."""
+        types_data = [
+            {"value": choice[0], "label": choice[1]} for choice in Display.TYPE_CHOICES
+        ]
+        serializer = DisplayTypeSerializer(types_data, many=True)
+        return Response({"types": serializer.data})
+
+    @action(detail=False, methods=["get"], url_path="standards")
+    def standards(self, request: Request) -> Response:
+        """Get standard display templates."""
+        standards = Display.objects.filter(display_category="standard").order_by(
+            "type", "name"
         )
-        
-        return Response({
-            'display': get_display_data(display)
-        }, status=201)
-
-
-@api_view(['GET', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def get_or_delete_display(request, display_slug):
-    """Get or delete a display by slug (all authenticated users can view and delete)"""
-    if not request.user.company:
-        return Response({'error': 'User is not associated with a company'}, status=400)
-    
-    # Find display by matching slugified name
-    displays = Display.objects.filter(company=request.user.company)
-    display = None
-    for d in displays:
-        if d.slug == display_slug:
-            display = d
-            break
-    
-    if not display:
-        return Response({'error': 'Display not found'}, status=404)
-    
-    if request.method == 'GET':
-        return Response({
-            'display': get_display_data(display)
-        })
-    
-    elif request.method == 'DELETE':
-        # Standard displays cannot be deleted via API, only via admin
-        if display.display_category == 'standard':
-            return Response({'error': 'Standard displays cannot be deleted via API. Please use the admin panel.'}, status=403)
-        
-        display.delete()
-        return Response({'message': 'Display deleted successfully'}, status=200)
+        serializer = DisplaySerializer(standards, many=True)
+        return Response({"standards": serializer.data})

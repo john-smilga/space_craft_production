@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/features/auth';
 
 interface AdminOnlyProps {
   fallback?: React.ReactNode;
@@ -8,7 +8,7 @@ interface AdminOnlyProps {
 }
 
 export function AdminOnly({ fallback = null, children }: AdminOnlyProps) {
-  const { user } = useAuthStore();
+  const user = useAuthStore.use.user();
 
   if (user?.role !== 'admin') {
     return <>{fallback}</>;

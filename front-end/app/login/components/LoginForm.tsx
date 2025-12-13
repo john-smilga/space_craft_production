@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/authStore';
+import { useLoginMutation } from '@/features/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField } from '@/components/ui/form-field';
@@ -18,7 +18,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [demoUser, setDemoUser] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const { login, loading } = useAuthStore();
+  const loginMutation = useLoginMutation();
   const router = useRouter();
 
   const handleDemoUserChange = (value: string) => {
@@ -39,12 +39,14 @@ export default function LoginForm() {
     e.preventDefault();
     setError(null);
     try {
-      await login(email, password);
+      await loginMutation.mutateAsync({ email, password });
       router.push('/dashboard');
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || error.message || 'Login failed';
-      setError(errorMessage);
-      console.error('Login error:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message || 'Login failed');
+      } else {
+        setError('Login failed');
+      }
     }
   };
 
@@ -79,8 +81,8 @@ export default function LoginForm() {
             required
           />
           {error && <p className='text-destructive text-sm'>{error}</p>}
-          <Button type='submit' disabled={loading} className='w-full'>
-            {loading ? 'Loading...' : 'Login'}
+          <Button type='submit' disabled={loginMutation.isPending} className='w-full'>
+            {loginMutation.isPending ? 'Loading...' : 'Login'}
           </Button>
         </form>
       </CardContent>

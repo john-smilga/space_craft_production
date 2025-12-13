@@ -1,10 +1,13 @@
-from django.urls import path
-from . import views
+"""URL configuration for displays app."""
+
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from displays import views
+
+router = DefaultRouter()
+router.register(r"displays", views.DisplayViewSet, basename="display")
 
 urlpatterns = [
-    path('displays/types/', views.get_display_types, name='get-display-types'),
-    path('displays/standards/', views.get_standard_displays, name='get-standard-displays'),
-    path('displays/', views.list_or_create_displays, name='list-or-create-displays'),
-    path('displays/<str:display_slug>/', views.get_or_delete_display, name='get-or-delete-display'),
+    path("", include(router.urls)),
 ]
-

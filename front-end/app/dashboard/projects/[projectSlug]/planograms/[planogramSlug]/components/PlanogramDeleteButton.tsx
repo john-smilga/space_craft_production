@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { usePlanogramForm } from '../hooks/usePlanogramForm';
-import { usePlanogramData } from '../hooks/usePlanogramData';
+import { usePlanogramForm, usePlanogramData } from '@/features/planogram';
 
 export default function PlanogramDeleteButton() {
   const router = useRouter();
@@ -15,7 +14,7 @@ export default function PlanogramDeleteButton() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const { planogramData, refetchPlanogram, fetchAvailableProducts } = usePlanogramData(planogramSlug);
-  const { deleteMutation } = usePlanogramForm(planogramSlug, planogramData, refetchPlanogram, fetchAvailableProducts);
+  const { deleteMutation } = usePlanogramForm(planogramSlug, planogramData ?? null, refetchPlanogram, fetchAvailableProducts);
 
   const handleDelete = async () => {
     if (!deleteConfirm) {
@@ -23,10 +22,10 @@ export default function PlanogramDeleteButton() {
       return;
     }
 
-    const result = await deleteMutation.mutate(undefined);
-    if (!result.error) {
+    try {
+      await deleteMutation.mutateAsync({ slug: planogramSlug });
       router.push(`/dashboard/projects/${projectSlug}`);
-    } else {
+    } catch {
       setDeleteConfirm(false);
     }
   };
@@ -34,18 +33,18 @@ export default function PlanogramDeleteButton() {
   return (
     <div className='mt-8'>
       <div className='flex gap-3 justify-end'>
-        <Button onClick={handleDelete} disabled={deleteMutation.loading} variant={deleteConfirm ? 'destructive' : 'outline'} className={deleteConfirm ? '' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:text-red-800'}>
-          {deleteMutation.loading ? 'Deleting...' : deleteConfirm ? 'Confirm Delete' : 'Delete Planogram'}
+        <Button onClick={handleDelete} disabled={deleteMutation.isPending} variant={deleteConfirm ? 'destructive' : 'outline'} className={deleteConfirm ? '' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:text-red-800'}>
+          {deleteMutation.isPending ? 'Deleting...' : deleteConfirm ? 'Confirm Delete' : 'Delete Planogram'}
         </Button>
         {deleteConfirm && (
-          <Button onClick={() => setDeleteConfirm(false)} variant='outline' disabled={deleteMutation.loading}>
+          <Button onClick={() => setDeleteConfirm(false)} variant='outline' disabled={deleteMutation.isPending}>
             Cancel
           </Button>
         )}
       </div>
       {deleteMutation.error && (
         <Alert variant='destructive' className='mt-4'>
-          <AlertDescription>{deleteMutation.error}</AlertDescription>
+          <AlertDescription>{deleteMutation.error.message}</AlertDescription>
         </Alert>
       )}
     </div>

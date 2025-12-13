@@ -3,15 +3,15 @@
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { usePlanogramFormStore } from '@/stores/planogramFormStore';
-import { usePlanogramData } from '../hooks/usePlanogramData';
+import { usePlanogramStore, usePlanogramData } from '@/features/planogram';
 import { useParams } from 'next/navigation';
 
 export default function PlanogramCategoriesSelector() {
   const params = useParams();
   const planogramSlug = params?.planogramSlug as string;
 
-  const { selectedCategoryIds, toggleCategory } = usePlanogramFormStore();
+  const selectedCategoryIds = usePlanogramStore.use.selectedCategoryIds();
+  const toggleCategory = usePlanogramStore.use.toggleCategory();
   const { planogramData, leafCategories, leafCategoriesLoading, leafCategoriesError } = usePlanogramData(planogramSlug);
   const planogram = planogramData?.planogram;
 
@@ -37,7 +37,7 @@ export default function PlanogramCategoriesSelector() {
               <SelectValue placeholder='Select category' />
             </SelectTrigger>
             <SelectContent>
-              {leafCategories.map((category) => (
+              {leafCategories.map((category: { id: number; name: string; slug: string }) => (
                 <SelectItem key={category.id} value={category.id.toString()}>
                   {category.name}
                 </SelectItem>
@@ -55,8 +55,8 @@ export default function PlanogramCategoriesSelector() {
           <Label className='text-xs text-muted-foreground mb-2'>Selected Categories</Label>
           <div className='flex flex-wrap gap-2'>
             {selectedCategoryIds.map((categoryId) => {
-              const leafCategory = leafCategories.find((c) => c.id === categoryId);
-              const planogramCategory = planogram?.categories?.find((c) => c.id === categoryId);
+              const leafCategory = leafCategories.find((c: { id: number }) => c.id === categoryId);
+              const planogramCategory = planogram?.categories?.find((c: { id: number }) => c.id === categoryId);
               const categoryName = leafCategory?.name || planogramCategory?.name || `Category ${categoryId}`;
               return (
                 <Badge key={categoryId} variant='secondary' className='inline-flex items-center gap-2'>

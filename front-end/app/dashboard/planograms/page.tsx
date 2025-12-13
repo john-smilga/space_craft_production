@@ -1,24 +1,23 @@
 'use client';
 
-import { useFetch } from '@/hooks/useFetch';
+import { usePlanogramsQuery } from '@/features/planogram';
 import EmptyState from '@/components/EmptyState';
 import Link from 'next/link';
-import type { PlanogramsResponse } from '@/types/planograms';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import PlanogramCard from './components/PlanogramCard';
 
 export default function PlanogramsPage() {
-  const { data, loading, error } = useFetch<PlanogramsResponse>('/planograms/');
-  const planograms = data?.planograms || [];
+  const { data, isLoading, error } = usePlanogramsQuery();
+  const planograms = data || [];
 
-  if (loading) {
+  if (isLoading) {
     return <div className='text-center py-8'>Loading...</div>;
   }
 
   if (error) {
     return (
       <Alert variant='destructive' className='mb-4'>
-        <AlertDescription>{error}</AlertDescription>
+        <AlertDescription>{(error as Error).message || 'Failed to load planograms'}</AlertDescription>
       </Alert>
     );
   }
@@ -38,7 +37,7 @@ export default function PlanogramsPage() {
             <Link href='/dashboard/projects' className='text-primary hover:underline'>
               projects
             </Link>{' '}
-            page, select a project, then click "Create Planogram".
+            page, select a project, then click &quot;Create Planogram&quot;.
           </span>
         </AlertDescription>
       </Alert>
@@ -50,12 +49,12 @@ export default function PlanogramsPage() {
               key={planogram.id}
               name={planogram.name}
               slug={planogram.slug}
-              projectName={planogram.project.name}
-              projectSlug={planogram.project.slug}
-              displayName={planogram.display?.name || null}
-              seasonDisplay={planogram.season_display}
+              projectName={planogram.project?.name || planogram.project_name || 'Unknown'}
+              projectSlug={planogram.project?.slug || planogram.project_slug || ''}
+              displayName={planogram.display?.name || planogram.display_name || null}
+              seasonDisplay={planogram.season_display || planogram.season}
               categories={planogram.categories}
-              categoryIds={planogram.category_ids}
+              categoryIds={planogram.category_ids || []}
             />
           ))}
         </div>

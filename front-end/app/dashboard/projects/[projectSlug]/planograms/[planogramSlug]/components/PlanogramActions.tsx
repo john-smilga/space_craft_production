@@ -2,10 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { usePlanogramSidebarStore } from '@/stores/planogramSidebarStore';
-import { usePlanogramFormStore } from '@/stores/planogramFormStore';
-import { usePlanogramForm } from '../hooks/usePlanogramForm';
-import { usePlanogramData } from '../hooks/usePlanogramData';
+import { usePlanogramStore, usePlanogramForm, usePlanogramData } from '@/features/planogram';
 import { useParams } from 'next/navigation';
 import AIOverviewDialog from './AIOverviewDialog';
 
@@ -13,20 +10,21 @@ export default function PlanogramActions() {
   const params = useParams();
   const planogramSlug = params?.planogramSlug as string;
 
-  const { sidebarOpen, toggleSidebar } = usePlanogramSidebarStore();
-  const { name } = usePlanogramFormStore();
+  const sidebarOpen = usePlanogramStore.use.sidebarOpen();
+  const toggleSidebar = usePlanogramStore.use.toggleSidebar();
+  const name = usePlanogramStore.use.name();
   const { planogramData, refetchPlanogram, fetchAvailableProducts } = usePlanogramData(planogramSlug);
-  const { handleRegenerate, updatePlanogramMutation } = usePlanogramForm(planogramSlug, planogramData, refetchPlanogram, fetchAvailableProducts);
+  const { handleRegenerate, updatePlanogramMutation } = usePlanogramForm(planogramSlug, planogramData ?? null, refetchPlanogram, fetchAvailableProducts);
 
   return (
     <>
       <div className='mt-4 pt-4 border-t flex gap-4'>
-        <Button 
-          onClick={handleRegenerate} 
-          disabled={updatePlanogramMutation.loading || !name?.trim()} 
+        <Button
+          onClick={handleRegenerate}
+          disabled={updatePlanogramMutation.isPending || !name?.trim()}
           className='w-full md:w-auto cursor-pointer'
         >
-          {updatePlanogramMutation.loading ? 'Updating...' : 'Regenerate'}
+          {updatePlanogramMutation.isPending ? 'Updating...' : 'Regenerate'}
         </Button>
         <Button onClick={toggleSidebar} variant='outline' className='w-full md:w-auto cursor-pointer'>
           {sidebarOpen ? 'Hide Products' : 'Explore Products'}
@@ -35,7 +33,7 @@ export default function PlanogramActions() {
 
       {updatePlanogramMutation.error && (
         <Alert variant='destructive' className='mt-4'>
-          <AlertDescription>{updatePlanogramMutation.error}</AlertDescription>
+          <AlertDescription>{updatePlanogramMutation.error.message}</AlertDescription>
         </Alert>
       )}
 

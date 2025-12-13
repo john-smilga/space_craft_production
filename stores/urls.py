@@ -1,8 +1,13 @@
-from django.urls import path
-from . import views
+"""URL configuration for stores app."""
+
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from stores import views
+
+router = DefaultRouter()
+router.register(r"stores", views.StoreViewSet, basename="store")
 
 urlpatterns = [
-    path('stores/', views.list_or_create_stores, name='list-or-create-stores'),
-    path('stores/<str:store_slug>/', views.get_or_update_or_delete_store, name='get-or-update-or-delete-store'),
+    path("", include(router.urls)),
 ]
-

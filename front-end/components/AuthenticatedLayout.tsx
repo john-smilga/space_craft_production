@@ -1,29 +1,32 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, useCurrentUserQuery } from '@/features/auth';
 import Navbar from '@/components/Navbar';
 import Breadcrumbs from '@/components/Breadcrumbs';
 
 export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, fetchUser } = useAuthStore();
+  const user = useAuthStore.use.user();
+  const { isLoading, isError } = useCurrentUserQuery();
   const router = useRouter();
-  const [hasRefetched, setHasRefetched] = useState(false);
 
-  useEffect(() => {
-    if (!loading && !user && !hasRefetched) {
-      // Refetch user once if not loaded
-      setHasRefetched(true);
-      fetchUser();
-    } else if (!loading && !user && hasRefetched) {
-      // If still no user after refetch, redirect to login
-      router.push('/login');
-    }
-  }, [user, loading, fetchUser, hasRefetched, router]);
+  // If user is in store, show dashboard
+  if (user) {
+    return (
+      <div className='min-h-screen bg-background'>
+        <Navbar />
+        <main>
+          <div className='max-w-7xl mx-auto py-6 px-6 md:px-0'>
+            <Breadcrumbs />
+            {children}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
-  // Show loading while fetching or refetching
-  if (loading || (!user && !hasRefetched)) {
+  // If query is loading (fetching user from backend)
+  if (isLoading) {
     return (
       <div className='flex min-h-screen items-center justify-center bg-background'>
         <p className='text-muted-foreground'>Loading...</p>
@@ -31,20 +34,11 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
     );
   }
 
-  // Don't render if no user (will redirect)
-  if (!user) {
+  // If query failed (user not found on backend) or user is null after loading
+  if (isError || !user) {
+    router.push('/login');
     return null;
   }
 
-  return (
-    <div className='min-h-screen bg-background'>
-      <Navbar />
-      <main>
-        <div className='max-w-7xl mx-auto py-6 px-6 md:px-0'>
-          <Breadcrumbs />
-          {children}
-        </div>
-      </main>
-    </div>
-  );
+  return null;
 }

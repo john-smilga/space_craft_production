@@ -5,15 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react';
-import { usePlanogramAvailableProductsStore } from '@/stores/planogramAvailableProductsStore';
-import { usePlanogramSidebarStore } from '@/stores/planogramSidebarStore';
-import { usePlanogramLayoutStore } from '@/stores/planogramLayoutStore';
-import { usePlanogramLayout } from '../hooks/usePlanogramLayout';
+import { usePlanogramStore, usePlanogramLayout } from '@/features/planogram';
 
 export default function AvailableProductsSidebar() {
-  const { availableItems, loadingAvailableItems, selectedAvailableItems, incrementItemQuantity, decrementItemQuantity, closeAvailableProductsSidebar, targetRowId, setTargetRowId } = usePlanogramAvailableProductsStore();
-  const { availableProductsSidebarExpanded, toggleAvailableProductsSidebarExpand } = usePlanogramSidebarStore();
-  const { gridData } = usePlanogramLayoutStore();
+  const availableItems = usePlanogramStore.use.availableItems();
+  const loadingAvailableItems = usePlanogramStore.use.loadingAvailableItems();
+  const selectedAvailableItems = usePlanogramStore.use.selectedAvailableItems();
+  const incrementItemQuantity = usePlanogramStore.use.incrementItemQuantity();
+  const decrementItemQuantity = usePlanogramStore.use.decrementItemQuantity();
+  const closeAvailableProductsSidebar = usePlanogramStore.use.closeAvailableProductsSidebar();
+  const targetRowId = usePlanogramStore.use.targetRowId();
+  const setTargetRowId = usePlanogramStore.use.setTargetRowId();
+  const availableProductsSidebarExpanded = usePlanogramStore.use.availableProductsSidebarExpanded();
+  const toggleAvailableProductsSidebarExpand = usePlanogramStore.use.toggleAvailableProductsSidebarExpand();
+  const gridData = usePlanogramStore.use.gridData();
   const { handleAddSelectedItems } = usePlanogramLayout();
 
   const formatScore = (score: number) => {

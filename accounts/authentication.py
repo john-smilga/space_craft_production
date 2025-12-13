@@ -1,17 +1,18 @@
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken
-from django.conf import settings
 import logging
 
-logger = logging.getLogger('accounts')
+from django.conf import settings
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken
+
+logger = logging.getLogger("accounts")
 
 
 class CookieJWTAuthentication(JWTAuthentication):
     def get_header(self, request):
         """Override to get token from cookies instead of Authorization header"""
-        cookie_name = settings.SIMPLE_JWT['AUTH_COOKIE']
+        cookie_name = settings.SIMPLE_JWT["AUTH_COOKIE"]
         token = request.COOKIES.get(cookie_name)
-        
+
         if token is None:
             logger.warning(
                 f"No JWT token found in cookies. "
@@ -21,15 +22,15 @@ class CookieJWTAuthentication(JWTAuthentication):
                 f"User-Agent: {request.META.get('HTTP_USER_AGENT', 'No UA')[:100]}"
             )
             return None
-        
+
         logger.info(
             f"JWT token found in cookies. "
             f"Cookie name: {cookie_name}, "
             f"Token length: {len(token)}, "
             f"Token preview: {token[:20]}..."
         )
-        return f'Bearer {token}'.encode('utf-8')
-    
+        return f"Bearer {token}".encode()
+
     def authenticate(self, request):
         """Override to add logging and handle missing tokens gracefully"""
         logger.info(
@@ -38,7 +39,7 @@ class CookieJWTAuthentication(JWTAuthentication):
             f"method: {request.method}, "
             f"origin: {request.META.get('HTTP_ORIGIN', 'No Origin')}"
         )
-        
+
         try:
             result = super().authenticate(request)
             if result:
@@ -68,6 +69,6 @@ class CookieJWTAuthentication(JWTAuthentication):
                 f"Authentication error: {e}. "
                 f"Path: {request.path}, "
                 f"Origin: {request.META.get('HTTP_ORIGIN', 'No Origin')}",
-                exc_info=True
+                exc_info=True,
             )
             return None

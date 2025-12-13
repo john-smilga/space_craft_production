@@ -1,8 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useFetch } from '@/hooks/useFetch';
-import type { PlanogramResponse } from '@/types/planograms';
+import { usePlanogramQuery } from '@/features/planogram';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -15,17 +14,17 @@ export default function PlanogramInfoPage() {
   const planogramSlug = params?.planogramSlug as string;
   const projectSlug = params?.projectSlug as string;
 
-  const { data, loading, error } = useFetch<PlanogramResponse>(planogramSlug ? `/planograms/${planogramSlug}/` : null);
+  const { data, isLoading, error } = usePlanogramQuery(planogramSlug);
   const planogram = data?.planogram || null;
 
-  if (loading) {
+  if (isLoading) {
     return <div className='text-center py-8'>Loading...</div>;
   }
 
   if (error && !planogram) {
     return (
       <Alert variant='destructive' className='mb-4'>
-        <AlertDescription>{error}</AlertDescription>
+        <AlertDescription>{(error as Error).message || 'Failed to load planogram'}</AlertDescription>
       </Alert>
     );
   }
@@ -40,7 +39,7 @@ export default function PlanogramInfoPage() {
 
       {error && (
         <Alert variant='destructive' className='mb-4'>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{(error as Error).message || 'Failed to load planogram'}</AlertDescription>
         </Alert>
       )}
 

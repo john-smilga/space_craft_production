@@ -2,20 +2,22 @@ export interface Planogram {
   id: number;
   name: string;
   season: string;
-  season_display: string;
-  category_ids: number[];
-  categories?: Array<{
+  season_display?: string;
+  category_ids?: number[];
+  categories: Array<{
     id: number;
     slug: string;
     name: string;
   }>;
   slug: string;
-  project: {
+  project?: {
     id: number;
     name: string;
     slug: string;
   };
-  display: {
+  project_name?: string;
+  project_slug?: string;
+  display?: {
     id: number | null;
     name: string | null;
     type: string | null;
@@ -25,23 +27,26 @@ export interface Planogram {
     depth_in?: number;
     shelf_count?: number;
   } | null;
+  display_name?: string | null;
   // Dimensions stored directly on planogram
-  width_in: number;
-  height_in: number;
+  width_in?: number;
+  height_in?: number;
   depth_in?: number | null;
-  shelf_count: number;
+  shelf_count?: number;
   shelf_spacing?: number | null;
-  company: {
+  company?: {
     id: number;
     name: string;
   };
-  created_at: string;
-  updated_at: string;
-  created_by: {
+  company_name?: string;
+  created_at?: string;
+  updated_at?: string;
+  preserve_layout?: boolean;
+  created_by?: {
     id: number;
     username: string;
   } | null;
-  updated_by: {
+  updated_by?: {
     id: number;
     username: string;
   } | null;
@@ -53,8 +58,15 @@ export interface PlanogramsResponse {
 
 export interface PlanogramResponse {
   planogram: Planogram;
-  layout?: GridResponse; // Only present in GET requests, not in POST
+  layout?: GridResponse;
 }
+
+export interface PlanogramDetailResponse {
+  planogram: Planogram;
+  layout?: GridResponse;
+}
+
+export type PlanogramCreateResponse = Planogram;
 
 export interface LayoutItem {
   i: string;

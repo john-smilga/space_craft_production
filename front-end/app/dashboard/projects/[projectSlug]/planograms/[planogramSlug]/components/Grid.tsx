@@ -5,15 +5,9 @@ import GridLayout, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import RowHeader from './RowHeader';
 import type { LayoutItem } from '@/types/planograms';
-import { useGridActions } from '../hooks/useGridActions';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-import { usePlanogramLayoutStore } from '@/stores/planogramLayoutStore';
-import { usePlanogramUIStore } from '@/stores/planogramUIStore';
-import { usePlanogramSidebarStore } from '@/stores/planogramSidebarStore';
-import { usePlanogramAvailableProductsStore } from '@/stores/planogramAvailableProductsStore';
-import { usePlanogramForm } from '../hooks/usePlanogramForm';
-import { usePlanogramData } from '../hooks/usePlanogramData';
+import { usePlanogramStore, usePlanogramForm, usePlanogramData, useGridActions } from '@/features/planogram';
 import { useParams } from 'next/navigation';
 
 const GridLayoutWithProvider = WidthProvider(GridLayout);
@@ -22,12 +16,17 @@ export default function Grid() {
   const params = useParams();
   const planogramSlug = params?.planogramSlug as string;
 
-  const { gridData, loading, rowLayouts, setRowLayouts } = usePlanogramLayoutStore();
-  const { rowNotifications, setRowNotification } = usePlanogramUIStore();
-  const { availableProductsSidebarOpen, toggleAvailableProductsSidebar } = usePlanogramSidebarStore();
-  const { setTargetRowId } = usePlanogramAvailableProductsStore();
+  const gridData = usePlanogramStore.use.gridData();
+  const loading = usePlanogramStore.use.loading();
+  const rowLayouts = usePlanogramStore.use.rowLayouts();
+  const setRowLayouts = usePlanogramStore.use.setRowLayouts();
+  const rowNotifications = usePlanogramStore.use.rowNotifications();
+  const setRowNotification = usePlanogramStore.use.setRowNotification();
+  const availableProductsSidebarOpen = usePlanogramStore.use.availableProductsSidebarOpen();
+  const toggleAvailableProductsSidebar = usePlanogramStore.use.toggleAvailableProductsSidebar();
+  const setTargetRowId = usePlanogramStore.use.setTargetRowId();
   const { planogramData, refetchPlanogram, fetchAvailableProducts } = usePlanogramData(planogramSlug);
-  const { handleSaveLayout: saveLayout } = usePlanogramForm(planogramSlug, planogramData, refetchPlanogram, fetchAvailableProducts);
+  const { handleSaveLayout: saveLayout } = usePlanogramForm(planogramSlug, planogramData ?? null, refetchPlanogram, fetchAvailableProducts);
 
   const [editMode, setEditMode] = useState<boolean>(false);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
@@ -36,9 +35,12 @@ export default function Grid() {
   useEffect(() => {
     if (gridData) {
       // Mark as initialized after a brief delay to allow rowLayouts to be set
-      setTimeout(() => setIsInitialized(true), 100);
+      const timer = setTimeout(() => setIsInitialized(true), 100);
+      return () => clearTimeout(timer);
     } else {
-      setIsInitialized(false);
+      // Reset initialization when gridData is cleared
+      const timer = setTimeout(() => setIsInitialized(false), 0);
+      return () => clearTimeout(timer);
     }
   }, [gridData]);
 
@@ -179,7 +181,7 @@ export default function Grid() {
                 }
 
                 // Check if all items in newLayout have corresponding items with meta
-                const hasValidMeta = newLayout.every((newItem: any) => {
+                const hasValidMeta = newLayout.every((newItem) => {
                   const existingItem = currentLayout.find((item) => item.i === newItem.i);
                   return existingItem && existingItem.meta && existingItem.meta.name && existingItem.meta.name !== 'Unknown';
                 });
@@ -194,13 +196,13 @@ export default function Grid() {
               isDraggable={editMode}
               margin={[4, 4]}
             >
-              {currentLayout.map((item) => {
+              {currentLayout.map((item: LayoutItem) => {
                 const bgColor = item.meta.color || '#9ca3af';
                 const widthIn = item.meta.pack_width_in;
                 return (
                   <div key={item.i} className={`border-2 rounded p-2 flex flex-col items-center justify-center text-sm text-center font-bold text-white drop-shadow-md relative ${editMode ? 'cursor-move' : 'cursor-default'}`} style={{ backgroundColor: bgColor, borderColor: bgColor }}>
                     <div className='flex-1 flex items-center justify-center'>{item.meta.name}</div>
-                    {widthIn && <div className='text-[10px] font-normal opacity-90 mt-1'>{widthIn.toFixed(1)}"</div>}
+                    {widthIn && <div className='text-[10px] font-normal opacity-90 mt-1'>{widthIn.toFixed(1)}&quot;</div>}
                     {editMode && (
                       <button
                         type='button'

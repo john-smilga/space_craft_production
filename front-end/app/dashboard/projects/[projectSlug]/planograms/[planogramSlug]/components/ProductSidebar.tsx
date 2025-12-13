@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useFetch } from '@/hooks/useFetch';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/axios';
 import type { Product } from '@/types/products';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -9,23 +10,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { usePlanogramFormStore } from '@/stores/planogramFormStore';
-import { usePlanogramSidebarStore } from '@/stores/planogramSidebarStore';
-import { usePlanogramUIStore } from '@/stores/planogramUIStore';
+import { usePlanogramStore } from '@/features/planogram';
 
 interface PathResponse {
   products: boolean;
-  items: Array<{ key: string; name: string } | { id: number; name: string; [key: string]: any }>;
+  items: Array<{ key: string; name: string } | { id: number; name: string; [key: string]: unknown }>;
 }
 
 export default function ProductSidebar() {
-  const { season } = usePlanogramFormStore();
-  const { sidebarExpanded, toggleSidebar, toggleSidebarExpand } = usePlanogramSidebarStore();
-  const { selectedProducts } = usePlanogramUIStore();
+  const season = usePlanogramStore.use.season();
+  const sidebarExpanded = usePlanogramStore.use.sidebarExpanded();
+  const toggleSidebar = usePlanogramStore.use.toggleSidebar();
+  const toggleSidebarExpand = usePlanogramStore.use.toggleSidebarExpand();
   const [selectedCategory, setSelectedCategory] = useState<string>('fresh');
 
   const url = `/categories/path/${selectedCategory}/?season=${season}`;
-  const { data, loading, error } = useFetch<PathResponse>(url);
+  const { data, isLoading: loading, error } = useQuery({
+    queryKey: ['category-path', selectedCategory, season],
+    queryFn: async () => {
+      const response = await api.get<PathResponse>(url);
+      return response.data;
+    },
+  });
   const items = data?.items || [];
   const isProducts = data?.products || false;
 
@@ -66,14 +72,14 @@ export default function ProductSidebar() {
                 </Select>
               </div>
               {loading && <div className='text-sm text-muted-foreground'>Loading...</div>}
-              {error && <div className='text-sm text-destructive'>Error: {error}</div>}
+              {error && <div className='text-sm text-destructive'>Error: {error.message}</div>}
               {!loading && !error && !isProducts && items.length > 0 && (
                 <div className='space-y-2'>
                   <Label>Categories</Label>
                   <div className='space-y-2'>
-                    {items.map((item) => {
-                      if ('key' in item) {
-                        return <CategoryItem key={item.key} path={`${selectedCategory}/${item.key}`} categoryName={item.name} season={season} />;
+                    {items.map((item: { key?: string; name?: string }) => {
+                      if ('key' in item && item.key) {
+                        return <CategoryItem key={item.key} path={`${selectedCategory}/${item.key}`} categoryName={item.name || ''} season={season} />;
                       }
                       return null;
                     })}
@@ -98,7 +104,15 @@ interface CategoryItemProps {
 function CategoryItem({ path, categoryName, season }: CategoryItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { data, loading } = useFetch<PathResponse>(isExpanded ? `/categories/path/${path}/?season=${season}` : null);
+  const url = `/categories/path/${path}/?season=${season}`;
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['category-path', path, season],
+    queryFn: async () => {
+      const response = await api.get<PathResponse>(url);
+      return response.data;
+    },
+    enabled: isExpanded,
+  });
   const items = data?.items || [];
   const isProducts = data?.products || false;
 
@@ -112,7 +126,7 @@ function CategoryItem({ path, categoryName, season }: CategoryItemProps) {
   const products: Product[] = useMemo(() => {
     if (!isProducts) return [];
     return items
-      .filter((item): item is { id: number; name: string; [key: string]: any } => 'id' in item)
+      .filter((item): item is { id: number; name: string; pack_width_in?: number; pack_height_in?: number; expiration_stability?: number; margin?: number; sales_velocity?: number; seasonality?: number; overall_score?: number } => 'id' in item)
       .map((item) => ({
         id: item.id,
         name: item.name,
@@ -125,7 +139,8 @@ function CategoryItem({ path, categoryName, season }: CategoryItemProps) {
         overall_score: item.overall_score,
         category: extractedCategoryName,
       }));
-  }, [items, isProducts, extractedCategoryName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isProducts, extractedCategoryName]);
 
   // Group products by score ranges
   const groupedProducts = useMemo(() => {
@@ -182,8 +197,9 @@ function CategoryItem({ path, categoryName, season }: CategoryItemProps) {
           {!loading &&
             !isProducts &&
             items.map((item) => {
-              if ('key' in item) {
-                return <CategoryItem key={item.key} path={`${path}/${item.key}`} categoryName={item.name} season={season} />;
+              if ('key' in item && typeof item.key === 'string') {
+                const categoryItem = item as { key: string; name: string };
+                return <CategoryItem key={categoryItem.key} path={`${path}/${categoryItem.key}`} categoryName={categoryItem.name} season={season} />;
               }
               return null;
             })}

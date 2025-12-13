@@ -1,85 +1,110 @@
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from django.contrib.auth import get_user_model
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.utils.text import slugify
-from .models import Company
-from .permissions import IsAdmin
-from .serializers import get_token_for_user
+"""Views for accounts app."""
+
+import logging
+from typing import Any
+
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from rest_framework import status
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from accounts.permissions import IsAdmin
+from accounts.serializers import (
+    LoginSerializer,
+    UserInviteSerializer,
+    UserSerializer,
+    UserUpdateSerializer,
+    get_token_for_user,
+)
+from common.mixins import CompanyFilterMixin, SlugLookupMixin
+from common.viewsets import BaseViewSet
 
 User = get_user_model()
+logger = logging.getLogger("accounts")
 
 
-def get_user_data(user):
-    """Helper function to get user data with role and company"""
-    return {
-        'id': user.id,
-        'email': user.email,
-        'username': user.username,
-        'slug': user.slug,
-        'role': user.role,
-        'date_joined': user.date_joined.isoformat() if user.date_joined else None,
-        'company': {
-            'id': user.company.id,
-            'name': user.company.name,
-        } if user.company else None,
-    }
+# Auth endpoints (function-based for auth flow)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([AllowAny])
-def validate_invitation(request):
-    """Validate an invitation token and return company info"""
-    token = request.query_params.get('token')
-    
+def validate_invitation(request: Request) -> Response:
+    """Validate an invitation token and return company info."""
+    token = request.query_params.get("token")
+
     if not token:
-        return Response({'error': 'Token is required'}, status=400)
-    
+        return Response(
+            {"error": "Token is required"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
     try:
         user = User.objects.get(invitation_token=token)
-        
+
         if not user.is_invitation_valid():
-            return Response({'error': 'Invitation token has expired'}, status=400)
-        
+            return Response(
+                {"error": "Invitation token has expired"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if user.is_active:
-            return Response({'error': 'This invitation has already been used'}, status=400)
-        
-        return Response({
-            'valid': True,
-            'email': user.email,
-            'company': {
-                'id': user.company.id,
-                'name': user.company.name,
-            } if user.company else None,
-        })
+            return Response(
+                {"error": "This invitation has already been used"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "valid": True,
+                "email": user.email,
+                "company": (
+                    {
+                        "id": user.company.id,
+                        "name": user.company.name,
+                    }
+                    if user.company
+                    else None
+                ),
+            }
+        )
     except User.DoesNotExist:
-        return Response({'error': 'Invalid invitation token'}, status=400)
+        return Response(
+            {"error": "Invalid invitation token"}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([AllowAny])
-def register(request):
-    """Register a new user using an invitation token"""
-    token = request.data.get('token')
-    password = request.data.get('password')
-    username = request.data.get('username')
-    
+def register(request: Request) -> Response:
+    """Register a new user using an invitation token."""
+    token = request.data.get("token")
+    password = request.data.get("password")
+    username = request.data.get("username")
+
     if not token or not password:
-        return Response({'error': 'Token and password are required'}, status=400)
-    
+        return Response(
+            {"error": "Token and password are required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     try:
         user = User.objects.get(invitation_token=token)
-        
+
         if not user.is_invitation_valid():
-            return Response({'error': 'Invitation token has expired'}, status=400)
-        
+            return Response(
+                {"error": "Invitation token has expired"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if user.is_active:
-            return Response({'error': 'This invitation has already been used'}, status=400)
-        
-        # Set password and activate user
+            return Response(
+                {"error": "This invitation has already been used"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         user.set_password(password)
         if username:
             user.username = username
@@ -87,264 +112,199 @@ def register(request):
         user.invitation_token = None
         user.invitation_expires_at = None
         user.save()
-        
+
         refresh = RefreshToken.for_user(user)
-        
-        response = Response({
-            'user': get_user_data(user)
-        })
+
+        serializer = UserSerializer(user)
+        response = Response({"user": serializer.data})
         response.set_cookie(
-            settings.SIMPLE_JWT['AUTH_COOKIE'],
+            settings.SIMPLE_JWT["AUTH_COOKIE"],
             str(refresh.access_token),
-            httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-            samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-            secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE']
+            httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+            samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+            secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
         )
         return response
-        
+
     except User.DoesNotExist:
-        return Response({'error': 'Invalid invitation token'}, status=400)
+        return Response(
+            {"error": "Invalid invitation token"}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([AllowAny])
-def login(request):
-    """Login existing user"""
-    import logging
-    logger = logging.getLogger('accounts')
-    
-    logger.info('=== LOGIN ATTEMPT ===')
-    logger.info(f'Request method: {request.method}')
-    logger.info(f'Request content type: {request.content_type}')
-    logger.info(f'Request data type: {type(request.data)}')
-    logger.info(f'Request data: {request.data}')
-    
-    email = request.data.get('email')
-    password = request.data.get('password')
-    
-    logger.info(f'Extracted email: {email}')
-    logger.info(f'Extracted password: {"***" if password else None}')
-    
-    if not email or not password:
-        logger.warning(f'Missing email or password - email: {email}, password: {"present" if password else "missing"}')
-        return Response({'error': 'Email and password are required'}, status=400)
-    
+def login(request: Request) -> Response:
+    """Login existing user."""
+    serializer = LoginSerializer(data=request.data)
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    email = serializer.validated_data.get("email")
+    password = serializer.validated_data.get("password")
+
     try:
-        logger.info(f'Looking up user with email: {email}')
         user = User.objects.get(email=email)
-        logger.info(f'User found: {user.username} (id: {user.id}, active: {user.is_active})')
-        
-        password_check = user.check_password(password)
-        logger.info(f'Password check result: {password_check}')
-        
-        if not password_check:
-            logger.warning(f'Password check failed for user: {email}')
-            return Response({'error': 'Invalid credentials'}, status=401)
-        
-        if not user.is_active:
-            logger.warning(f'User is not active: {email}')
-            return Response({'error': 'Account is not active'}, status=401)
-        
-        logger.info(f'Generating token for user: {user.username}')
-        refresh = get_token_for_user(user)
-        logger.info('Token generated successfully')
-        
-        response = Response({
-            'user': get_user_data(user)
-        })
-        
-        # Log cookie settings before setting
-        cookie_name = settings.SIMPLE_JWT['AUTH_COOKIE']
-        cookie_settings = {
-            'name': cookie_name,
-            'httponly': settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-            'samesite': settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-            'secure': settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
-        }
-        logger.info(f'Setting cookie with settings: {cookie_settings}')
-        
-        response.set_cookie(
-            cookie_name,
-            str(refresh.access_token),
-            httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-            samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-            secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE']
-        )
-        
-        # Log cookie after setting to verify it's in response
-        cookie_in_response = cookie_name in response.cookies
-        cookie_obj = response.cookies.get(cookie_name) if cookie_in_response else None
-        logger.info(
-            f'Cookie set in response: {cookie_in_response}, '
-            f'Response cookies: {list(response.cookies.keys())}, '
-            f'Cookie value length: {len(str(refresh.access_token))}'
-        )
-        if cookie_obj:
-            # Django Morsel stores attributes as dict keys, not attributes
-            logger.info(
-                f'Cookie object details: HttpOnly={cookie_obj.get("httponly", False)}, '
-                f'Secure={cookie_obj.get("secure", False)}, '
-                f'SameSite={cookie_obj.get("samesite", "Not Set")}, '
-                f'Path={cookie_obj.get("path", "/")}'
+
+        if not user.check_password(password):
+            logger.warning(f"Failed login attempt for {email}")
+            return Response(
+                {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
             )
-        
-        logger.info('Login successful, returning response')
+
+        if not user.is_active:
+            return Response(
+                {"error": "Account is not active"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        refresh = get_token_for_user(user)
+
+        user_serializer = UserSerializer(user)
+        response = Response({"user": user_serializer.data})
+
+        response.set_cookie(
+            settings.SIMPLE_JWT["AUTH_COOKIE"],
+            str(refresh.access_token),
+            httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+            samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+            secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+        )
+
         return response
-        
+
     except User.DoesNotExist:
-        logger.warning(f'User not found with email: {email}')
-        return Response({'error': 'Invalid credentials'}, status=401)
+        logger.warning(f"Failed login attempt for {email}")
+        return Response(
+            {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
+        )
     except Exception as e:
-        logger.error(f'Unexpected error during login: {e}', exc_info=True)
-        return Response({'error': 'An error occurred during login'}, status=500)
+        logger.error(f"Unexpected error during login: {e}")
+        return Response(
+            {"error": "An error occurred during login"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def logout(request):
-    """Logout current user"""
-    response = Response({'message': 'Logged out'})
-    response.delete_cookie('jwt')
+def logout(request: Request) -> Response:
+    """Logout current user."""
+    response = Response({"message": "Logged out"})
+    response.delete_cookie("jwt")
     return response
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def me(request):
-    """Get current user info"""
-    return Response(get_user_data(request.user))
+def me(request: Request) -> Response:
+    """Get current user info."""
+    serializer = UserSerializer(request.user)
+    return Response(serializer.data)
 
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated, IsAdmin])
-def invite_user(request):
-    """Create an invitation for a new user (admin only)"""
-    email = request.data.get('email')
-    role = request.data.get('role', 'member')  # Default to member
-    
-    if not email:
-        return Response({'error': 'Email is required'}, status=400)
-    
-    if not request.user.company:
-        return Response({'error': 'Admin is not associated with a company'}, status=400)
-    
-    # Only allow creating members via invitation (admins are created via Django admin)
-    if role != 'member':
-        return Response({'error': 'Only members can be created via invitation. Admins must be created via Django admin.'}, status=400)
-    
-    # Check if user already exists
-    if User.objects.filter(email=email).exists():
-        return Response({'error': 'User with this email already exists'}, status=400)
-    
-    # Use admin's company automatically
-    company = request.user.company
-    
-    # Create inactive user with invitation (always as member)
-    user = User.objects.create_user(
-        username=email.split('@')[0],  # Use email prefix as default username
-        email=email,
-        password=None,  # User will set password during registration
-        company=company,
-        role=role,
-        is_active=False,  # User is inactive until they complete registration
-    )
-    
-    # Generate invitation token
-    token = user.generate_invitation_token()
-    
-    # Generate invitation link
-    frontend_url = settings.FRONTEND_URL
-    invitation_link = f"{frontend_url}/register?token={token}"
-    
-    return Response({
-        'message': 'Invitation created successfully',
-        'invitation_token': token,
-        'invitation_link': invitation_link,
-        'user': {
-            'id': user.id,
-            'email': user.email,
-            'role': user.role,
-            'company': {
-                'id': company.id,
-                'name': company.name,
+# User management endpoints (ViewSet)
+
+
+class UserViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
+    """ViewSet for User management (admin only)."""
+
+    queryset = User.objects.select_related("company").filter(is_active=True)
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = UserSerializer
+
+    def get_serializer_class(self) -> type:
+        """Return appropriate serializer based on action."""
+        if self.action == "invite":
+            return UserInviteSerializer
+        elif self.action in ["update", "partial_update"]:
+            return UserUpdateSerializer
+        return UserSerializer
+
+    def get_queryset(self):
+        """Get users filtered by company, excluding current user."""
+        queryset = super().get_queryset()
+        return queryset.exclude(id=self.request.user.id).order_by("-date_joined")
+
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        """Delete a user (cannot delete admins or self)."""
+        instance = self.get_object()
+
+        if instance.id == request.user.id:
+            return Response(
+                {"error": "Cannot delete your own account"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if instance.role == "admin":
+            return Response(
+                {"error": "Cannot delete admin user"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return super().destroy(request, *args, **kwargs)
+
+    @action(detail=False, methods=["post"], url_path="invite")
+    def invite(self, request: Request) -> Response:
+        """Create an invitation for a new user."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"]
+        username = serializer.validated_data["username"]
+        first_name = serializer.validated_data.get("first_name", "")
+        last_name = serializer.validated_data.get("last_name", "")
+        role = serializer.validated_data.get("role", "member")
+
+        company = request.user.company
+
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            password=None,
+            company=company,
+            role=role,
+            is_active=False,
+        )
+
+        token = user.generate_invitation_token()
+
+        frontend_url = settings.FRONTEND_URL
+        invitation_link = f"{frontend_url}/register?token={token}"
+
+        return Response(
+            {
+                "message": "Invitation created successfully",
+                "invitation_token": token,
+                "invitation_link": invitation_link,
+                "user": UserSerializer(user).data,
             },
-        },
-    }, status=201)
+            status=status.HTTP_201_CREATED,
+        )
 
+    @action(detail=False, methods=["patch"], url_path="me/username")
+    def update_username(self, request: Request) -> Response:
+        """Update current user's username."""
+        new_username = request.data.get("username")
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated, IsAdmin])
-def list_users(request):
-    """List all users from the same company (admin only)"""
-    if not request.user.company:
-        return Response({'error': 'User is not associated with a company'}, status=400)
-    
-    # Get all users from the same company
-    users = User.objects.filter(company=request.user.company, is_active=True).exclude(id=request.user.id)
-    
-    return Response({
-        'users': [get_user_data(user) for user in users]
-    })
+        if not new_username:
+            return Response(
+                {"error": "Username is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
+        if (
+            User.objects.filter(username=new_username)
+            .exclude(id=request.user.id)
+            .exists()
+        ):
+            return Response(
+                {"error": "Username already taken"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
-@api_view(['GET', 'DELETE'])
-@permission_classes([IsAuthenticated, IsAdmin])
-def get_or_delete_user(request, user_slug):
-    """Get or delete a user by slug (admin only, same company only)"""
-    if not request.user.company:
-        return Response({'error': 'User is not associated with a company'}, status=400)
-    
-    # Find user by matching slugified username
-    # Since slug is derived from username, we need to check all users
-    # This is acceptable as users are filtered by company (typically small set)
-    users = User.objects.filter(company=request.user.company, is_active=True)
-    user = None
-    for u in users:
-        if u.slug == user_slug:
-            user = u
-            break
-    
-    if not user:
-        return Response({'error': 'User not found'}, status=404)
-    
-    if request.method == 'GET':
-        if not user.is_active:
-            return Response({'error': 'User not found'}, status=404)
-        return Response({
-            'user': get_user_data(user)
-        })
-    
-    elif request.method == 'DELETE':
-        # Prevent admin from deleting themselves
-        if user.id == request.user.id:
-            return Response({'error': 'Cannot delete your own account'}, status=400)
-        
-        # Prevent deleting the company admin
-        if user.role == 'admin':
-            return Response({'error': 'Cannot delete admin user'}, status=400)
-        
-        user.delete()
-        return Response({'message': 'User deleted successfully'}, status=200)
+        request.user.username = new_username
+        request.user.save()
 
-
-@api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
-def update_username(request):
-    """Update current user's username (any authenticated user, only their own)"""
-    new_username = request.data.get('username')
-    
-    if not new_username:
-        return Response({'error': 'Username is required'}, status=400)
-    
-    # Check if username is already taken
-    if User.objects.filter(username=new_username).exclude(id=request.user.id).exists():
-        return Response({'error': 'Username already taken'}, status=400)
-    
-    request.user.username = new_username
-    request.user.save()
-    
-    return Response({
-        'user': get_user_data(request.user)
-    })
-
-
+        serializer = UserSerializer(request.user)
+        return Response({"user": serializer.data})

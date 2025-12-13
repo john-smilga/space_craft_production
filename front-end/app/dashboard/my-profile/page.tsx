@@ -1,9 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuthStore } from '@/stores/authStore';
-import { useMutation } from '@/hooks/useMutation';
-import api from '@/lib/axios';
+import { useState } from 'react';
+import { useAuthStore, useUpdateUsernameMutation } from '@/features/auth';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,32 +9,21 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormField } from '@/components/ui/form-field';
 
 export default function UserPage() {
-  const { user, fetchUser } = useAuthStore();
+  const user = useAuthStore.use.user();
   const [isEditingUsername, setIsEditingUsername] = useState(false);
-  const [username, setUsername] = useState(user?.username || '');
+  const [username, setUsername] = useState('');
 
-  useEffect(() => {
-    if (user?.username && !isEditingUsername) {
-      setUsername(user.username);
-    }
-  }, [user?.username, isEditingUsername]);
-
-  const updateUsernameMutation = useMutation<void, { username: string }>(
-    async (variables) => {
-      await api.patch('/users/me/username/', variables);
-    },
-    { toastResource: 'username' }
-  );
+  const updateUsernameMutation = useUpdateUsernameMutation();
 
   const handleEditUsername = () => {
     setUsername(user?.username || '');
-    setIsEditingUsername(true);
     updateUsernameMutation.reset();
+    setIsEditingUsername(true);
   };
 
   const handleCancelEdit = () => {
     setIsEditingUsername(false);
-    setUsername(user?.username || '');
+    setUsername('');
     updateUsernameMutation.reset();
   };
 
@@ -50,13 +37,12 @@ export default function UserPage() {
       return;
     }
 
-    const result = await updateUsernameMutation.mutate({ username });
-    if (result.error) {
-      return;
+    try {
+      await updateUsernameMutation.mutateAsync({ username });
+      setIsEditingUsername(false);
+    } catch {
+      // Error handled by mutation
     }
-
-    await fetchUser();
-    setIsEditingUsername(false);
   };
 
   return (
@@ -73,18 +59,18 @@ export default function UserPage() {
                     type='text'
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    disabled={updateUsernameMutation.loading}
+                    disabled={updateUsernameMutation.isPending}
                   />
-                  {updateUsernameMutation.error && (
+                  {updateUsernameMutation.isError && (
                     <Alert variant='destructive'>
-                      <AlertDescription>{updateUsernameMutation.error}</AlertDescription>
+                      <AlertDescription>{(updateUsernameMutation.error as Error)?.message || 'Failed to update username'}</AlertDescription>
                     </Alert>
                   )}
                   <div className='flex gap-2'>
-                    <Button onClick={handleSaveUsername} disabled={updateUsernameMutation.loading}>
-                      {updateUsernameMutation.loading ? 'Saving...' : 'Save'}
+                    <Button onClick={handleSaveUsername} disabled={updateUsernameMutation.isPending}>
+                      {updateUsernameMutation.isPending ? 'Saving...' : 'Save'}
                     </Button>
-                    <Button onClick={handleCancelEdit} disabled={updateUsernameMutation.loading} variant='outline'>
+                    <Button onClick={handleCancelEdit} disabled={updateUsernameMutation.isPending} variant='outline'>
                       Cancel
                     </Button>
                   </div>

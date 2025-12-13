@@ -1,7 +1,6 @@
 'use client';
 
-import { useFetch } from '@/hooks/useFetch';
-import type { CategoriesResponse } from '@/types/categories';
+import { useCategoriesQuery } from '@/hooks/useCategories';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -11,7 +10,7 @@ interface TopLevelCategorySelectorProps {
 }
 
 export default function TopLevelCategorySelector({ selectedTopLevel, onSelect }: TopLevelCategorySelectorProps) {
-  const { data: topLevelData } = useFetch<CategoriesResponse>('/categories/');
+  const { data: topLevelData } = useCategoriesQuery();
   const topLevelCategories = topLevelData?.categories || [];
 
   return (

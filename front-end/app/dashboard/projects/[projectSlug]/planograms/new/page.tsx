@@ -2,21 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useFetch } from '@/hooks/useFetch';
-import { useMutation } from '@/hooks/useMutation';
-import api from '@/lib/axios';
-import type { PlanogramResponse } from '@/types/planograms';
+import { useProjectQuery } from '@/features/projects';
+import { useCreatePlanogramMutation } from '@/features/planogram';
 import NameInput from './components/NameInput';
 import ProjectDisplay from './components/ProjectDisplay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import InfoAlert from '@/components/InfoAlert';
-
-interface CreatePlanogramVariables {
-  name: string;
-  project_slug: string;
-}
 
 export default function CreatePlanogramPage() {
   const router = useRouter();
@@ -26,33 +19,33 @@ export default function CreatePlanogramPage() {
   const [name, setName] = useState('New Planogram');
 
   // Fetch project to verify it exists and get its name
-  const { data: projectData } = useFetch<{ project: { name: string; slug: string } }>(projectSlug ? `/projects/${projectSlug}/` : null);
-  const project = projectData?.project;
+  const { data: project } = useProjectQuery(projectSlug);
 
-  const createPlanogramMutation = useMutation<PlanogramResponse, CreatePlanogramVariables>(
-    async (variables) => {
-      const response = await api.post('/planograms/', variables);
-      return response.data;
-    },
-    { toastResource: 'planogram' }
-  );
+  const createPlanogramMutation = useCreatePlanogramMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    createPlanogramMutation.reset();
 
-    if (!projectSlug) {
+    if (!project) {
       return;
     }
 
-    const result = await createPlanogramMutation.mutate({
-      name,
-      project_slug: projectSlug,
-    });
+    try {
+      const result = await createPlanogramMutation.mutateAsync({
+        name,
+        project: project.id,
+        // Provide minimal required defaults - user can edit later
+        season: 'summer',
+        width_in: 48,
+        height_in: 60,
+        shelf_count: 4,
+        category_ids: [1], // Default to Beef category
+      });
 
-    if (result.data) {
       // Redirect to planogram detail page
-      router.push(`/dashboard/projects/${projectSlug}/planograms/${result.data.planogram.slug}`);
+      router.push(`/dashboard/projects/${projectSlug}/planograms/${result.slug}`);
+    } catch {
+      // Error handled by mutation
     }
   };
 
@@ -75,9 +68,9 @@ export default function CreatePlanogramPage() {
 
             <ProjectDisplay projectName={project?.name || null} />
 
-            {createPlanogramMutation.error && (
+            {createPlanogramMutation.isError && (
               <Alert variant='destructive'>
-                <AlertDescription>{createPlanogramMutation.error}</AlertDescription>
+                <AlertDescription>{(createPlanogramMutation.error as Error)?.message || 'Failed to create planogram'}</AlertDescription>
               </Alert>
             )}
 
@@ -85,8 +78,8 @@ export default function CreatePlanogramPage() {
               <Button type='button' onClick={() => router.back()} variant='outline'>
                 Cancel
               </Button>
-              <Button type='submit' disabled={createPlanogramMutation.loading || !name || !projectSlug}>
-                {createPlanogramMutation.loading ? 'Creating...' : 'Create Planogram'}
+              <Button type='submit' disabled={createPlanogramMutation.isPending || !name || !projectSlug}>
+                {createPlanogramMutation.isPending ? 'Creating...' : 'Create Planogram'}
               </Button>
             </div>
           </form>

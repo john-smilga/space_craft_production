@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, useLogoutMutation } from '@/features/auth';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -14,11 +14,12 @@ type MenuItem = {
 };
 
 export default function UserMenu() {
-  const { user, logout } = useAuthStore();
+  const user = useAuthStore.use.user();
+  const logoutMutation = useLogoutMutation();
   const router = useRouter();
 
   const handleLogout = async () => {
-    await logout();
+    await logoutMutation.mutateAsync();
     router.push('/login');
   };
 

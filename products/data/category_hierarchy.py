@@ -50,14 +50,15 @@ CATEGORY_HIERARCHY = {
 # Reverse mapping: category_id -> full path (for product lookup)
 CATEGORY_ID_TO_PATH = {}
 
+
 def _build_id_to_path_mapping(node, path_parts=None):
     """Build reverse mapping from category ID to path."""
     if path_parts is None:
         path_parts = []
-    
+
     for slug, value in node.items():
         current_path = path_parts + [slug]
-        
+
         if isinstance(value, int):
             # This is a selectable category with an ID
             full_path = "/".join(current_path)
@@ -66,8 +67,10 @@ def _build_id_to_path_mapping(node, path_parts=None):
             # Recurse into nested structure
             _build_id_to_path_mapping(value, current_path)
 
+
 # Initialize the reverse mapping
 _build_id_to_path_mapping(CATEGORY_HIERARCHY)
+
 
 def get_category_path_by_id(category_id: int) -> str:
     """Get full category path from category ID."""
@@ -78,37 +81,32 @@ def get_category_path_by_id(category_id: int) -> str:
 # When adding new categories, add their color here
 CATEGORY_COLORS = {
     # Meat categories
-    "beef": "#dc2626",           # Red
-    "pork": "#ea580c",            # Orange
-    "poultry": "#ca8a04",         # Amber
-    "lamb": "#9333ea",            # Purple
-    "sausage": "#991b1b",         # Dark Red
-    
+    "beef": "#dc2626",  # Red
+    "pork": "#ea580c",  # Orange
+    "poultry": "#ca8a04",  # Amber
+    "lamb": "#9333ea",  # Purple
+    "sausage": "#991b1b",  # Dark Red
     # Seafood categories
-    "fresh_fish": "#2563eb",      # Blue
-    "shellfish": "#0891b2",        # Cyan
-    
+    "fresh_fish": "#2563eb",  # Blue
+    "shellfish": "#0891b2",  # Cyan
     # Fruit categories
-    "berries": "#991b1b",         # Dark Red
-    "citrus": "#ea580c",          # Orange
-    "tropical": "#65a30d",        # Lime
-    
+    "berries": "#991b1b",  # Dark Red
+    "citrus": "#ea580c",  # Orange
+    "tropical": "#65a30d",  # Lime
     # Vegetable categories
-    "leafy_greens": "#059669",    # Emerald
-    "root_vegetables": "#0d9488", # Teal
-    "nightshades": "#1e40af",     # Dark Blue
-    "cruciferous": "#065f46",     # Dark Green
-    "alliums": "#155e75",         # Dark Cyan
-    "cucurbits": "#16a34a",       # Green
-    "herbs": "#65a30d",           # Lime
-    
+    "leafy_greens": "#059669",  # Emerald
+    "root_vegetables": "#0d9488",  # Teal
+    "nightshades": "#1e40af",  # Dark Blue
+    "cruciferous": "#065f46",  # Dark Green
+    "alliums": "#155e75",  # Dark Cyan
+    "cucurbits": "#16a34a",  # Green
+    "herbs": "#65a30d",  # Lime
     # Frozen meal categories
-    "entrees": "#dc2626",         # Red
-    "sides": "#ea580c",           # Orange
-    
+    "entrees": "#dc2626",  # Red
+    "sides": "#ea580c",  # Orange
     # Frozen dessert categories
-    "ice_cream": "#0891b2",       # Cyan
-    "frozen_fruit": "#65a30d",    # Lime
+    "ice_cream": "#0891b2",  # Cyan
+    "frozen_fruit": "#65a30d",  # Lime
 }
 
 # Default color for categories without a defined color
@@ -118,13 +116,13 @@ DEFAULT_CATEGORY_COLOR = "#9ca3af"  # Gray
 def get_category_color(category_slug: str) -> str:
     """
     Get color for a category slug.
-    
+
     Args:
         category_slug: Category slug (e.g., "beef", "pork", "fresh_fish")
-    
+
     Returns:
         Hex color code. Returns default gray if category not found.
-    
+
     Note:
         When adding new categories, add their color to CATEGORY_COLORS above.
     """

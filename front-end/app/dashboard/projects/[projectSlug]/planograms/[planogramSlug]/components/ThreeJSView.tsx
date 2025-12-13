@@ -13,7 +13,7 @@ interface ThreeJSViewProps {
 
 // Simple product box component
 function ProductBox({ item, position, size, color }: { item: LayoutItem; position: [number, number, number]; size: [number, number, number]; color: string }) {
-  const [width, height, depth] = size;
+  const [width, , depth] = size;
   const productName = item.meta.name || 'Unknown';
 
   // Position text in the center of the box
@@ -42,7 +42,7 @@ function ProductBox({ item, position, size, color }: { item: LayoutItem; positio
 }
 
 // Shelf row component
-function ShelfRow({ rowId, rowLayouts, rowIndex, cellWidth, shelfWidth, gridData, totalRows }: { rowId: number; rowLayouts: Record<number, LayoutItem[]>; rowIndex: number; cellWidth: number; shelfWidth: number; gridData: GridResponse; totalRows: number }) {
+function ShelfRow({ rowId, rowLayouts, rowIndex, cellWidth, shelfWidth, totalRows }: { rowId: number; rowLayouts: Record<number, LayoutItem[]>; rowIndex: number; cellWidth: number; shelfWidth: number; totalRows: number }) {
   const { isDark } = useThemeStore();
   // Scale up shelf dimensions proportionally
   const scaleFactor = 1.5;
@@ -92,8 +92,6 @@ function Scene({ gridData, rowLayouts }: { gridData: GridResponse; rowLayouts: R
 
   // Calculate center position based on number of rows
   const totalRows = gridData.rows.length;
-  const rowSpacing = 1.2 * scaleFactor;
-  const centerY = ((totalRows - 1) * rowSpacing) / 2;
 
   return (
     <>
@@ -103,7 +101,7 @@ function Scene({ gridData, rowLayouts }: { gridData: GridResponse; rowLayouts: R
 
       {/* Shelf rows */}
       {gridData.rows.map((row, index) => (
-        <ShelfRow key={row.id} rowId={row.id} rowLayouts={rowLayouts} rowIndex={index} cellWidth={cellWidth} shelfWidth={shelfWidth} gridData={gridData} totalRows={totalRows} />
+        <ShelfRow key={row.id} rowId={row.id} rowLayouts={rowLayouts} rowIndex={index} cellWidth={cellWidth} shelfWidth={shelfWidth} totalRows={totalRows} />
       ))}
     </>
   );

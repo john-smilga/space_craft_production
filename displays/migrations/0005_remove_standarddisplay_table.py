@@ -6,16 +6,32 @@ from django.db import migrations
 def remove_standarddisplay_table(apps, schema_editor):
     """Remove the displays_standarddisplay table if it exists (legacy table)"""
     db_alias = schema_editor.connection.alias
+    db_vendor = schema_editor.connection.vendor
+
     with schema_editor.connection.cursor() as cursor:
-        # Check if table exists
-        cursor.execute("""
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name = 'displays_standarddisplay'
-        """)
-        if cursor.fetchone():
-            cursor.execute("DROP TABLE IF EXISTS displays_standarddisplay CASCADE")
+        # Check if table exists (database-agnostic)
+        table_exists = False
+
+        if db_vendor == 'sqlite':
+            cursor.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table' AND name='displays_standarddisplay'
+            """)
+            table_exists = cursor.fetchone() is not None
+        else:  # PostgreSQL
+            cursor.execute("""
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                AND table_name = 'displays_standarddisplay'
+            """)
+            table_exists = cursor.fetchone() is not None
+
+        if table_exists:
+            if db_vendor == 'sqlite':
+                cursor.execute("DROP TABLE IF EXISTS displays_standarddisplay")
+            else:
+                cursor.execute("DROP TABLE IF EXISTS displays_standarddisplay CASCADE")
 
 
 def add_standarddisplay_table(apps, schema_editor):

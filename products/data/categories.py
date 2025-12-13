@@ -11,17 +11,15 @@ CATEGORY_HIERARCHY = {
     "poultry": {"path": "fresh > meat > poultry", "level": 2},
     "lamb": {"path": "fresh > meat > lamb", "level": 2},
     "sausage": {"path": "fresh > meat > sausage", "level": 2},
-    
     # Seafood
     "seafood": {"path": "fresh > seafood", "level": 1},
-    
     # Produce (new)
     "fruits": {"path": "fresh > produce > fruits", "level": 2},
     "vegetables": {"path": "fresh > produce > vegetables", "level": 2},
 }
 
+
 # Helper to get category path
 def get_category_path(category_slug):
     """Get full category path for a category slug."""
     return CATEGORY_HIERARCHY.get(category_slug, {}).get("path", category_slug)
-

@@ -18,7 +18,3 @@ export interface Store {
 export interface StoresResponse {
   stores: Store[];
 }
-
-export interface StoreResponse {
-  store: Store;
-}

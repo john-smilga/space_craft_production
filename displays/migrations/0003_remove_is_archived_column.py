@@ -6,126 +6,184 @@ from django.db import migrations
 def remove_is_archived_column(apps, schema_editor):
     """Remove archive-related columns and ensure company_id is nullable"""
     db_alias = schema_editor.connection.alias
+    db_vendor = schema_editor.connection.vendor
+
     with schema_editor.connection.cursor() as cursor:
-        # Remove archived_by_id foreign key constraint and index first
-        cursor.execute("""
-            SELECT conname 
-            FROM pg_constraint 
-            WHERE conrelid = 'displays_display'::regclass 
-            AND conname LIKE '%archived_by_id%'
-        """)
-        fk_constraint = cursor.fetchone()
-        if fk_constraint:
-            cursor.execute(f"""
-                ALTER TABLE displays_display 
-                DROP CONSTRAINT IF EXISTS {fk_constraint[0]} CASCADE
-            """)
-        
-        # Remove archived_by_id index
-        cursor.execute("""
-            DROP INDEX IF EXISTS displays_display_archived_by_id_cc6d63a4
-        """)
-        
-        # Remove archived_by_id column
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='displays_display' AND column_name='archived_by_id'
-        """)
-        if cursor.fetchone():
+        if db_vendor == 'sqlite':
+            # SQLite: Check columns using PRAGMA
+            cursor.execute("PRAGMA table_info(displays_display)")
+            columns = {row[1] for row in cursor.fetchall()}
+
+            # For SQLite, we can just try to drop columns (will fail silently if not exists)
+            if 'archived_by_id' in columns:
+                try:
+                    cursor.execute("ALTER TABLE displays_display DROP COLUMN archived_by_id")
+                except Exception:
+                    pass
+
+            if 'archived_at' in columns:
+                try:
+                    cursor.execute("ALTER TABLE displays_display DROP COLUMN archived_at")
+                except Exception:
+                    pass
+
+            if 'is_archived' in columns:
+                try:
+                    cursor.execute("ALTER TABLE displays_display DROP COLUMN is_archived")
+                except Exception:
+                    pass
+
+            # SQLite doesn't support ALTER COLUMN DROP NOT NULL, skip for SQLite
+        else:
+            # PostgreSQL: Use information_schema and pg_constraint
+            # Remove archived_by_id foreign key constraint first
             cursor.execute("""
-                ALTER TABLE displays_display 
-                DROP COLUMN archived_by_id
+                SELECT conname
+                FROM pg_constraint
+                WHERE conrelid = 'displays_display'::regclass
+                AND conname LIKE '%archived_by_id%'
             """)
-        
-        # Remove archived_at column
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='displays_display' AND column_name='archived_at'
-        """)
-        if cursor.fetchone():
+            fk_constraint = cursor.fetchone()
+            if fk_constraint:
+                cursor.execute(f"""
+                    ALTER TABLE displays_display
+                    DROP CONSTRAINT IF EXISTS {fk_constraint[0]} CASCADE
+                """)
+
+            # Remove archived_by_id index
             cursor.execute("""
-                ALTER TABLE displays_display 
-                DROP COLUMN archived_at
+                DROP INDEX IF EXISTS displays_display_archived_by_id_cc6d63a4
             """)
-        
-        # Remove is_archived column
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='displays_display' AND column_name='is_archived'
-        """)
-        if cursor.fetchone():
+
+            # Remove archived_by_id column
             cursor.execute("""
-                ALTER TABLE displays_display 
-                DROP COLUMN is_archived
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='displays_display' AND column_name='archived_by_id'
             """)
-        
-        # Ensure company_id is nullable (in case production DB has NOT NULL constraint)
-        cursor.execute("""
-            SELECT is_nullable 
-            FROM information_schema.columns 
-            WHERE table_name='displays_display' AND column_name='company_id'
-        """)
-        result = cursor.fetchone()
-        if result and result[0] == 'NO':
+            if cursor.fetchone():
+                cursor.execute("""
+                    ALTER TABLE displays_display
+                    DROP COLUMN archived_by_id
+                """)
+
+            # Remove archived_at column
             cursor.execute("""
-                ALTER TABLE displays_display 
-                ALTER COLUMN company_id DROP NOT NULL
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='displays_display' AND column_name='archived_at'
             """)
+            if cursor.fetchone():
+                cursor.execute("""
+                    ALTER TABLE displays_display
+                    DROP COLUMN archived_at
+                """)
+
+            # Remove is_archived column
+            cursor.execute("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='displays_display' AND column_name='is_archived'
+            """)
+            if cursor.fetchone():
+                cursor.execute("""
+                    ALTER TABLE displays_display
+                    DROP COLUMN is_archived
+                """)
+
+            # Ensure company_id is nullable
+            cursor.execute("""
+                SELECT is_nullable
+                FROM information_schema.columns
+                WHERE table_name='displays_display' AND column_name='company_id'
+            """)
+            result = cursor.fetchone()
+            if result and result[0] == 'NO':
+                cursor.execute("""
+                    ALTER TABLE displays_display
+                    ALTER COLUMN company_id DROP NOT NULL
+                """)
 
 
 def add_is_archived_column(apps, schema_editor):
     """Reverse migration - add the columns back (if needed)"""
     db_alias = schema_editor.connection.alias
+    db_vendor = schema_editor.connection.vendor
+
     with schema_editor.connection.cursor() as cursor:
-        # Add archived_at column
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='displays_display' AND column_name='archived_at'
-        """)
-        if not cursor.fetchone():
+        if db_vendor == 'sqlite':
+            # SQLite: Check columns using PRAGMA
+            cursor.execute("PRAGMA table_info(displays_display)")
+            columns = {row[1] for row in cursor.fetchall()}
+
+            # Add archived_at column
+            if 'archived_at' not in columns:
+                cursor.execute("""
+                    ALTER TABLE displays_display
+                    ADD COLUMN archived_at TIMESTAMP
+                """)
+
+            # Add archived_by_id column
+            if 'archived_by_id' not in columns:
+                cursor.execute("""
+                    ALTER TABLE displays_display
+                    ADD COLUMN archived_by_id INTEGER REFERENCES accounts_user(id)
+                """)
+
+            # Add is_archived column
+            if 'is_archived' not in columns:
+                cursor.execute("""
+                    ALTER TABLE displays_display
+                    ADD COLUMN is_archived BOOLEAN DEFAULT 0 NOT NULL
+                """)
+        else:
+            # PostgreSQL: Use information_schema
+            # Add archived_at column
             cursor.execute("""
-                ALTER TABLE displays_display 
-                ADD COLUMN archived_at TIMESTAMP WITH TIME ZONE
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='displays_display' AND column_name='archived_at'
             """)
-        
-        # Add archived_by_id column
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='displays_display' AND column_name='archived_by_id'
-        """)
-        if not cursor.fetchone():
+            if not cursor.fetchone():
+                cursor.execute("""
+                    ALTER TABLE displays_display
+                    ADD COLUMN archived_at TIMESTAMP WITH TIME ZONE
+                """)
+
+            # Add archived_by_id column
             cursor.execute("""
-                ALTER TABLE displays_display 
-                ADD COLUMN archived_by_id BIGINT
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='displays_display' AND column_name='archived_by_id'
             """)
-            # Add foreign key constraint
+            if not cursor.fetchone():
+                cursor.execute("""
+                    ALTER TABLE displays_display
+                    ADD COLUMN archived_by_id BIGINT
+                """)
+                # Add foreign key constraint
+                cursor.execute("""
+                    ALTER TABLE displays_display
+                    ADD CONSTRAINT displays_display_archived_by_id_cc6d63a4_fk_accounts_user_id
+                    FOREIGN KEY (archived_by_id) REFERENCES accounts_user(id) DEFERRABLE INITIALLY DEFERRED
+                """)
+                # Add index
+                cursor.execute("""
+                    CREATE INDEX displays_display_archived_by_id_cc6d63a4
+                    ON displays_display(archived_by_id)
+                """)
+
+            # Add is_archived column
             cursor.execute("""
-                ALTER TABLE displays_display 
-                ADD CONSTRAINT displays_display_archived_by_id_cc6d63a4_fk_accounts_user_id 
-                FOREIGN KEY (archived_by_id) REFERENCES accounts_user(id) DEFERRABLE INITIALLY DEFERRED
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='displays_display' AND column_name='is_archived'
             """)
-            # Add index
-            cursor.execute("""
-                CREATE INDEX displays_display_archived_by_id_cc6d63a4 
-                ON displays_display(archived_by_id)
-            """)
-        
-        # Add is_archived column
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='displays_display' AND column_name='is_archived'
-        """)
-        if not cursor.fetchone():
-            cursor.execute("""
-                ALTER TABLE displays_display 
-                ADD COLUMN is_archived BOOLEAN DEFAULT FALSE NOT NULL
-            """)
+            if not cursor.fetchone():
+                cursor.execute("""
+                    ALTER TABLE displays_display
+                    ADD COLUMN is_archived BOOLEAN DEFAULT FALSE NOT NULL
+                """)
         # Note: We don't reverse the company_id nullable change as it should be nullable per model
 
 

@@ -1,9 +1,9 @@
 'use client';
 
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/features/auth';
 
 export default function DashboardHeader() {
-  const { user } = useAuthStore();
+  const user = useAuthStore.use.user();
 
   return (
     <div className='mb-24 mt-8'>

@@ -1,6 +1,6 @@
 'use client';
 
-import { usePlanogramUIStore } from '@/stores/planogramUIStore';
+import { usePlanogramStore } from '@/features/planogram';
 
 interface RowHeaderProps {
   rowName: string;
@@ -8,7 +8,7 @@ interface RowHeaderProps {
 }
 
 export default function RowHeader({ rowName, rowId }: RowHeaderProps) {
-  const { rowNotifications } = usePlanogramUIStore();
+  const rowNotifications = usePlanogramStore.use.rowNotifications();
   const rowNotification = rowNotifications[rowId];
 
   return (

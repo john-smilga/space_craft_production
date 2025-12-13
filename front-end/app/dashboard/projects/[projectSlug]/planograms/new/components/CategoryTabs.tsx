@@ -1,7 +1,6 @@
 'use client';
 
-import { useFetch } from '@/hooks/useFetch';
-import type { CategoriesResponse, SelectableCategoriesResponse } from '@/types/categories';
+import { useCategoriesQuery, useSelectableCategoriesQuery } from '@/hooks/useCategories';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,10 +15,10 @@ interface CategoryTabsProps {
 }
 
 export default function CategoryTabs({ parentSlug, activeTab, onTabClick, selectedCategoryIds, onCategoryToggle }: CategoryTabsProps) {
-  const { data: subcategoriesData } = useFetch<CategoriesResponse>(parentSlug ? `/categories/${parentSlug}/` : null);
+  const { data: subcategoriesData } = useCategoriesQuery(parentSlug);
   const subcategories = subcategoriesData?.categories || [];
 
-  const { data: selectableData } = useFetch<SelectableCategoriesResponse>(parentSlug && activeTab ? `/categories/${parentSlug}/${activeTab}/` : null);
+  const { data: selectableData } = useSelectableCategoriesQuery(parentSlug, activeTab);
   const selectableCategories = selectableData?.categories || [];
 
   const getCategoryIcon = (slug: string): string => {

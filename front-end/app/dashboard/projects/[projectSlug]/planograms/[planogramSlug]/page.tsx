@@ -1,14 +1,11 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { usePlanogramLayoutStore } from '@/stores/planogramLayoutStore';
-import { usePlanogramSidebarStore } from '@/stores/planogramSidebarStore';
-import { usePlanogramData } from './hooks/usePlanogramData';
+import { usePlanogramStore, usePlanogramData } from '@/features/planogram';
 import Grid from './components/Grid';
 import ThreeJSView from './components/ThreeJSView';
 import ProductSidebar from './components/ProductSidebar';
 import AvailableProductsSidebar from './components/AvailableProductsSidebar';
-import ShelvesTable from './components/ShelvesTable';
 import PlanogramNameField from './components/PlanogramNameField';
 import PlanogramFormFields from './components/PlanogramFormFields';
 import PlanogramCategoriesSelector from './components/PlanogramCategoriesSelector';
@@ -21,9 +18,11 @@ function PlanogramDetailContent() {
   const params = useParams();
   const planogramSlug = params?.planogramSlug as string;
 
-  // Get state from stores
-  const { gridData, rowLayouts } = usePlanogramLayoutStore();
-  const { sidebarOpen, availableProductsSidebarOpen } = usePlanogramSidebarStore();
+  // Get state from consolidated store
+  const gridData = usePlanogramStore.use.gridData();
+  const rowLayouts = usePlanogramStore.use.rowLayouts();
+  const sidebarOpen = usePlanogramStore.use.sidebarOpen();
+  const availableProductsSidebarOpen = usePlanogramStore.use.availableProductsSidebarOpen();
 
   // Use custom hooks
   const { planogramData, planogramLoading } = usePlanogramData(planogramSlug);
@@ -78,7 +77,6 @@ function PlanogramDetailContent() {
           )}
 
           <div className='space-y-6'>
-            <ShelvesTable />
             {gridData ? (
               <>
                 <Grid />

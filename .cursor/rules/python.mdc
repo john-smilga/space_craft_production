@@ -1,0 +1,202 @@
+---
+globs: **/*.py
+alwaysApply: false
+---
+
+# Python Rules (Language + Tooling)
+
+These rules apply to all Python code written or modified in this repo.
+
+---
+
+## GENERAL
+
+- Make small, focused edits. Do not refactor multiple files at once unless explicitly requested.
+- Follow existing architecture, naming conventions, and folder structure.
+- Prefer clarity and readability over clever or compressed code.
+- Do not introduce new dependencies unless absolutely necessary; prefer the stdlib and existing project dependencies.
+- When adding non-trivial logic or patterns, include brief docstrings or comments.
+
+---
+
+## TOOLING AWARENESS (BLACK, RUFF, MYPY)
+
+- Always write code that already conforms to the repo’s configured tools:
+  - `black .`
+  - `ruff check .`
+  - `mypy .`
+- Assume these tools will run after changes. Avoid generating code that will obviously fail them.
+
+### Black
+
+- Let Black control formatting; avoid manual alignment that Black will undo.
+
+### Ruff
+
+- Avoid:
+  - Unused imports / unused variables
+  - Wildcard imports (`from x import *`)
+  - Bare `except:`; catch specific exceptions.
+- Keep imports organized: standard library → third-party → local modules.
+- Do not leave commented-out blocks of code unless explicitly requested.
+
+### MyPy
+
+- Add type hints to all new/modified public functions, methods, and interfaces.
+- Prefer explicit types over `Any` when feasible.
+- Avoid overly dynamic patterns that confuse static typing unless necessary.
+
+---
+
+## IMPORTS (PYTHON IMPORT PATTERNS)
+
+### Import Organization
+
+- Prefer top-level imports over function-level imports
+- Import order: standard library → third-party → local modules
+- Group imports with blank lines between groups
+- Sort imports alphabetically within each group
+
+### Top-Level vs Function-Level Imports
+
+#### ✅ Prefer Top-Level Imports
+
+Use top-level imports unless there's a specific reason not to:
+
+```python
+# ✅ GOOD: Top-level import
+from project.users.models import User
+
+def register_user(username: str, email: str, password: str) -> User:
+    """Register a new user."""
+    if User.objects.filter(email=email).exists():
+        raise ValueError("A user with this email already exists.")
+```
+
+Benefits:
+
+- Cleaner, more readable code
+- Import happens once at module load (better performance)
+- Direct type annotations (not string annotations)
+- Easier to see all dependencies at a glance
+
+#### ❌ Avoid Function-Level Imports (Unless Necessary)
+
+Only use function-level imports when:
+
+1. Circular import risk (top-level would cause circular imports)
+2. Expensive imports (rarely used)
+3. Optional dependencies (might not be available)
+
+```python
+# ❌ BAD: Function-level import without good reason
+def register_user(username: str, email: str, password: str) -> "User":
+    from project.users.models import User  # Unnecessary function-level import
+```
+
+```python
+# ✅ GOOD: Function-level import for circular import avoidance / expensive import
+def expensive_operation():
+    from heavy_module import HeavyClass
+```
+
+### TYPE_CHECKING Pattern
+
+When using `TYPE_CHECKING` for type hints, still prefer top-level imports for runtime:
+
+```python
+from typing import TYPE_CHECKING
+
+from project.users.models import User  # Top-level import for runtime use
+
+if TYPE_CHECKING:
+    from typing import Protocol
+```
+
+Avoid using `TYPE_CHECKING` as an excuse for function-level imports:
+
+```python
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from project.users.models import User
+
+def register_user(...) -> "User":
+    from project.users.models import User
+```
+
+### Type Annotations
+
+- Prefer direct type annotations over string annotations when possible
+- Use string annotations (`"User"`) only when necessary to avoid circular imports
+
+```python
+from project.users.models import User
+
+def register_user(...) -> User:
+    ...
+```
+
+```python
+# ❌ BAD: String annotation when not needed
+def register_user(...) -> "User":
+    from project.users.models import User
+```
+
+---
+
+## TESTING (PYTHON-GENERIC)
+
+- For any non-trivial behavior change or new feature, add or update tests.
+- Tests must be:
+  - Deterministic
+  - Isolated (no shared global state)
+  - Independent of external network calls (use fakes/mocks)
+- Prefer simple, descriptive test names that explain intent, not implementation details.
+
+---
+
+## SECURITY
+
+- Never log secrets, passwords, tokens, or other sensitive user data.
+- Validate and sanitize external input at the boundary of your system (API, CLI, file IO).
+- Avoid returning internal error details to untrusted callers; surface only safe, user-facing messages.
+
+---
+
+## LOGGING & OBSERVABILITY
+
+- Use Python’s `logging` module instead of `print`.
+- Log meaningful events at appropriate levels (`debug`, `info`, `warning`, `error`, `critical`).
+- Do not log sensitive data.
+- If observability tools (APM, metrics, tracing) are present, follow existing patterns when adding instrumentation.
+
+---
+
+## DIFF REQUIREMENTS
+
+- All diffs must already:
+  - Conform to Black formatting
+  - Avoid obvious Ruff violations
+  - Be compatible with MyPy type checking
+- Do not introduce:
+  - Unused imports or variables
+  - Commented-out blocks of dead code
+  - Temporary debug code (`print`, `pdb`, etc.)
+
+---
+
+## STRICT MODE (WHEN UNSURE)
+
+- Prefer explicit over implicit:
+  - Explicit imports, explicit types, explicit control flow
+- Avoid highly dynamic / meta-programming constructs unless they match existing patterns.
+- If unsure about a construct’s interaction with Black/Ruff/MyPy, choose a simpler alternative.
+
+---
+
+## FALLBACK RULES
+
+- Prefer correctness + lint/type compliance over compactness or clever tricks.
+- Prefer consistency with the existing codebase over personal style.
+- Break complex work into small, reviewable steps.

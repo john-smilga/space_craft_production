@@ -2,8 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import type { PlanogramResponse } from '@/types/planograms';
-import { usePlanogramDownloadStore } from '@/stores/planogramDownloadStore';
-import { usePlanogramLayoutStore } from '@/stores/planogramLayoutStore';
+import { usePlanogramStore } from '@/features/planogram';
 import toast from 'react-hot-toast';
 
 interface PlanogramDownloadButtonProps {
@@ -11,8 +10,9 @@ interface PlanogramDownloadButtonProps {
 }
 
 export default function PlanogramDownloadButton({ planogram }: PlanogramDownloadButtonProps) {
-  const { loading, downloadPlanogram } = usePlanogramDownloadStore();
-  const { gridData } = usePlanogramLayoutStore();
+  const downloadLoading = usePlanogramStore.use.downloadLoading();
+  const downloadPlanogram = usePlanogramStore.use.downloadPlanogram();
+  const gridData = usePlanogramStore.use.gridData();
 
   const handleDownload = async () => {
     if (!planogram) {
@@ -24,8 +24,8 @@ export default function PlanogramDownloadButton({ planogram }: PlanogramDownload
   };
 
   return (
-    <Button onClick={handleDownload} size='sm' variant='outline' className='border-primary text-primary hover:bg-primary hover:text-primary-foreground' disabled={loading}>
-      {loading ? 'Preparing...' : 'Download'}
+    <Button onClick={handleDownload} size='sm' variant='outline' className='border-primary text-primary hover:bg-primary hover:text-primary-foreground' disabled={downloadLoading}>
+      {downloadLoading ? 'Preparing...' : 'Download'}
     </Button>
   );
 }

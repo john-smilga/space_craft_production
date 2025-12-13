@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuthStore } from '@/stores/authStore';
+import { useRegisterMutation } from '@/features/auth';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,48 +16,59 @@ function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [invitationData, setInvitationData] = useState<{ email: string; company: { id: number; name: string } | null } | null>(null);
-  const { register } = useAuthStore();
+  const registerMutation = useRegisterMutation();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     const tokenParam = searchParams.get('token');
-    if (!tokenParam) {
-      setError('Invalid invitation link. Token is missing.');
-      setLoading(false);
-      return;
-    }
+    
+    const validateToken = async () => {
+      if (!tokenParam) {
+        setError('Invalid invitation link. Token is missing.');
+        setLoading(false);
+        return;
+      }
 
-    setToken(tokenParam);
-    // Validate invitation token
-    api
-      .get(`/auth/validate-invitation/?token=${tokenParam}`)
-      .then((response) => {
+      setToken(tokenParam);
+      
+      try {
+        const response = await api.get(`/auth/validate-invitation/?token=${tokenParam}`);
         if (response.data.valid) {
           setInvitationData({
             email: response.data.email,
             company: response.data.company,
           });
-          setLoading(false);
         } else {
           setError('Invalid or expired invitation token');
-          setLoading(false);
         }
-      })
-      .catch((err) => {
-        setError(err.response?.data?.error || 'Invalid invitation token');
+      } catch (err: unknown) {
+        const errorMessage = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Invalid invitation token';
+        setError(errorMessage);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    validateToken();
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     try {
-      await register(token!, password, username || undefined);
+      await registerMutation.mutateAsync({
+        token: token!,
+        password,
+        username: username || undefined,
+      });
       router.push('/dashboard');
-    } catch (error: any) {
-      setError(error.response?.data?.error || 'Registration failed');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message || 'Registration failed');
+      } else {
+        setError('Registration failed');
+      }
     }
   };
 
@@ -128,8 +139,8 @@ function RegisterForm() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            <Button type='submit' disabled={loading} className='w-full'>
-              Complete Registration
+            <Button type='submit' disabled={registerMutation.isPending} className='w-full'>
+              {registerMutation.isPending ? 'Registering...' : 'Complete Registration'}
             </Button>
           </form>
         </CardContent>

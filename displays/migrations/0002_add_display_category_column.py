@@ -6,32 +6,43 @@ from django.db import migrations
 def add_display_category_column_if_missing(apps, schema_editor):
     """Add display_category column if it doesn't exist"""
     db_alias = schema_editor.connection.alias
+    db_vendor = schema_editor.connection.vendor
+
     with schema_editor.connection.cursor() as cursor:
-        # Check if column exists
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='displays_display' AND column_name='display_category'
-        """)
-        if not cursor.fetchone():
+        # Check if column exists (database-agnostic)
+        column_exists = False
+
+        if db_vendor == 'sqlite':
+            cursor.execute("PRAGMA table_info(displays_display)")
+            columns = [row[1] for row in cursor.fetchall()]
+            column_exists = 'display_category' in columns
+        else:  # PostgreSQL, MySQL, etc.
+            cursor.execute("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='displays_display' AND column_name='display_category'
+            """)
+            column_exists = cursor.fetchone() is not None
+
+        if not column_exists:
             # Column doesn't exist, add it
             cursor.execute("""
-                ALTER TABLE displays_display 
-                ADD COLUMN display_category VARCHAR(20) DEFAULT 'custom' 
+                ALTER TABLE displays_display
+                ADD COLUMN display_category VARCHAR(20) DEFAULT 'custom'
                 NOT NULL
             """)
             # Update existing rows: standard if company is null, custom otherwise
             cursor.execute("""
-                UPDATE displays_display 
-                SET display_category = CASE 
-                    WHEN company_id IS NULL THEN 'standard' 
-                    ELSE 'custom' 
+                UPDATE displays_display
+                SET display_category = CASE
+                    WHEN company_id IS NULL THEN 'standard'
+                    ELSE 'custom'
                 END
             """)
             # Create index
             try:
                 cursor.execute("""
-                    CREATE INDEX displays_di_display_0c9e6c_idx 
+                    CREATE INDEX displays_di_display_0c9e6c_idx
                     ON displays_display(display_category)
                 """)
             except Exception:

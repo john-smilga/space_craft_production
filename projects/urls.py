@@ -1,8 +1,13 @@
-from django.urls import path
-from . import views
+"""URL configuration for projects app."""
+
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from projects import views
+
+router = DefaultRouter()
+router.register(r"projects", views.ProjectViewSet, basename="project")
 
 urlpatterns = [
-    path('projects/', views.list_or_create_projects, name='list-or-create-projects'),
-    path('projects/<str:project_slug>/', views.get_or_update_or_delete_project, name='get-or-update-or-delete-project'),
+    path("", include(router.urls)),
 ]
-

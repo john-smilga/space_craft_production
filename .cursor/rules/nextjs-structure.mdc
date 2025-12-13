@@ -1,0 +1,10 @@
+---
+globs:**/*.tsx, **/*.ts, **/*.jsx, **/*.js
+alwaysApply: false
+---
+# Project Structure (Next.js)
+
+Always follow the structure guide in `.cursor/docs/structure/nextjs.md`.
+
+- If the doc is missing, follow the patterns of the existing project.
+- If there is a conflict between an older pattern and the doc, prefer the doc unless the user explicitly asks otherwise.
