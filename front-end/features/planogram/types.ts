@@ -3,10 +3,8 @@ import { schemas } from '@/lib/generated/api-schemas';
 
 // Export the TYPE (not the schema) as Planogram for backward compatibility
 export type Planogram = z.infer<typeof schemas.Planogram>;
-export type PlanogramType = z.infer<typeof schemas.Planogram>;
 export type CreatePlanogramInput = z.infer<typeof schemas.PlanogramCreateRequest>;
 export type UpdatePlanogramInput = z.infer<typeof schemas.PlanogramUpdateRequest>;
-export type PlanogramsResponse = z.infer<typeof schemas.PaginatedPlanogramListList>;
 export type Season = z.infer<typeof schemas.SeasonEnum>;
 
 export interface PlanogramDetailResponse {
