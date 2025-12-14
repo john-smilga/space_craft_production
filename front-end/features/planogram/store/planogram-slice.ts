@@ -239,6 +239,10 @@ const usePlanogramStoreBase = create<PlanogramState>()(
               return { skipNextInitialization: false };
             }
 
+            if (!layout || !layout.rows) {
+              return {};
+            }
+
             const layouts: Record<number, LayoutItem[]> = {};
             layout.rows.forEach((row) => {
               layouts[row.id] = row.items.map((item) => ({

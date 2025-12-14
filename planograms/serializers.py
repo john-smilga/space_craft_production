@@ -5,13 +5,18 @@ from typing import Any
 
 from rest_framework import serializers
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field, extend_schema_serializer, inline_serializer
+
 from common.serializers import validate_positive_integer, validate_positive_number
 from displays.models import Display
 from planograms.models import Planogram
+from products.serializers import CategorySerializer
 from products.services import get_category_names_by_ids
 from projects.models import Project
 
 
+@extend_schema_field(field=serializers.ListField(child=serializers.IntegerField()))
 class CategoryIdsField(serializers.Field):
     """Custom field for validating category IDs as JSON list."""
 
@@ -52,11 +57,15 @@ class PlanogramSerializer(serializers.ModelSerializer):
     created_by_username = serializers.CharField(
         source="created_by.username", read_only=True
     )
-    updated_by_username = serializers.CharField(
-        source="updated_by.username", read_only=True
-    )
+    updated_by_username = serializers.SerializerMethodField()
     company_name = serializers.CharField(source="company.name", read_only=True)
-    categories = serializers.SerializerMethodField()
+    categories = extend_schema_field(
+        CategorySerializer(many=True)
+    )(serializers.SerializerMethodField())
+
+    def get_updated_by_username(self, obj: Planogram) -> str:
+        """Get username of user who last updated, or empty string if never updated."""
+        return obj.updated_by.username if obj.updated_by else ""
 
     def get_categories(self, obj: Planogram) -> list[dict[str, Any]]:
         """Derive category names from category_ids."""
@@ -105,6 +114,7 @@ class PlanogramSerializer(serializers.ModelSerializer):
         ]
 
 
+
 class PlanogramListSerializer(serializers.ModelSerializer):
     """Optimized list output serializer for Planogram model."""
 
@@ -112,6 +122,15 @@ class PlanogramListSerializer(serializers.ModelSerializer):
     project_name = serializers.CharField(source="project.name", read_only=True)
     project_slug = serializers.CharField(source="project.slug", read_only=True)
     display_name = serializers.CharField(source="display.name", read_only=True)
+    categories = extend_schema_field(
+        CategorySerializer(many=True)
+    )(serializers.SerializerMethodField())
+
+    def get_categories(self, obj: Planogram) -> list[dict[str, Any]]:
+        """Derive category names from category_ids."""
+        if not obj.category_ids:
+            return []
+        return get_category_names_by_ids(obj.category_ids)
 
     class Meta:
         model = Planogram
@@ -124,6 +143,8 @@ class PlanogramListSerializer(serializers.ModelSerializer):
             "project_slug",
             "display_name",
             "shelf_count",
+            "category_ids",
+            "categories",
             "preserve_layout",
             "created_at",
             "updated_at",
@@ -139,6 +160,14 @@ class PlanogramCreateSerializer(serializers.ModelSerializer):
     display = serializers.PrimaryKeyRelatedField(
         queryset=Display.objects.none(), required=False, allow_null=True
     )
+    # Make dimension fields optional - view will use display defaults
+    width_in = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, allow_null=True
+    )
+    height_in = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, allow_null=True
+    )
+    shelf_count = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta:
         model = Planogram
@@ -279,3 +308,9 @@ class PlanogramLayoutSerializer(serializers.Serializer):
         if not isinstance(value, dict):
             raise serializers.ValidationError("Layout must be a JSON object.")
         return value
+
+
+class AIOverviewResponseSerializer(serializers.Serializer):
+    """Output serializer for AI overview response."""
+
+    overview = serializers.CharField()

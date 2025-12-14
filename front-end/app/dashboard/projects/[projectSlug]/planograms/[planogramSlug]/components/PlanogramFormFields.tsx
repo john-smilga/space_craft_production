@@ -76,7 +76,7 @@ export default function PlanogramFormFields() {
                 })
                 .map((display) => (
                   <SelectItem key={display.id} value={display.id.toString()}>
-                    [{display.display_category.charAt(0).toUpperCase() + display.display_category.slice(1)}] {display.name} ({display.type_display}) - {display.width_in}&quot; × {display.height_in}&quot; × {display.depth_in}&quot;
+                    [{display.display_category.charAt(0).toUpperCase() + display.display_category.slice(1)}] {display.name} ({display.type.replace(/_/g, ' ')}) - {display.width_in}&quot; × {display.height_in}&quot; × {display.depth_in}&quot;
                   </SelectItem>
                 ))}
             </SelectContent>

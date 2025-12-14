@@ -1,33 +1,8 @@
-export interface Store {
-  id: number;
-  name: string;
-  store_code: string;
-  slug: string;
-  address: string;
-  company: {
-    id: number;
-    name: string;
-  };
-  created_at: string;
-  created_by: {
-    id: number;
-    username: string;
-  } | null;
-}
+import { z } from 'zod';
+import { schemas } from '@/lib/generated/api-schemas';
 
-export interface StoresResponse {
-  stores: Store[];
-}
-
-export interface CreateStoreInput {
-  name: string;
-  store_code: string;
-  address: string;
-}
-
-export interface UpdateStoreInput {
-  name?: string;
-  store_code?: string;
-  address?: string;
-}
+export type StoreType = z.infer<typeof schemas.Store>;
+export type CreateStoreInput = z.infer<typeof schemas.StoreCreateRequest>;
+export type UpdateStoreInput = z.infer<typeof schemas.StoreUpdateRequest>;
+export type StoresResponse = z.infer<typeof schemas.PaginatedStoreListList>;
 

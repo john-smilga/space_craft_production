@@ -14,6 +14,7 @@ export function InviteUserForm() {
   useRequireAdmin();
   const user = useAuthStore.use.user();
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [success, setSuccess] = useState<{ link: string; token: string } | null>(null);
 
   const inviteMutation = useInviteUserMutation();
@@ -25,6 +26,7 @@ export function InviteUserForm() {
     try {
       const result = await inviteMutation.mutateAsync({
         email,
+        username,
         role: 'member',
       });
 
@@ -33,6 +35,7 @@ export function InviteUserForm() {
         token: result.invitation_token,
       });
       setEmail('');
+      setUsername('');
     } catch {
       // Error handled by mutation
     }
@@ -60,6 +63,15 @@ export function InviteUserForm() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder='user@example.com'
+            />
+
+            <FormField
+              label='Username'
+              type='text'
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              placeholder='username'
             />
 
             {user?.company && (

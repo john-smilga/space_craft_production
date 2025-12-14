@@ -1,22 +1,7 @@
-import type { User } from '../auth/types';
+import { z } from 'zod';
+import { schemas } from '@/lib/generated/api-schemas';
 
-export type { User };
-
-export interface UsersResponse {
-  users: User[];
-}
-
-export interface UserResponse {
-  user: User;
-}
-
-export interface InviteUserInput {
-  email: string;
-  role: string;
-}
-
-export interface InviteResponse {
-  invitation_link: string;
-  invitation_token: string;
-}
+export type UserType = z.infer<typeof schemas.User>;
+export type InviteUserInput = z.infer<typeof schemas.UserInviteRequest>;
+export type InviteResponse = z.infer<typeof schemas.UserInviteResponse>;
 

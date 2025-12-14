@@ -89,3 +89,50 @@ def admin_client(api_client, admin_user):
     """Create an authenticated API client with admin user."""
     api_client.force_authenticate(user=admin_user)
     return api_client
+
+
+# OpenAPI Schema Validation
+@pytest.fixture(scope="session")
+def openapi_spec():
+    """Load OpenAPI schema once per test session."""
+    from openapi_core import Spec
+    import yaml
+    from pathlib import Path
+
+    schema_path = Path(__file__).parent / "openapi.yaml"
+    with open(schema_path) as f:
+        spec_dict = yaml.safe_load(f)
+    return Spec.from_dict(spec_dict)
+
+
+@pytest.fixture
+def assert_matches_schema(openapi_spec):
+    """Validate API responses against OpenAPI schema.
+
+    Usage in tests:
+        response = client.post("/api/auth/login/", {...})
+        assert_matches_schema(response)
+    """
+    from openapi_core import validate_response
+    from openapi_core.contrib.django import (
+        DjangoOpenAPIRequest,
+        DjangoOpenAPIResponse,
+    )
+
+    def _validate(response):
+        """Validate a Django REST Framework response against the schema."""
+        openapi_request = DjangoOpenAPIRequest(response.wsgi_request)
+        openapi_response = DjangoOpenAPIResponse(response)
+
+        # Validate using openapi-core 0.19.x API
+        # The function validates and raises exceptions if validation fails
+        result = validate_response(openapi_request, openapi_response, spec=openapi_spec)
+
+        # Check if result has errors (API may vary by version)
+        if result is not None and hasattr(result, 'raise_for_errors'):
+            result.raise_for_errors()
+        elif result is not None and hasattr(result, 'errors') and result.errors:
+            raise Exception(f"Schema validation failed: {result.errors}")
+        # If result is None, validation passed (no errors)
+
+    return _validate

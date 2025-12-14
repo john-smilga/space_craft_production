@@ -1,13 +1,16 @@
+import { z } from 'zod';
 import api from '@/lib/axios';
 import { usePaginatedQuery } from '@/lib/react-query/hooks';
-import type { Store } from '../types';
+import { schemas } from '@/lib/generated/api-schemas';;
+
+type StoreType = z.infer<typeof schemas.StoreList>;
 
 export function useStoresQuery() {
-  return usePaginatedQuery<Store>(
+  return usePaginatedQuery<StoreType>(
     ['stores'],
     async () => {
       const response = await api.get('/stores/');
-      return response.data;
+      return schemas.PaginatedStoreListList.parse(response.data);
     }
   );
 }

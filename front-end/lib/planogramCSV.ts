@@ -1,7 +1,10 @@
-import type { Planogram } from '@/types/planograms';
-import type { GridResponse } from '@/types/planograms';
+import { z } from 'zod';
+import { schemas } from '@/lib/generated/api-schemas';
+import type { GridResponse } from '@/features/planogram/types';
 
-export function generatePlanogramCSV(planogram: Planogram | null | undefined, layout: GridResponse | null): string {
+type PlanogramType = z.infer<typeof schemas.Planogram>;
+
+export function generatePlanogramCSV(planogram: PlanogramType | null | undefined, layout: GridResponse | null): string {
   if (!planogram) {
     return 'No planogram data available';
   }
@@ -12,16 +15,18 @@ export function generatePlanogramCSV(planogram: Planogram | null | undefined, la
   rows.push('Planogram Name,Project,Season,Categories,Display,Dimensions (W×H×D),Shelves,Shelf Spacing');
 
   // Metadata row
-  const categories = planogram.categories?.map((c) => c.name).join('; ') || 'N/A';
-  const displayName = planogram.display?.name || 'N/A';
-  // Get dimensions from display object (where backend puts them) or top level as fallback
-  const widthIn = planogram.display?.width_in ?? planogram.width_in;
-  const heightIn = planogram.display?.height_in ?? planogram.height_in;
-  const depthIn = planogram.display?.depth_in ?? planogram.depth_in;
+  const categories = Array.isArray(planogram.categories) 
+    ? (planogram.categories as Array<{ name: string }>).map((c) => c.name).join('; ') 
+    : 'N/A';
+  const displayName = planogram.display_name || 'N/A';
+  // Get dimensions from planogram (they're at the top level)
+  const widthIn = planogram.width_in;
+  const heightIn = planogram.height_in;
+  const depthIn = planogram.depth_in;
   const dimensions = widthIn && heightIn ? `${widthIn}"×${heightIn}"${depthIn ? `×${depthIn}"` : ''}` : 'N/A';
 
-  const projectName = planogram.project?.name || planogram.project_name || 'Unknown';
-  const seasonDisplay = planogram.season_display || planogram.season || 'N/A';
+  const projectName = planogram.project_name || 'Unknown';
+  const seasonDisplay = planogram.season || 'N/A';
   const shelfCount = planogram.shelf_count ?? 'N/A';
   const shelfSpacing = planogram.shelf_spacing?.toString() || 'N/A';
   rows.push([`"${planogram.name.replace(/"/g, '""')}"`, `"${projectName.replace(/"/g, '""')}"`, seasonDisplay, `"${categories.replace(/"/g, '""')}"`, `"${displayName.replace(/"/g, '""')}"`, dimensions, shelfCount.toString(), shelfSpacing].join(','));

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { usePlanogramStore } from '../../store';
 import { usePlanogramData } from '../../hooks';
 import { useParams } from 'next/navigation';
+import type { PlanogramCategory } from '../../types';
 
 export function PlanogramCategoriesSelector() {
   const params = useParams();
@@ -57,7 +58,8 @@ export function PlanogramCategoriesSelector() {
           <Label className='text-xs text-muted-foreground mb-2'>Selected Categories</Label>
           <div className='flex flex-wrap gap-2'>
             {selectedCategoryIds.map((categoryId) => {
-              const planogramCategory = planogram?.categories?.find((c) => c.id === categoryId);
+              const planogramCategories = planogram?.categories as PlanogramCategory[] | undefined;
+              const planogramCategory = planogramCategories?.find((c) => c.id === categoryId);
               const leafCategory = leafCategories.find((c) => c.id === categoryId);
               const categoryName = planogramCategory?.name || leafCategory?.name || `Category ${categoryId}`;
               return (

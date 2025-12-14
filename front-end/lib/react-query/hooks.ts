@@ -60,6 +60,20 @@ export function useAppMutation<TData, TVariables = void>(
       }
     },
     onError: (error) => {
+      // For axios errors, extract the response data which contains validation errors
+      const apiError = error as any;
+      const errorDetails = apiError.response?.data;
+      
+      // Log the full error details to console for debugging
+      // eslint-disable-next-line no-console
+      console.error('API Error Details:', {
+        status: apiError.response?.status,
+        statusText: apiError.response?.statusText,
+        data: errorDetails,
+        message: error.message,
+      });
+      
+      // Show a user-friendly message in the toast
       const message = errorMessage || error.message || 'An error occurred';
       toast.error(message);
     },

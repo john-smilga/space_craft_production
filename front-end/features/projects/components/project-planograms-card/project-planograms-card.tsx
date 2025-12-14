@@ -1,5 +1,8 @@
 import Link from 'next/link';
-import type { Planogram } from '@/types/planograms';
+import { z } from 'zod';
+import { schemas } from '@/lib/generated/api-schemas';
+
+type PlanogramListType = z.infer<typeof schemas.PlanogramList>;
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import EmptyState from '@/components/EmptyState';
@@ -7,7 +10,7 @@ import PlanogramCard from '@/app/dashboard/planograms/components/PlanogramCard';
 
 interface ProjectPlanogramsCardProps {
   projectSlug: string;
-  planograms: Planogram[];
+  planograms: PlanogramListType[];
 }
 
 export function ProjectPlanogramsCard({ projectSlug, planograms }: ProjectPlanogramsCardProps) {
@@ -30,10 +33,14 @@ export function ProjectPlanogramsCard({ projectSlug, planograms }: ProjectPlanog
                 name={planogram.name}
                 slug={planogram.slug}
                 projectSlug={projectSlug}
-                displayName={planogram.display?.name || planogram.display_name || null}
-                seasonDisplay={planogram.season_display || planogram.season}
+                displayName={planogram.display_name || null}
+                seasonDisplay={planogram.season || ''}
                 categories={planogram.categories}
-                categoryIds={planogram.category_ids || []}
+                categoryIds={
+                  Array.isArray(planogram.category_ids)
+                    ? (planogram.category_ids as number[])
+                    : []
+                }
               />
             ))}
           </div>

@@ -3,6 +3,7 @@
 import { useCategoriesQuery } from '@/hooks/useCategories';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { Category } from '@/types/categories';
 
 interface TopLevelCategorySelectorProps {
   selectedTopLevel: string | null;
@@ -11,7 +12,7 @@ interface TopLevelCategorySelectorProps {
 
 export default function TopLevelCategorySelector({ selectedTopLevel, onSelect }: TopLevelCategorySelectorProps) {
   const { data: topLevelData } = useCategoriesQuery();
-  const topLevelCategories = topLevelData?.categories || [];
+  const topLevelCategories: Category[] = topLevelData?.categories || [];
 
   return (
     <div className='space-y-2'>

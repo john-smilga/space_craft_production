@@ -16,7 +16,7 @@ User = get_user_model()
 class TestValidateInvitation:
     """Tests for validate_invitation endpoint."""
 
-    def test_validate_valid_invitation(self, api_client):
+    def test_validate_valid_invitation(self, api_client, assert_matches_schema):
         """Test validating a valid invitation token."""
         company = CompanyFactory()
         user = UserFactory(company=company, is_active=False)
@@ -25,6 +25,7 @@ class TestValidateInvitation:
         response = api_client.get("/api/auth/validate-invitation/", {"token": token})
 
         assert response.status_code == status.HTTP_200_OK
+        assert_matches_schema(response)  # Validate against OpenAPI schema
         assert response.data["valid"] is True
         assert response.data["email"] == user.email
         assert response.data["company"]["name"] == company.name
@@ -41,7 +42,12 @@ class TestValidateInvitation:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "expired" in response.data["error"].lower()
+        # Check standardized error format
+        assert "error" in response.data
+        assert "code" in response.data["error"]
+        assert "message" in response.data["error"]
+        assert response.data["error"]["code"] == "validation_error"
+        assert "expired" in response.data["error"]["message"].lower()
 
     def test_validate_already_used_invitation(self, api_client):
         """Test validating an invitation that's already been used."""
@@ -51,7 +57,9 @@ class TestValidateInvitation:
         response = api_client.get("/api/auth/validate-invitation/", {"token": token})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "already been used" in response.data["error"].lower()
+        assert "error" in response.data
+        assert response.data["error"]["code"] == "validation_error"
+        assert "already been used" in response.data["error"]["message"].lower()
 
     def test_validate_invalid_token(self, api_client):
         """Test validating an invalid token."""
@@ -60,21 +68,25 @@ class TestValidateInvitation:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "invalid" in response.data["error"].lower()
+        assert "error" in response.data
+        assert response.data["error"]["code"] == "validation_error"
+        assert "invalid" in response.data["error"]["message"].lower()
 
     def test_validate_missing_token(self, api_client):
         """Test validating without providing a token."""
         response = api_client.get("/api/auth/validate-invitation/")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "required" in response.data["error"].lower()
+        assert "error" in response.data
+        assert response.data["error"]["code"] == "validation_error"
+        assert "required" in response.data["error"]["message"].lower()
 
 
 @pytest.mark.django_db
 class TestRegister:
     """Tests for register endpoint."""
 
-    def test_register_with_valid_token(self, api_client):
+    def test_register_with_valid_token(self, api_client, assert_matches_schema):
         """Test registering a user with a valid invitation token."""
         company = CompanyFactory()
         user = UserFactory(company=company, is_active=False)
@@ -91,6 +103,7 @@ class TestRegister:
         )
 
         assert response.status_code == status.HTTP_200_OK
+        assert_matches_schema(response)  # Validate against OpenAPI schema
         assert "username" in response.data
         assert response.data["username"] == "newusername"
         assert "jwt" in response.cookies
@@ -135,7 +148,9 @@ class TestRegister:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "expired" in response.data["error"].lower()
+        assert "error" in response.data
+        assert response.data["error"]["code"] == "validation_error"
+        assert "expired" in response.data["error"]["message"].lower()
 
     def test_register_missing_password(self, api_client):
         """Test registering without password."""
@@ -147,14 +162,48 @@ class TestRegister:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "required" in response.data["error"].lower()
+        assert "error" in response.data
+        assert response.data["error"]["code"] == "validation_error"
+        assert "required" in response.data["error"]["message"].lower()
+
+    def test_register_response_shape(self, api_client, assert_matches_schema):
+        """Test that register returns correct user fields."""
+        company = CompanyFactory()
+        user = UserFactory(
+            company=company,
+            is_active=False,
+            first_name="Jane",
+            last_name="Smith",
+            email="jane@example.com",
+        )
+        token = user.generate_invitation_token()
+
+        response = api_client.post(
+            "/api/auth/register/",
+            {
+                "token": token,
+                "password": "newpassword123",
+                "username": "janesmith",
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert_matches_schema(response)  # Schema validation covers all fields
+
+        # Verify values (field presence is validated by schema)
+        assert response.data["username"] == "janesmith"
+        assert response.data["email"] == "jane@example.com"
+        assert response.data["first_name"] == "Jane"
+        assert response.data["last_name"] == "Smith"
+        assert response.data["is_active"] is True
 
 
 @pytest.mark.django_db
 class TestLogin:
     """Tests for login endpoint."""
 
-    def test_login_with_valid_credentials(self, api_client):
+    def test_login_with_valid_credentials(self, api_client, assert_matches_schema):
         """Test logging in with valid credentials."""
         user = UserFactory()
         user.set_password("password123")
@@ -170,6 +219,7 @@ class TestLogin:
         )
 
         assert response.status_code == status.HTTP_200_OK
+        assert_matches_schema(response)  # Validate against OpenAPI schema
         assert "email" in response.data
         assert response.data["email"] == user.email
         assert "jwt" in response.cookies
@@ -190,7 +240,9 @@ class TestLogin:
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "invalid credentials" in response.data["error"].lower()
+        assert "error" in response.data
+        assert response.data["error"]["code"] == "unauthorized"
+        assert "invalid credentials" in response.data["error"]["message"].lower()
 
     def test_login_with_nonexistent_email(self, api_client):
         """Test logging in with non-existent email."""
@@ -204,7 +256,9 @@ class TestLogin:
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "invalid credentials" in response.data["error"].lower()
+        assert "error" in response.data
+        assert response.data["error"]["code"] == "unauthorized"
+        assert "invalid credentials" in response.data["error"]["message"].lower()
 
     def test_login_inactive_user(self, api_client):
         """Test logging in with inactive account."""
@@ -222,7 +276,31 @@ class TestLogin:
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "not active" in response.data["error"].lower()
+        assert "error" in response.data
+        assert response.data["error"]["code"] == "unauthorized"
+        assert "not active" in response.data["error"]["message"].lower()
+
+    def test_login_response_shape(self, api_client, assert_matches_schema):
+        """Test that login returns correct user fields."""
+        user = UserFactory(
+            first_name="John", last_name="Doe", email="john@example.com"
+        )
+        user.set_password("password123")
+        user.save()
+
+        response = api_client.post(
+            "/api/auth/login/",
+            {"email": "john@example.com", "password": "password123"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert_matches_schema(response)  # Schema validation covers all fields
+
+        # Verify values (field presence is validated by schema)
+        assert response.data["email"] == "john@example.com"
+        assert response.data["first_name"] == "John"
+        assert response.data["last_name"] == "Doe"
 
 
 @pytest.mark.django_db
@@ -369,7 +447,9 @@ class TestUserViewSetDestroy:
         response = admin_client.delete(f"/api/users/{admin.slug}/")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "cannot delete admin" in response.data["error"].lower()
+        assert "error" in response.data
+        assert response.data["error"]["code"] == "validation_error"
+        assert "cannot delete admin" in response.data["error"]["message"].lower()
 
     def test_delete_self(self, admin_client, admin_user):
         """Test cannot delete own account (returns 404 because current user excluded from queryset)."""
@@ -443,11 +523,15 @@ class TestUserViewSetUpdateUsername:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "already taken" in response.data["error"].lower()
+        assert "error" in response.data
+        assert response.data["error"]["code"] == "validation_error"
+        assert "already taken" in response.data["error"]["message"].lower()
 
     def test_update_username_missing(self, admin_client):
         """Test updating username without providing new username."""
         response = admin_client.patch("/api/users/me/username/", {}, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "required" in response.data["error"].lower()
+        assert "error" in response.data
+        assert response.data["error"]["code"] == "validation_error"
+        assert "required" in response.data["error"]["message"].lower()

@@ -51,12 +51,8 @@ export function StoreForm({ storeSlug, mode }: StoreFormProps) {
     };
 
     try {
-      const result = await mutation.mutateAsync(input);
-      if (mode === 'create') {
-        router.push('/dashboard/stores');
-      } else if (result) {
-        router.push(`/dashboard/stores/${result.slug}`);
-      }
+      await mutation.mutateAsync(input);
+      router.push('/dashboard/stores');
     } catch {
       // Error handled by mutation
     }

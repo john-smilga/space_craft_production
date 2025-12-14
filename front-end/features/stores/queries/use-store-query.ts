@@ -1,16 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
 import api from '@/lib/axios';
-import type { Store } from '../types';
+import { schemas } from '@/lib/generated/api-schemas';;
+
+type StoreType = z.infer<typeof schemas.Store>;
 
 export function useStoreQuery(storeSlug: string | null) {
   return useQuery({
     queryKey: ['store', storeSlug],
-    queryFn: async (): Promise<Store> => {
+    queryFn: async (): Promise<StoreType> => {
       if (!storeSlug) {
         throw new Error('Store slug is required');
       }
       const response = await api.get(`/stores/${storeSlug}/`);
-      return response.data;
+      return schemas.Store.parse(response.data);
     },
     enabled: !!storeSlug,
   });

@@ -22,7 +22,8 @@ export default function ShelvesTable() {
 
   const cols = useMemo(() => {
     if (!widthIn) return 1;
-    const normalizedWidth = Math.min(Math.max(widthIn, 24), 240);
+    const widthNum = parseFloat(widthIn);
+    const normalizedWidth = Math.min(Math.max(widthNum, 24), 240);
     return Math.max(1, Math.floor(normalizedWidth / CELL_WIDTH_IN));
   }, [widthIn]);
 

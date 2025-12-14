@@ -1,13 +1,53 @@
 import { useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
 import api from '@/lib/axios';
 import type { PlanogramDetailResponse, Planogram } from '../types';
-import type { DisplaysResponse, StandardDisplaysResponse } from '@/features/displays/types';
 import type { AvailableItem } from '../types';
 import type { SelectableCategoriesResponse } from '@/types/categories';
 import { usePlanogramStore } from '../store';
-import { PlanogramDetailResponseSchema } from '../schemas/planogram-detail-response-schema';
-import { AvailableProductsResponseSchema } from '../schemas/available-products-response-schema';
+import { useStandardDisplaysQuery } from '@/features/displays';
+import { schemas } from '@/lib/generated/api-schemas';
+import { useDisplaysQuery } from '@/features/displays/queries';
+
+// Schema for layout item structure (not in API schemas since it's frontend-specific structure)
+const LayoutItemSchema = z.object({
+  i: z.string(),
+  x: z.number(),
+  y: z.number(),
+  w: z.number(),
+  h: z.number(),
+  meta: z.object({
+    id: z.number(),
+    name: z.string(),
+    category: z.string(),
+    color: z.string().optional(),
+    score: z.number(),
+    pack_width_in: z.number(),
+    pack_height_in: z.number(),
+  }),
+});
+
+const GridResponseSchema = z.object({
+  grid: z.object({
+    cols: z.number(),
+    rows: z.number(),
+    cellWidthIn: z.number(),
+  }),
+  rows: z.array(
+    z.object({
+      id: z.number(),
+      category: z.string().nullable(),
+      name: z.string(),
+      items: z.array(LayoutItemSchema),
+    })
+  ),
+});
+
+// API returns planogram fields spread out + layout field
+const PlanogramDetailResponseSchema = schemas.Planogram.extend({
+  layout: GridResponseSchema.optional(),
+});
 
 export function usePlanogramData(planogramSlug: string | null) {
   const initializeForm = usePlanogramStore.use.initializeForm();
@@ -25,7 +65,13 @@ export function usePlanogramData(planogramSlug: string | null) {
       const { data } = await api.get(`/planograms/${planogramSlug}/`);
       // Validate response structure matches expected format
       try {
-        return PlanogramDetailResponseSchema.parse(data);
+        const validated = PlanogramDetailResponseSchema.parse(data);
+        // Extract layout and return structured response
+        const { layout, ...planogramData } = validated;
+        return {
+          planogram: planogramData,
+          layout,
+        };
       } catch (error) {
         console.error('Planogram response validation failed:', error);
         throw new Error('Invalid planogram response format');
@@ -36,24 +82,11 @@ export function usePlanogramData(planogramSlug: string | null) {
   });
 
   // Fetch company displays (custom displays)
-  const { data: displaysData } = useQuery({
-    queryKey: ['displays'],
-    queryFn: async (): Promise<DisplaysResponse> => {
-      const { data } = await api.get('/displays/');
-      return data;
-    },
-  });
-  const companyDisplays = displaysData?.displays || [];
+  const { data: companyDisplays = [] } = useDisplaysQuery();
 
   // Fetch standard displays
-  const { data: standardsData } = useQuery({
-    queryKey: ['standard-displays'],
-    queryFn: async (): Promise<StandardDisplaysResponse> => {
-      const { data } = await api.get('/displays/standards/');
-      return data as StandardDisplaysResponse;
-    },
-  });
-  const standardDisplays = ((standardsData as StandardDisplaysResponse)?.standards) || (Array.isArray(standardsData) ? standardsData : []);
+  const { data: standardsData } = useStandardDisplaysQuery();
+  const standardDisplays = standardsData?.standards || [];
 
   // Fetch leaf categories (categories that have products directly as children, not subcategories)
   const leafCategoriesQuery = useQuery({
@@ -73,7 +106,7 @@ export function usePlanogramData(planogramSlug: string | null) {
         return;
       }
 
-      const categoryIds = planogram.category_ids || [];
+      const categoryIds = Array.isArray(planogram.category_ids) ? planogram.category_ids : [];
       const currentSeason = planogram.season || 'summer';
 
       if (categoryIds.length === 0) {
@@ -86,18 +119,18 @@ export function usePlanogramData(planogramSlug: string | null) {
         const categoryIdsStr = categoryIds.join(',');
         const response = await api.get(`/products/by-categories/?category_ids=${categoryIdsStr}&season=${currentSeason}`);
 
-        // Validate response structure
-        const validatedResponse = AvailableProductsResponseSchema.parse(response.data);
+        // Validate response structure using generated schema
+        const validatedResponse = schemas.ProductListResponse.parse(response.data);
         const products = validatedResponse.products || [];
 
         // Convert to AvailableItem format
         const items: AvailableItem[] = products.map((product) => ({
           id: product.id,
           name: product.name,
-          category: product.category || 'Unknown',
-          color: product.color || '#9ca3af',
-          score: product.overall_score || 0,
-          margin: product.margin || 0,
+          category: product.category ?? 'Unknown',
+          color: product.color ?? '#9ca3af',
+          score: product.overall_score,
+          margin: product.margin,
           pack_width_in: product.pack_width_in,
           pack_height_in: product.pack_height_in,
         }));
@@ -119,7 +152,7 @@ export function usePlanogramData(planogramSlug: string | null) {
       const planogram = planogramQuery.data.planogram;
 
       // Use display ID directly
-      const displayId = planogram.display?.id?.toString() || undefined;
+      const displayId = planogram.display?.toString() || undefined;
 
       // Initialize form state
       initializeForm({
@@ -127,9 +160,9 @@ export function usePlanogramData(planogramSlug: string | null) {
         display_id: displayId,
         season: planogram.season,
         shelf_count: planogram.shelf_count,
-        width_in: planogram.width_in,
-        height_in: planogram.height_in,
-        category_ids: planogram.category_ids,
+        width_in: parseFloat(planogram.width_in),
+        height_in: parseFloat(planogram.height_in),
+        category_ids: Array.isArray(planogram.category_ids) ? planogram.category_ids : [],
       });
 
       // Fetch available products when planogram loads

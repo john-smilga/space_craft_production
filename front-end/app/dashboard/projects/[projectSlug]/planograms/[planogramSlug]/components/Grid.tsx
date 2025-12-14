@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import GridLayout, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import RowHeader from './RowHeader';
-import type { LayoutItem } from '@/types/planograms';
+import type { LayoutItem } from '@/features/planogram/types';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { usePlanogramStore, usePlanogramForm, usePlanogramData, useGridActions } from '@/features/planogram';

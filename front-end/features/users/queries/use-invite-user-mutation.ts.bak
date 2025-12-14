@@ -1,0 +1,23 @@
+import { z } from 'zod';
+import api from '@/lib/axios';
+import { useAppMutation } from '@/lib/react-query/hooks';
+import { UserInviteRequest, UserInviteResponse } from '@/lib/generated/api-schemas';
+
+type InviteUserInput = z.infer<typeof UserInviteRequest>;
+type InviteResponse = z.infer<typeof UserInviteResponse>;
+
+export function useInviteUserMutation() {
+  return useAppMutation<InviteResponse, InviteUserInput>(
+    async (input) => {
+      const validatedInput = UserInviteRequest.parse(input);
+      const response = await api.post('/users/invite/', validatedInput);
+      return UserInviteResponse.parse(response.data);
+    },
+    {
+      successMessage: 'User invitation created successfully',
+      errorMessage: 'Failed to create invitation',
+      invalidateQueries: [['users']],
+    }
+  );
+}
+

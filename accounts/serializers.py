@@ -137,6 +137,44 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(required=True, write_only=True)
 
 
+class LogoutResponseSerializer(serializers.Serializer):
+    """Output serializer for logout response."""
+
+    message = serializers.CharField()
+
+
+class CompanyInfoSerializer(serializers.Serializer):
+    """Serializer for basic company info in invitation validation."""
+
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+
+
+class ValidateInvitationResponseSerializer(serializers.Serializer):
+    """Output serializer for invitation validation response."""
+
+    valid = serializers.BooleanField()
+    email = serializers.EmailField()
+    company = CompanyInfoSerializer(allow_null=True)
+
+
+class RegisterRequestSerializer(serializers.Serializer):
+    """Input serializer for registration with invitation token."""
+
+    token = serializers.CharField(required=True)
+    password = serializers.CharField(required=True, write_only=True)
+    username = serializers.CharField(required=False, max_length=150)
+
+
+class UserInviteResponseSerializer(serializers.Serializer):
+    """Output serializer for user invitation response."""
+
+    message = serializers.CharField()
+    invitation_token = serializers.CharField()
+    invitation_link = serializers.CharField()
+    user = UserSerializer()
+
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Custom token serializer with additional claims."""
 

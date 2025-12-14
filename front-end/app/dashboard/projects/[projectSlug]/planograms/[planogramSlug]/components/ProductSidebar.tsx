@@ -2,9 +2,12 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
 import api from '@/lib/axios';
-import type { Product } from '@/types/products';
+import { schemas } from '@/lib/generated/api-schemas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+type ProductType = z.infer<typeof schemas.Product>;
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -123,7 +126,7 @@ function CategoryItem({ path, categoryName, season }: CategoryItemProps) {
       ?.replace(/_/g, ' ')
       .replace(/\b\w/g, (l) => l.toUpperCase()) || '';
 
-  const products: Product[] = useMemo(() => {
+  const products: ProductType[] = useMemo(() => {
     if (!isProducts) return [];
     return items
       .filter((item): item is { id: number; name: string; pack_width_in?: number; pack_height_in?: number; expiration_stability?: number; margin?: number; sales_velocity?: number; seasonality?: number; overall_score?: number } => 'id' in item)
@@ -132,19 +135,18 @@ function CategoryItem({ path, categoryName, season }: CategoryItemProps) {
         name: item.name,
         pack_width_in: item.pack_width_in || 0,
         pack_height_in: item.pack_height_in || 0,
-        expiration_stability: item.expiration_stability,
-        margin: item.margin,
-        sales_velocity: item.sales_velocity,
-        seasonality: item.seasonality,
-        overall_score: item.overall_score,
+        margin: item.margin || 0,
+        sales_velocity: item.sales_velocity || 0,
+        overall_score: item.overall_score || 0,
         category: extractedCategoryName,
+        color: undefined,
       }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isProducts, extractedCategoryName]);
 
   // Group products by score ranges
   const groupedProducts = useMemo(() => {
-    const groups: Record<string, Product[]> = {
+    const groups: Record<string, ProductType[]> = {
       '90-100%': [],
       '80-89%': [],
       '70-79%': [],
@@ -155,7 +157,7 @@ function CategoryItem({ path, categoryName, season }: CategoryItemProps) {
 
     products.forEach((product) => {
       const score = product.overall_score;
-      if (score === undefined || score === null) {
+      if (score === 0) {
         groups['No Score'].push(product);
       } else {
         const scorePercent = score * 100;

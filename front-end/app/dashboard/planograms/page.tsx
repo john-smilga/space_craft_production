@@ -49,12 +49,12 @@ export default function PlanogramsPage() {
               key={planogram.id}
               name={planogram.name}
               slug={planogram.slug}
-              projectName={planogram.project?.name || planogram.project_name || 'Unknown'}
-              projectSlug={planogram.project?.slug || planogram.project_slug || ''}
-              displayName={planogram.display?.name || planogram.display_name || null}
-              seasonDisplay={planogram.season_display || planogram.season}
-              categories={planogram.categories}
-              categoryIds={planogram.category_ids || []}
+              projectName={planogram.project_name || 'Unknown'}
+              projectSlug={planogram.project_slug || ''}
+              displayName={planogram.display_name || null}
+              seasonDisplay={planogram.season || 'summer'}
+              categories={[]}
+              categoryIds={[]}
             />
           ))}
         </div>

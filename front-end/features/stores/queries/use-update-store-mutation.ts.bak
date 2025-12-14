@@ -1,0 +1,29 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
+import api from '@/lib/axios';
+import { useAppMutation } from '@/lib/react-query/hooks';
+import { StoreUpdateRequest, StoreUpdate } from '@/lib/generated/api-schemas';
+
+type UpdateStoreInput = z.infer<typeof StoreUpdateRequest>;
+type StoreResponse = z.infer<typeof StoreUpdate>;
+
+export function useUpdateStoreMutation(storeSlug: string) {
+  const queryClient = useQueryClient();
+
+  return useAppMutation<StoreResponse, UpdateStoreInput>(
+    async (input) => {
+      const validatedInput = StoreUpdateRequest.parse(input);
+      const response = await api.put(`/stores/${storeSlug}/`, validatedInput);
+      return StoreUpdate.parse(response.data);
+    },
+    {
+      successMessage: 'Store updated successfully',
+      errorMessage: 'Failed to update store',
+      invalidateQueries: [['stores'], ['store', storeSlug]],
+      onSuccess: (data) => {
+        queryClient.invalidateQueries({ queryKey: ['store', data.name] });
+      },
+    }
+  );
+}
+

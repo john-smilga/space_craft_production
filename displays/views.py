@@ -3,6 +3,7 @@
 from typing import Any
 
 from django.db.models import Q, QuerySet
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -51,6 +52,11 @@ class DisplayViewSet(SlugLookupMixin, BaseViewSet):
 
         return queryset.filter(company__isnull=True).order_by("-created_at")
 
+    @extend_schema(
+        request=DisplayCreateSerializer,
+        responses={201: DisplaySerializer},
+        description="Create a new custom display.",
+    )
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Create a new custom display."""
         serializer = self.get_serializer(data=request.data)
@@ -75,6 +81,10 @@ class DisplayViewSet(SlugLookupMixin, BaseViewSet):
 
         return super().destroy(request, *args, **kwargs)
 
+    @extend_schema(
+        responses={200: DisplayTypeSerializer(many=True)},
+        description="Get available display types.",
+    )
     @action(detail=False, methods=["get"], url_path="types")
     def types(self, request: Request) -> Response:
         """Get available display types."""
@@ -84,6 +94,10 @@ class DisplayViewSet(SlugLookupMixin, BaseViewSet):
         serializer = DisplayTypeSerializer(types_data, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        responses={200: DisplaySerializer(many=True)},
+        description="Get standard display templates.",
+    )
     @action(detail=False, methods=["get"], url_path="standards")
     def standards(self, request: Request) -> Response:
         """Get standard display templates."""

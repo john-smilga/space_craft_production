@@ -12,8 +12,17 @@ import { formatDate } from '@/lib/utils';
 import { useProjectQuery, useDeleteProjectMutation } from '../../queries';
 import { ProjectPlanogramsCard } from '../project-planograms-card/project-planograms-card';
 import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
 import api from '@/lib/axios';
-import type { PlanogramsResponse } from '@/types/planograms';
+import { schemas } from '@/lib/generated/api-schemas';
+
+type PlanogramType = z.infer<typeof schemas.PlanogramList>;
+
+// Schema for the project planograms endpoint response
+const ProjectPlanogramsResponseSchema = z.object({
+  planograms: z.array(schemas.PlanogramList)
+});
+type PlanogramsResponse = z.infer<typeof ProjectPlanogramsResponseSchema>;
 
 interface ProjectDetailProps {
   projectSlug: string;
@@ -30,7 +39,7 @@ export function ProjectDetail({ projectSlug }: ProjectDetailProps) {
     queryKey: ['planograms', 'project', projectSlug],
     queryFn: async (): Promise<PlanogramsResponse> => {
       const response = await api.get(`/projects/${projectSlug}/planograms/`);
-      return response.data;
+      return ProjectPlanogramsResponseSchema.parse(response.data);
     },
     enabled: !!projectSlug,
   });
@@ -92,18 +101,18 @@ export function ProjectDetail({ projectSlug }: ProjectDetailProps) {
               <DetailField
                 label='Store'
                 value={
-                  project.store ? (
-                    <Link href={`/dashboard/stores/${project.store.slug}`} className='text-primary hover:underline'>
-                      {project.store.name}
+                  project.store_slug ? (
+                    <Link href={`/dashboard/stores/${project.store_slug}`} className='text-primary hover:underline'>
+                      {project.store_name}
                     </Link>
                   ) : (
                     <span className='text-destructive'>Store not found</span>
                   )
                 }
               />
-              <DetailField label='Store Code' value={project.store?.store_code || 'N/A'} />
+              <DetailField label='Store Code' value={project.store_code || 'N/A'} />
               <DetailField label='Created At' value={formatDate(project.created_at)} />
-              <DetailField label='Created By' value={project.created_by?.username || 'N/A'} />
+              <DetailField label='Created By' value={project.created_by_username || 'N/A'} />
               <div className='md:col-start-1 md:row-start-2'></div>
               <div className='md:col-start-2 md:row-start-2'></div>
               <div className='md:col-start-3 md:row-start-2'></div>

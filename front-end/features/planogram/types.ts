@@ -1,66 +1,18 @@
-export interface Planogram {
-  id: number;
-  name: string;
-  season: string;
-  season_display?: string;
-  category_ids?: number[];
-  categories: Array<{
-    id: number;
-    slug: string;
-    name: string;
-  }>;
-  slug: string;
-  project?: {
-    id: number;
-    name: string;
-    slug: string;
-  };
-  project_name?: string;
-  project_slug?: string;
-  display?: {
-    id: number | null;
-    name: string | null;
-    type: string | null;
-    slug: string | null;
-    width_in?: number;
-    height_in?: number;
-    depth_in?: number;
-    shelf_count?: number;
-  } | null;
-  display_name?: string | null;
-  width_in: number;
-  height_in: number;
-  depth_in?: number | null;
-  shelf_count: number;
-  shelf_spacing?: number | null;
-  company?: {
-    id: number;
-    name: string;
-  };
-  company_name?: string;
-  created_at?: string;
-  updated_at?: string;
-  preserve_layout?: boolean;
-  created_by?: {
-    id: number;
-    username: string;
-  } | null;
-  updated_by?: {
-    id: number;
-    username: string;
-  } | null;
-}
+import { z } from 'zod';
+import { schemas } from '@/lib/generated/api-schemas';
 
-export interface PlanogramsResponse {
-  planograms: Planogram[];
-}
+// Export the TYPE (not the schema) as Planogram for backward compatibility
+export type Planogram = z.infer<typeof schemas.Planogram>;
+export type PlanogramType = z.infer<typeof schemas.Planogram>;
+export type CreatePlanogramInput = z.infer<typeof schemas.PlanogramCreateRequest>;
+export type UpdatePlanogramInput = z.infer<typeof schemas.PlanogramUpdateRequest>;
+export type PlanogramsResponse = z.infer<typeof schemas.PaginatedPlanogramListList>;
+export type Season = z.infer<typeof schemas.SeasonEnum>;
 
 export interface PlanogramDetailResponse {
-  planogram: Planogram;
+  planogram: PlanogramType;
   layout?: GridResponse;
 }
-
-export type PlanogramResponse = Planogram;
 
 export interface LayoutItem {
   i: string;
@@ -98,5 +50,11 @@ export interface GridResponse {
     name: string;
     items: LayoutItem[];
   }>;
+}
+
+export interface PlanogramCategory {
+  id: number;
+  name: string;
+  slug?: string;
 }
 

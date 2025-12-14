@@ -3,16 +3,19 @@
 import logging
 from typing import Any
 
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from common.exceptions import NotFoundError
 from common.mixins import CompanyFilterMixin, SlugLookupMixin
 from common.viewsets import BaseViewSet
 from planograms.models import Planogram
 from planograms.serializers import (
+    AIOverviewResponseSerializer,
     PlanogramCreateSerializer,
     PlanogramLayoutSerializer,
     PlanogramListSerializer,
@@ -54,6 +57,10 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         queryset = super().get_queryset()
         return queryset.order_by("-created_at")
 
+    @extend_schema(
+        responses={200: PlanogramSerializer},
+        description="Retrieve planogram with layout.",
+    )
     def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Retrieve planogram with layout."""
         instance = self.get_object()
@@ -65,6 +72,11 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
 
         return Response({**planogram_data, "layout": layout})
 
+    @extend_schema(
+        request=PlanogramCreateSerializer,
+        responses={201: PlanogramSerializer},
+        description="Create a new planogram with optional display selection and auto-generated layout.",
+    )
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Create a new planogram."""
         serializer = self.get_serializer(
@@ -77,11 +89,8 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         if not display:
             display = auto_select_display(request.user.company)
             if not display:
-                return Response(
-                    {
-                        "error": "No display found. Please ensure at least one standard display exists."
-                    },
-                    status=status.HTTP_404_NOT_FOUND,
+                raise NotFoundError(
+                    "No display found. Please ensure at least one standard display exists."
                 )
 
         width_in = serializer.validated_data.get("width_in", display.width_in)
@@ -107,8 +116,16 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         )
 
         output_serializer = PlanogramSerializer(planogram)
-        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+        planogram_data = output_serializer.data
+        layout = get_or_compute_layout(planogram)
 
+        return Response({**planogram_data, "layout": layout}, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=PlanogramUpdateSerializer,
+        responses={200: PlanogramSerializer},
+        description="Update planogram.",
+    )
     def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Update planogram."""
         instance = self.get_object()
@@ -125,6 +142,11 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
 
         return Response({**planogram_data, "layout": layout})
 
+    @extend_schema(
+        request=PlanogramLayoutSerializer,
+        responses={200: PlanogramSerializer},
+        description="Save planogram layout and return updated planogram data.",
+    )
     @action(detail=True, methods=["post"], url_path="layout")
     def save_layout(self, request: Request, slug: str = None) -> Response:
         """Save planogram layout."""
@@ -143,6 +165,10 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         output_serializer = PlanogramSerializer(instance)
         return Response(output_serializer.data)
 
+    @extend_schema(
+        responses={200: AIOverviewResponseSerializer},
+        description="Generate AI-powered overview of the planogram layout.",
+    )
     @action(detail=True, methods=["post"], url_path="ai-overview")
     def ai_overview(self, request: Request, slug: str = None) -> Response:
         """Generate AI overview for planogram."""

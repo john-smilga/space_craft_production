@@ -1,18 +1,16 @@
 import { useMutation } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { schemas } from '@/lib/generated/api-schemas';
 import { usePlanogramStore } from '../store';
 
 interface AIOverviewVariables {
   slug: string;
 }
 
-interface AIOverviewResponse {
-  overview: string;
-}
-
 async function fetchAIOverview(variables: AIOverviewVariables): Promise<string> {
-  const { data } = await api.post<AIOverviewResponse>(`/planograms/${variables.slug}/ai-overview/`);
-  return data.overview;
+  const { data } = await api.post(`/planograms/${variables.slug}/ai-overview/`);
+  const validatedResponse = schemas.AIOverviewResponse.parse(data);
+  return validatedResponse.overview;
 }
 
 export function useAIOverviewMutation() {

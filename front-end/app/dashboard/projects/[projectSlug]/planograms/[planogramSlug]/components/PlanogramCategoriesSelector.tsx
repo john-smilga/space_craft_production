@@ -56,7 +56,7 @@ export default function PlanogramCategoriesSelector() {
           <div className='flex flex-wrap gap-2'>
             {selectedCategoryIds.map((categoryId) => {
               const leafCategory = leafCategories.find((c: { id: number }) => c.id === categoryId);
-              const planogramCategory = planogram?.categories?.find((c: { id: number }) => c.id === categoryId);
+              const planogramCategory = (planogram?.categories as Array<{ id: number; name: string }> | undefined)?.find((c) => c.id === categoryId);
               const categoryName = leafCategory?.name || planogramCategory?.name || `Category ${categoryId}`;
               return (
                 <Badge key={categoryId} variant='secondary' className='inline-flex items-center gap-2'>

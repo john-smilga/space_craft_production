@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
-import type { Display } from '../../types';
+import type { DisplayListType } from '../../types';
 
 interface DisplayCardProps {
-  display: Display;
+  display: DisplayListType;
 }
 
 export function DisplayCard({ display }: DisplayCardProps) {
@@ -14,7 +14,7 @@ export function DisplayCard({ display }: DisplayCardProps) {
           <div className='mb-2'>
             <h3 className='text-xl font-semibold'>{display.name}</h3>
           </div>
-          <p className='text-sm text-muted-foreground capitalize mb-2'>{display.type_display}</p>
+          <p className='text-sm text-muted-foreground capitalize mb-2'>{display.type.replace(/_/g, ' ')}</p>
           <p className='text-sm'>
             {display.width_in}&quot; × {display.height_in}&quot; × {display.depth_in}&quot; | {display.shelf_count} shelf{display.shelf_count !== 1 ? 's' : ''}
           </p>

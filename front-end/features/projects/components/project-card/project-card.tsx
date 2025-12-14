@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
-import type { Project } from '../../types';
+import type { ProjectListType } from '../../types';
 
 interface ProjectCardProps {
-  project: Project;
+  project: ProjectListType;
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {

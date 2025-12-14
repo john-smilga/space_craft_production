@@ -1,12 +1,17 @@
+import { z } from 'zod';
 import api from '@/lib/axios';
 import { useAppMutation } from '@/lib/react-query/hooks';
-import type { Store, CreateStoreInput } from '../types';
+import { schemas } from '@/lib/generated/api-schemas';;
+
+type CreateStoreInput = z.infer<typeof schemas.StoreCreateRequest>;
+type StoreResponse = z.infer<typeof schemas.Store>;
 
 export function useCreateStoreMutation() {
-  return useAppMutation<Store, CreateStoreInput>(
+  return useAppMutation<StoreResponse, CreateStoreInput>(
     async (input) => {
-      const response = await api.post('/stores/', input);
-      return response.data;
+      const validatedInput = schemas.StoreCreateRequest.parse(input);
+      const response = await api.post('/stores/', validatedInput);
+      return schemas.Store.parse(response.data);
     },
     {
       successMessage: 'Store created successfully',

@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
+import { z } from 'zod'
 import api from '@/lib/axios'
-import { userSchema } from '../schemas/user-schema'
+import { schemas } from '@/lib/generated/api-schemas'
 import { useAuthStore } from '../store'
-import type { User } from '../types'
 
-async function fetchCurrentUser(): Promise<User> {
+type UserType = z.infer<typeof schemas.User>
+
+async function fetchCurrentUser(): Promise<UserType> {
   const { data } = await api.get('/users/me/')
-  return userSchema.parse(data)
+  return schemas.User.parse(data)
 }
 
 export function useCurrentUserQuery() {

@@ -1,12 +1,60 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { z } from 'zod';
 import api from '@/lib/axios';
+import { schemas } from '@/lib/generated/api-schemas';
 import { usePlanogramStore } from '../store';
-import type { PlanogramDetailResponse } from '../types';
+import type { PlanogramDetailResponse, GridResponse } from '../types';
+
+// Schema for layout item structure
+const LayoutItemSchema = z.object({
+  i: z.string(),
+  x: z.number(),
+  y: z.number(),
+  w: z.number(),
+  h: z.number(),
+  meta: z.object({
+    id: z.number(),
+    name: z.string(),
+    category: z.string(),
+    color: z.string().optional(),
+    score: z.number(),
+    pack_width_in: z.number(),
+    pack_height_in: z.number(),
+  }),
+});
+
+const GridResponseSchema = z.object({
+  grid: z.object({
+    cols: z.number(),
+    rows: z.number(),
+    cellWidthIn: z.number(),
+  }),
+  rows: z.array(
+    z.object({
+      id: z.number(),
+      category: z.string().nullable(),
+      name: z.string(),
+      items: z.array(LayoutItemSchema),
+    })
+  ),
+});
+
+// API returns planogram fields spread out + layout field
+const PlanogramDetailResponseSchema = schemas.Planogram.extend({
+  layout: GridResponseSchema.optional(),
+});
 
 async function fetchPlanogram(slug: string): Promise<PlanogramDetailResponse> {
   const { data } = await api.get(`/planograms/${slug}/`);
-  return data;
+  const validated = PlanogramDetailResponseSchema.parse(data);
+  
+  // Extract layout and return structured response
+  const { layout, ...planogramData } = validated;
+  return {
+    planogram: planogramData,
+    layout,
+  };
 }
 
 export function usePlanogramQuery(slug: string | null) {
@@ -25,16 +73,16 @@ export function usePlanogramQuery(slug: string | null) {
   useEffect(() => {
     if (query.data) {
       const planogram = query.data.planogram;
-      const displayId = planogram.display?.id?.toString() || undefined;
+      const displayId = planogram.display?.toString() || undefined;
 
       initializeForm({
         name: planogram.name,
         display_id: displayId,
         season: planogram.season,
         shelf_count: planogram.shelf_count,
-        width_in: planogram.width_in,
-        height_in: planogram.height_in,
-        category_ids: planogram.category_ids,
+        width_in: parseFloat(planogram.width_in),
+        height_in: parseFloat(planogram.height_in),
+        category_ids: Array.isArray(planogram.category_ids) ? planogram.category_ids : [],
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

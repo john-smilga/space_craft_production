@@ -1,5 +1,4 @@
-import { useRouter, useParams } from 'next/navigation';
-import { useUpdatePlanogramMutation, useDeletePlanogramMutation } from '../queries';
+import { useUpdatePlanogramMutation, useSaveLayoutMutation, useDeletePlanogramMutation } from '../queries';
 import type { PlanogramDetailResponse, Planogram, LayoutItem } from '../types';
 import { usePlanogramStore } from '../store';
 
@@ -10,7 +9,6 @@ export function usePlanogramForm(
   fetchAvailableProducts: (overridePlanogram?: Planogram) => Promise<void>
 ) {
   const name = usePlanogramStore.use.name();
-  const selectedDisplay = usePlanogramStore.use.selectedDisplay();
   const season = usePlanogramStore.use.season();
   const shelfCount = usePlanogramStore.use.shelfCount();
   const widthIn = usePlanogramStore.use.widthIn();
@@ -23,11 +21,8 @@ export function usePlanogramForm(
   const setSelectedCategoryIds = usePlanogramStore.use.setSelectedCategoryIds();
   const setSkipNextInitialization = usePlanogramStore.use.setSkipNextInitialization();
 
-  const router = useRouter();
-  const params = useParams();
-  const projectSlug = params?.projectSlug as string;
-
   const updateMutation = useUpdatePlanogramMutation();
+  const saveLayoutMutation = useSaveLayoutMutation();
   const deleteMutation = useDeletePlanogramMutation();
 
   // Save layout handler
@@ -39,21 +34,17 @@ export function usePlanogramForm(
       return;
     }
 
-    const { name, width_in, height_in, shelf_count } = planogramData.planogram;
-
     try {
-      await updateMutation.mutateAsync({
+      // Save only the layout with items - no other planogram fields
+      await saveLayoutMutation.mutateAsync({
         slug: planogramSlug,
-        name,
-        width_in,
-        height_in,
-        shelf_count,
         layout,
         preserve_layout: true,
       });
+
       await refetchPlanogram();
     } catch {
-      // Error handled by mutation
+      // Error handled by mutations
     }
   };
 
@@ -76,13 +67,7 @@ export function usePlanogramForm(
     }
 
     // Only include fields that have changed
-    if (selectedDisplay) {
-      const displayId = parseInt(selectedDisplay, 10);
-      const currentDisplayId = planogramData.planogram.display?.id;
-      if (displayId !== currentDisplayId) {
-        updates.display_id = displayId;
-      }
-    }
+    // Note: Display cannot be changed after creation per API limitations
     if (season && season !== planogramData.planogram.season) {
       updates.season = season;
     }
@@ -90,7 +75,7 @@ export function usePlanogramForm(
       updates.shelf_count = shelfCount;
     }
     if (selectedCategoryIds.length > 0) {
-      const currentIds = planogramData.planogram.category_ids || [];
+      const currentIds = Array.isArray(planogramData.planogram.category_ids) ? planogramData.planogram.category_ids : [];
       if (JSON.stringify(selectedCategoryIds.sort()) !== JSON.stringify(currentIds.sort())) {
         updates.category_ids = selectedCategoryIds;
       }
@@ -105,8 +90,8 @@ export function usePlanogramForm(
         const result = await updateMutation.mutateAsync({
           slug: planogramSlug,
           name: name.trim(),
-          width_in: widthIn,
-          height_in: heightIn,
+          width_in: widthIn.toString(),
+          height_in: heightIn.toString(),
           shelf_count: shelfCount > 0 ? shelfCount : (planogramData!.planogram.shelf_count ?? 1),
           ...updates,
         });
@@ -117,28 +102,20 @@ export function usePlanogramForm(
           if (updatedPlanogram.name) {
             setName(updatedPlanogram.name);
           }
-          if (updatedPlanogram.display?.id) {
-            setSelectedDisplay(updatedPlanogram.display.id.toString());
-          }
           if (updatedPlanogram.season) {
             setSeason(updatedPlanogram.season);
           }
           // Always update shelf_count, default to 1 if missing
           setShelfCount(updatedPlanogram.shelf_count && updatedPlanogram.shelf_count > 0 ? updatedPlanogram.shelf_count : 1);
-          if (updatedPlanogram.category_ids) {
+          if (Array.isArray(updatedPlanogram.category_ids)) {
             setSelectedCategoryIds(updatedPlanogram.category_ids);
           }
 
-          // Refetch available products after regeneration (in case season or categories changed)
-          await fetchAvailableProducts(updatedPlanogram);
-
-          // Refetch to get latest state
+          // Refetch to get latest state (including display and slug)
           await refetchPlanogram();
-
-          // Update URL if slug changed (slug is generated from name)
-          if (updatedPlanogram.slug && updatedPlanogram.slug !== planogramSlug) {
-            router.push(`/dashboard/projects/${projectSlug}/planograms/${updatedPlanogram.slug}`);
-          }
+          
+          // Refetch available products after regeneration (in case season or categories changed)
+          await fetchAvailableProducts();
         }
       } catch {
         // Error handled by mutation
@@ -152,13 +129,14 @@ export function usePlanogramForm(
     // Trigger regeneration when display changes
     if (planogramData?.planogram) {
       try {
+        // Note: Display cannot be changed after creation per API limitations
+        // Just update the UI state
         const result = await updateMutation.mutateAsync({
           slug: planogramSlug,
           name: planogramData.planogram.name,
           width_in: planogramData.planogram.width_in,
           height_in: planogramData.planogram.height_in,
           shelf_count: planogramData.planogram.shelf_count,
-          display_id: parseInt(displayId, 10),
           preserve_layout: false,
         });
         if (result) {

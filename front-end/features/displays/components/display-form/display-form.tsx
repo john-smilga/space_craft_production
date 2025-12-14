@@ -33,7 +33,7 @@ export function DisplayForm() {
       return;
     }
     
-    const standard = standards.find((s) => s.id.toString() === selectedStandard);
+    const standard = standards.find((s: { id: number; [key: string]: unknown }) => s.id.toString() === selectedStandard);
     if (!standard) {
       return;
     }
@@ -55,15 +55,15 @@ export function DisplayForm() {
     try {
       const result = await createMutation.mutateAsync({
         name,
-        type,
-        width_in: parseFloat(widthIn),
-        height_in: parseFloat(heightIn),
-        depth_in: parseFloat(depthIn),
+        type: type as "gondola" | "endcap" | "wall_unit" | "refrigerated_case" | "freezer_case" | "island_display" | "checkout_counter" | "shelf" | "rack" | "bin" | "other",
+        width_in: widthIn,
+        height_in: heightIn,
+        depth_in: depthIn,
         shelf_count: parseInt(shelfCount),
-        shelf_spacing: shelfSpacing ? parseFloat(shelfSpacing) : null,
+        shelf_spacing: shelfSpacing || null,
       });
 
-      router.push(`/dashboard/displays/${result.display.slug}`);
+      router.push(`/dashboard/displays/${result.slug}`);
     } catch {
       // Error handled by mutation
     }
@@ -90,7 +90,7 @@ export function DisplayForm() {
                 value={selectedStandard}
                 onValueChange={setSelectedStandard}
                 options={standards.map((standard) => ({
-                  label: `${standard.name} (${standard.type_display}) - ${standard.width_in}" × ${standard.height_in}" × ${standard.depth_in || 24}"`,
+                  label: `${standard.name} (${standard.type}) - ${standard.width_in}" × ${standard.height_in}" × ${standard.depth_in || 24}"`,
                   value: standard.id.toString(),
                 }))}
                 placeholder='None'

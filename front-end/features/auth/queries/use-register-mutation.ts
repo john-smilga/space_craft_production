@@ -1,9 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
 import api from '@/lib/axios';
 import { useAppMutation } from '@/lib/react-query/hooks';
-import { registerResponseSchema } from '../schemas/login-schema';
+import { schemas } from '@/lib/generated/api-schemas';
 import { useAuthStore } from '../store';
-import type { RegisterData, RegisterResponse } from '../types';
+
+type RegisterData = z.infer<typeof schemas.RegisterRequestRequest>;
+type RegisterResponse = z.infer<typeof schemas.User>;
 
 export function useRegisterMutation() {
   const queryClient = useQueryClient();
@@ -11,15 +14,16 @@ export function useRegisterMutation() {
 
   return useAppMutation<RegisterResponse, RegisterData>(
     async (data) => {
-      const response = await api.post('/auth/register/', data);
-      return registerResponseSchema.parse(response.data);
+      const validatedInput = schemas.RegisterRequestRequest.parse(data);
+      const response = await api.post('/auth/register/', validatedInput);
+      return schemas.User.parse(response.data);
     },
     {
       successMessage: 'Registered successfully',
       errorMessage: 'Registration failed',
       onSuccess: (data) => {
-        setUser(data.user);
-        queryClient.setQueryData(['auth', 'current-user'], data.user);
+        setUser(data);
+        queryClient.setQueryData(['auth', 'current-user'], data);
       },
     }
   );

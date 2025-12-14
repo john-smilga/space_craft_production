@@ -1,0 +1,2682 @@
+openapi: 3.0.3
+info:
+  title: Spacecraft API
+  version: 1.0.0
+  description: Planogram management system API
+paths:
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: Login existing user.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: Logout current user.
+      tags:
+      - auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+          description: ''
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      description: Register a new user using an invitation token.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequestRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/auth/validate-invitation/:
+    get:
+      operationId: auth_validate_invitation_retrieve
+      description: Validate an invitation token and return company info.
+      parameters:
+      - in: query
+        name: token
+        schema:
+          type: string
+        description: Invitation token to validate
+        required: true
+      tags:
+      - auth
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateInvitationResponse'
+          description: ''
+  /api/categories/:
+    get:
+      operationId: categories_retrieve
+      description: Get top-level categories (e.g., fresh, frozen).
+      tags:
+      - categories
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+          description: ''
+  /api/categories/{category_id}/children/:
+    get:
+      operationId: categories_children_retrieve_2
+      description: Get children categories by parent category ID.
+      parameters:
+      - in: path
+        name: category_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - categories
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryChildrenResponse'
+          description: ''
+  /api/categories/{parent_slug}/:
+    get:
+      operationId: categories_retrieve_2
+      description: Get subcategories under a parent category (e.g., meat, seafood,
+        produce under fresh).
+      parameters:
+      - in: path
+        name: parent_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - categories
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+          description: ''
+  /api/categories/{parent_slug}/{tab_slug}/:
+    get:
+      operationId: categories_retrieve_3
+      description: Get selectable categories (with IDs) under a specific tab.
+      parameters:
+      - in: path
+        name: parent_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: tab_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - categories
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+          description: ''
+  /api/categories/by-ids/:
+    post:
+      operationId: categories_by_ids_create
+      description: Get category names from category IDs.
+      tags:
+      - categories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryIdsRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+          description: ''
+  /api/categories/children/:
+    get:
+      operationId: categories_children_retrieve
+      description: Get children categories by parent category ID.
+      tags:
+      - categories
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryChildrenResponse'
+          description: ''
+  /api/categories/leaf/:
+    get:
+      operationId: categories_leaf_retrieve
+      description: Get all leaf categories (categories with products directly, not
+        subcategories).
+      tags:
+      - categories
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+          description: ''
+  /api/categories/path/:
+    get:
+      operationId: categories_path_retrieve
+      description: Get children at a specific path in the category hierarchy.
+      parameters:
+      - in: query
+        name: season
+        schema:
+          type: string
+        description: 'Season for product filtering (default: summer)'
+      tags:
+      - categories
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+          description: ''
+  /api/categories/path/{path}/:
+    get:
+      operationId: categories_path_retrieve_2
+      description: Get children at a specific path in the category hierarchy.
+      parameters:
+      - in: path
+        name: path
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: season
+        schema:
+          type: string
+        description: 'Season for product filtering (default: summer)'
+      tags:
+      - categories
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+          description: ''
+  /api/category/{category_id}/products/:
+    get:
+      operationId: category_products_retrieve
+      description: Get products for a specific category ID with seasonal metrics.
+      parameters:
+      - in: path
+        name: category_id
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: season
+        schema:
+          type: string
+        description: 'Season for metrics (default: summer)'
+      tags:
+      - category
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+          description: ''
+  /api/displays/:
+    get:
+      operationId: displays_list
+      description: ViewSet for Display CRUD operations.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - displays
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDisplayListList'
+          description: ''
+    post:
+      operationId: displays_create
+      description: Create a new custom display.
+      tags:
+      - displays
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisplayCreateRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Display'
+          description: ''
+  /api/displays/{slug}/:
+    get:
+      operationId: displays_retrieve
+      description: ViewSet for Display CRUD operations.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - displays
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Display'
+          description: ''
+    put:
+      operationId: displays_update
+      description: ViewSet for Display CRUD operations.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - displays
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisplayUpdateRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisplayUpdate'
+          description: ''
+    patch:
+      operationId: displays_partial_update
+      description: ViewSet for Display CRUD operations.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - displays
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDisplayUpdateRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisplayUpdate'
+          description: ''
+    delete:
+      operationId: displays_destroy
+      description: Delete a display (cannot delete standard displays).
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - displays
+      responses:
+        '204':
+          description: No response body
+  /api/displays/standards/:
+    get:
+      operationId: displays_standards_list
+      description: Get standard display templates.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - displays
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDisplayList'
+          description: ''
+  /api/displays/types/:
+    get:
+      operationId: displays_types_list
+      description: Get available display types.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - displays
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDisplayTypeList'
+          description: ''
+  /api/planograms/:
+    get:
+      operationId: planograms_list
+      description: ViewSet for Planogram CRUD operations.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - planograms
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPlanogramListList'
+          description: ''
+    post:
+      operationId: planograms_create
+      description: Create a new planogram with optional display selection and auto-generated
+        layout.
+      tags:
+      - planograms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanogramCreateRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Planogram'
+          description: ''
+  /api/planograms/{slug}/:
+    get:
+      operationId: planograms_retrieve
+      description: Retrieve planogram with layout.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - planograms
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Planogram'
+          description: ''
+    put:
+      operationId: planograms_update
+      description: Update planogram.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - planograms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanogramUpdateRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Planogram'
+          description: ''
+    patch:
+      operationId: planograms_partial_update
+      description: ViewSet for Planogram CRUD operations.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - planograms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPlanogramUpdateRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanogramUpdate'
+          description: ''
+    delete:
+      operationId: planograms_destroy
+      description: ViewSet for Planogram CRUD operations.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - planograms
+      responses:
+        '204':
+          description: No response body
+  /api/planograms/{slug}/ai-overview/:
+    post:
+      operationId: planograms_ai_overview_create
+      description: Generate AI-powered overview of the planogram layout.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - planograms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanogramRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIOverviewResponse'
+          description: ''
+  /api/planograms/{slug}/layout/:
+    post:
+      operationId: planograms_layout_create
+      description: Save planogram layout and return updated planogram data.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - planograms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanogramLayoutRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Planogram'
+          description: ''
+  /api/products/by-categories/:
+    get:
+      operationId: products_by_categories_retrieve
+      description: Get all products for multiple category IDs with seasonal metrics.
+      parameters:
+      - in: query
+        name: category_ids
+        schema:
+          type: string
+        description: Comma-separated list of category IDs (e.g., '1,2,6')
+        required: true
+      - in: query
+        name: season
+        schema:
+          type: string
+        description: 'Season for metrics (default: summer)'
+      tags:
+      - products
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+          description: ''
+  /api/projects/:
+    get:
+      operationId: projects_list
+      description: ViewSet for Project CRUD operations.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - projects
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjectListList'
+          description: ''
+    post:
+      operationId: projects_create
+      description: Create a new project.
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreateRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+  /api/projects/{slug}/:
+    get:
+      operationId: projects_retrieve
+      description: ViewSet for Project CRUD operations.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - projects
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+    put:
+      operationId: projects_update
+      description: ViewSet for Project CRUD operations.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdateRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectUpdate'
+          description: ''
+    patch:
+      operationId: projects_partial_update
+      description: ViewSet for Project CRUD operations.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - projects
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectUpdateRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectUpdate'
+          description: ''
+    delete:
+      operationId: projects_destroy
+      description: ViewSet for Project CRUD operations.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - projects
+      responses:
+        '204':
+          description: No response body
+  /api/projects/{slug}/planograms/:
+    get:
+      operationId: projects_planograms_retrieve
+      description: Get all planograms for a specific project.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - projects
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  planograms:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlanogramList'
+                required:
+                - planograms
+          description: ''
+  /api/stores/:
+    get:
+      operationId: stores_list
+      description: ViewSet for Store CRUD operations.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - stores
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStoreListList'
+          description: ''
+    post:
+      operationId: stores_create
+      description: Create a new store (admin only).
+      tags:
+      - stores
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreCreateRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Store'
+          description: ''
+  /api/stores/{slug}/:
+    get:
+      operationId: stores_retrieve
+      description: ViewSet for Store CRUD operations.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - stores
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Store'
+          description: ''
+    put:
+      operationId: stores_update
+      description: Update a store (admin only).
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - stores
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreUpdateRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreUpdate'
+          description: ''
+    patch:
+      operationId: stores_partial_update
+      description: Partially update a store (admin only).
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - stores
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStoreUpdateRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreUpdate'
+          description: ''
+    delete:
+      operationId: stores_destroy
+      description: Delete a store (admin only).
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - stores
+      responses:
+        '204':
+          description: No response body
+  /api/users/:
+    get:
+      operationId: users_list
+      description: ViewSet for User management (admin only).
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - users
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: users_create
+      description: ViewSet for User management (admin only).
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/{slug}/:
+    get:
+      operationId: users_retrieve
+      description: ViewSet for User management (admin only).
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - users
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: users_update
+      description: ViewSet for User management (admin only).
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserUpdate'
+          description: ''
+    patch:
+      operationId: users_partial_update
+      description: ViewSet for User management (admin only).
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdateRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserUpdate'
+          description: ''
+    delete:
+      operationId: users_destroy
+      description: Delete a user (cannot delete admins or self).
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - users
+      responses:
+        '204':
+          description: No response body
+  /api/users/invite/:
+    post:
+      operationId: users_invite_create
+      description: Create an invitation for a new user and return invitation details.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInviteRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInviteResponse'
+          description: ''
+  /api/users/me/:
+    get:
+      operationId: users_me_retrieve
+      description: Get current user info.
+      tags:
+      - users
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/me/username/:
+    patch:
+      operationId: users_me_username_partial_update
+      description: Update current user's username.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+components:
+  schemas:
+    AIOverviewResponse:
+      type: object
+      description: Output serializer for AI overview response.
+      properties:
+        overview:
+          type: string
+      required:
+      - overview
+    Category:
+      type: object
+      description: Serializer for category data.
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        path:
+          type: string
+        has_children:
+          type: boolean
+      required:
+      - id
+      - name
+      - slug
+    CategoryChildrenResponse:
+      type: object
+      description: Response serializer for category children endpoint.
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        has_children:
+          type: boolean
+      required:
+      - categories
+      - has_children
+    CategoryIdsRequestRequest:
+      type: object
+      description: Request serializer for category IDs.
+      properties:
+        category_ids:
+          type: array
+          items:
+            type: integer
+      required:
+      - category_ids
+    CategoryListResponse:
+      type: object
+      description: Response serializer for category list endpoints.
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+      required:
+      - categories
+    Company:
+      type: object
+      description: Serializer for Company model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        tax_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+    CompanyInfo:
+      type: object
+      description: Serializer for basic company info in invitation validation.
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+      - id
+      - name
+    CompanyRequest:
+      type: object
+      description: Serializer for Company model.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        tax_id:
+          type: string
+          nullable: true
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+      required:
+      - name
+    Display:
+      type: object
+      description: Output serializer for Display model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        shelf_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        display_category:
+          allOf:
+          - $ref: '#/components/schemas/DisplayCategoryEnum'
+          readOnly: true
+          description: |-
+            Standard displays are available to all companies, custom displays are company-specific
+
+            * `standard` - Standard
+            * `custom` - Custom
+        company:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Null for standard displays, set for custom displays
+        company_name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_by_username:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - company
+      - company_name
+      - created_at
+      - created_by
+      - created_by_username
+      - depth_in
+      - display_category
+      - height_in
+      - id
+      - name
+      - shelf_count
+      - slug
+      - type
+      - width_in
+    DisplayCategoryEnum:
+      enum:
+      - standard
+      - custom
+      type: string
+      description: |-
+        * `standard` - Standard
+        * `custom` - Custom
+    DisplayCreateRequest:
+      type: object
+      description: Input serializer for display creation.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        shelf_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - depth_in
+      - height_in
+      - name
+      - shelf_count
+      - type
+      - width_in
+    DisplayList:
+      type: object
+      description: Optimized list output serializer for Display model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        shelf_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        display_category:
+          allOf:
+          - $ref: '#/components/schemas/DisplayCategoryEnum'
+          readOnly: true
+          description: |-
+            Standard displays are available to all companies, custom displays are company-specific
+
+            * `standard` - Standard
+            * `custom` - Custom
+        slug:
+          type: string
+          readOnly: true
+      required:
+      - depth_in
+      - display_category
+      - height_in
+      - id
+      - name
+      - shelf_count
+      - slug
+      - type
+      - width_in
+    DisplayType:
+      type: object
+      description: Serializer for display type choices.
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+      required:
+      - label
+      - value
+    DisplayUpdate:
+      type: object
+      description: Input serializer for display updates.
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        shelf_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - depth_in
+      - height_in
+      - name
+      - shelf_count
+      - type
+      - width_in
+    DisplayUpdateRequest:
+      type: object
+      description: Input serializer for display updates.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        shelf_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - depth_in
+      - height_in
+      - name
+      - shelf_count
+      - type
+      - width_in
+    LoginRequest:
+      type: object
+      description: Input serializer for login.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    LogoutResponse:
+      type: object
+      description: Output serializer for logout response.
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    PaginatedDisplayList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Display'
+    PaginatedDisplayListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DisplayList'
+    PaginatedDisplayTypeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DisplayType'
+    PaginatedPlanogramListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanogramList'
+    PaginatedProjectListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectList'
+    PaginatedStoreListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StoreList'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PatchedDisplayUpdateRequest:
+      type: object
+      description: Input serializer for display updates.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        shelf_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+    PatchedPlanogramUpdateRequest:
+      type: object
+      description: Input serializer for planogram updates.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        season:
+          $ref: '#/components/schemas/SeasonEnum'
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Display width in inches
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Display height in inches
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Display depth in inches
+        shelf_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Number of shelves
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Shelf spacing in inches
+        category_ids:
+          type: array
+          items:
+            type: integer
+        preserve_layout:
+          type: boolean
+          description: If True, use saved layout instead of regenerating
+    PatchedProjectUpdateRequest:
+      type: object
+      description: Input serializer for project updates.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+    PatchedStoreUpdateRequest:
+      type: object
+      description: Input serializer for store updates.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          minLength: 1
+    PatchedUserRequest:
+      type: object
+      description: Output serializer for User model.
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+    PatchedUserUpdateRequest:
+      type: object
+      description: Input serializer for user updates.
+      properties:
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+    Planogram:
+      type: object
+      description: Output serializer for Planogram model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          readOnly: true
+        season:
+          $ref: '#/components/schemas/SeasonEnum'
+        project:
+          type: integer
+        project_name:
+          type: string
+          readOnly: true
+        project_slug:
+          type: string
+          readOnly: true
+        display:
+          type: integer
+          nullable: true
+          description: Optional reference to display used for dimensions
+        display_name:
+          type: string
+          readOnly: true
+        company:
+          type: integer
+          readOnly: true
+        company_name:
+          type: string
+          readOnly: true
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Display width in inches
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Display height in inches
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Display depth in inches
+        shelf_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Number of shelves
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Shelf spacing in inches
+        category_ids:
+          description: List of selected category IDs
+        categories:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: Derive category names from category_ids.
+          readOnly: true
+        layout:
+          nullable: true
+          description: Stored layout data from frontend
+        preserve_layout:
+          type: boolean
+          description: If True, use saved layout instead of regenerating
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_by_username:
+          type: string
+          readOnly: true
+        updated_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        updated_by_username:
+          type: string
+          description: Get username of user who last updated, or empty string if never
+            updated.
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - categories
+      - company
+      - company_name
+      - created_at
+      - created_by
+      - created_by_username
+      - display_name
+      - height_in
+      - id
+      - name
+      - project
+      - project_name
+      - project_slug
+      - shelf_count
+      - slug
+      - updated_at
+      - updated_by
+      - updated_by_username
+      - width_in
+    PlanogramCreateRequest:
+      type: object
+      description: Input serializer for planogram creation with validation.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        season:
+          $ref: '#/components/schemas/SeasonEnum'
+        project:
+          type: integer
+        display:
+          type: integer
+          nullable: true
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Display depth in inches
+        shelf_count:
+          type: integer
+          nullable: true
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Shelf spacing in inches
+        category_ids:
+          type: array
+          items:
+            type: integer
+      required:
+      - category_ids
+      - name
+      - project
+    PlanogramLayoutRequest:
+      type: object
+      description: Input serializer for layout save.
+      properties:
+        layout: {}
+        preserve_layout:
+          type: boolean
+          default: true
+      required:
+      - layout
+    PlanogramList:
+      type: object
+      description: Optimized list output serializer for Planogram model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          readOnly: true
+        season:
+          $ref: '#/components/schemas/SeasonEnum'
+        project_name:
+          type: string
+          readOnly: true
+        project_slug:
+          type: string
+          readOnly: true
+        display_name:
+          type: string
+          readOnly: true
+        shelf_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Number of shelves
+        category_ids:
+          description: List of selected category IDs
+        categories:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: Derive category names from category_ids.
+          readOnly: true
+        preserve_layout:
+          type: boolean
+          description: If True, use saved layout instead of regenerating
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - categories
+      - created_at
+      - display_name
+      - id
+      - name
+      - project_name
+      - project_slug
+      - shelf_count
+      - slug
+      - updated_at
+    PlanogramRequest:
+      type: object
+      description: Output serializer for Planogram model.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        season:
+          $ref: '#/components/schemas/SeasonEnum'
+        project:
+          type: integer
+        display:
+          type: integer
+          nullable: true
+          description: Optional reference to display used for dimensions
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Display width in inches
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Display height in inches
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Display depth in inches
+        shelf_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Number of shelves
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Shelf spacing in inches
+        category_ids:
+          description: List of selected category IDs
+        layout:
+          nullable: true
+          description: Stored layout data from frontend
+        preserve_layout:
+          type: boolean
+          description: If True, use saved layout instead of regenerating
+      required:
+      - height_in
+      - name
+      - project
+      - shelf_count
+      - width_in
+    PlanogramUpdate:
+      type: object
+      description: Input serializer for planogram updates.
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        season:
+          $ref: '#/components/schemas/SeasonEnum'
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Display width in inches
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Display height in inches
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Display depth in inches
+        shelf_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Number of shelves
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Shelf spacing in inches
+        category_ids:
+          type: array
+          items:
+            type: integer
+        preserve_layout:
+          type: boolean
+          description: If True, use saved layout instead of regenerating
+      required:
+      - height_in
+      - name
+      - shelf_count
+      - width_in
+    PlanogramUpdateRequest:
+      type: object
+      description: Input serializer for planogram updates.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        season:
+          $ref: '#/components/schemas/SeasonEnum'
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Display width in inches
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Display height in inches
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Display depth in inches
+        shelf_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          description: Number of shelves
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Shelf spacing in inches
+        category_ids:
+          type: array
+          items:
+            type: integer
+        preserve_layout:
+          type: boolean
+          description: If True, use saved layout instead of regenerating
+      required:
+      - height_in
+      - name
+      - shelf_count
+      - width_in
+    Product:
+      type: object
+      description: Serializer for product data with seasonal metrics.
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        pack_width_in:
+          type: number
+          format: double
+        pack_height_in:
+          type: number
+          format: double
+        margin:
+          type: number
+          format: double
+        sales_velocity:
+          type: number
+          format: double
+        overall_score:
+          type: number
+          format: double
+        category:
+          type: string
+        color:
+          type: string
+        expiration_stability:
+          type: number
+          format: double
+        seasonality:
+          type: number
+          format: double
+      required:
+      - id
+      - margin
+      - name
+      - overall_score
+      - pack_height_in
+      - pack_width_in
+      - sales_velocity
+    ProductListResponse:
+      type: object
+      description: Response serializer for product list endpoints.
+      properties:
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+      required:
+      - products
+    Project:
+      type: object
+      description: Output serializer for Project model with nested store.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          readOnly: true
+        store:
+          type: integer
+        store_name:
+          type: string
+          readOnly: true
+        store_code:
+          type: string
+          readOnly: true
+        store_slug:
+          type: string
+          readOnly: true
+        company:
+          type: integer
+          readOnly: true
+        company_name:
+          type: string
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_by_username:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - company
+      - company_name
+      - created_at
+      - created_by
+      - created_by_username
+      - id
+      - name
+      - slug
+      - store
+      - store_code
+      - store_name
+      - store_slug
+    ProjectCreateRequest:
+      type: object
+      description: Input serializer for project creation.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        store:
+          type: integer
+      required:
+      - name
+      - store
+    ProjectList:
+      type: object
+      description: Optimized list output serializer for Project model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          readOnly: true
+        store_name:
+          type: string
+          readOnly: true
+        store_code:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - slug
+      - store_code
+      - store_name
+    ProjectUpdate:
+      type: object
+      description: Input serializer for project updates.
+      properties:
+        name:
+          type: string
+          maxLength: 255
+      required:
+      - name
+    ProjectUpdateRequest:
+      type: object
+      description: Input serializer for project updates.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - name
+    RegisterRequestRequest:
+      type: object
+      description: Input serializer for registration with invitation token.
+      properties:
+        token:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+      required:
+      - password
+      - token
+    RoleEnum:
+      enum:
+      - admin
+      - member
+      type: string
+      description: |-
+        * `admin` - Admin
+        * `member` - Member
+    SeasonEnum:
+      enum:
+      - spring
+      - summer
+      - fall
+      - winter
+      type: string
+      description: |-
+        * `spring` - Spring
+        * `summer` - Summer
+        * `fall` - Fall
+        * `winter` - Winter
+    Store:
+      type: object
+      description: Output serializer for Store model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        store_code:
+          type: string
+          maxLength: 50
+        address:
+          type: string
+        company:
+          type: integer
+          readOnly: true
+        company_name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_by_username:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - company
+      - company_name
+      - created_at
+      - created_by
+      - created_by_username
+      - id
+      - name
+      - slug
+      - store_code
+    StoreCreateRequest:
+      type: object
+      description: Input serializer for store creation.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        store_code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        address:
+          type: string
+          minLength: 1
+      required:
+      - address
+      - name
+      - store_code
+    StoreList:
+      type: object
+      description: Optimized list output serializer for Store model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        store_code:
+          type: string
+          maxLength: 50
+        slug:
+          type: string
+          readOnly: true
+        company_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - company_name
+      - created_at
+      - id
+      - name
+      - slug
+      - store_code
+    StoreUpdate:
+      type: object
+      description: Input serializer for store updates.
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        address:
+          type: string
+      required:
+      - address
+      - name
+    StoreUpdateRequest:
+      type: object
+      description: Input serializer for store updates.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          minLength: 1
+      required:
+      - address
+      - name
+    TypeEnum:
+      enum:
+      - gondola
+      - endcap
+      - wall_unit
+      - refrigerated_case
+      - freezer_case
+      - island_display
+      - checkout_counter
+      - shelf
+      - rack
+      - bin
+      - other
+      type: string
+      description: |-
+        * `gondola` - Gondola
+        * `endcap` - Endcap
+        * `wall_unit` - Wall Unit
+        * `refrigerated_case` - Refrigerated Case
+        * `freezer_case` - Freezer Case
+        * `island_display` - Island Display
+        * `checkout_counter` - Checkout Counter
+        * `shelf` - Shelf
+        * `rack` - Rack
+        * `bin` - Bin
+        * `other` - Other
+    User:
+      type: object
+      description: Output serializer for User model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        company:
+          allOf:
+          - $ref: '#/components/schemas/Company'
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - company
+      - date_joined
+      - id
+      - slug
+      - username
+    UserInviteRequest:
+      type: object
+      description: Input serializer for user invitations.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          default: member
+      required:
+      - email
+      - username
+    UserInviteResponse:
+      type: object
+      description: Output serializer for user invitation response.
+      properties:
+        message:
+          type: string
+        invitation_token:
+          type: string
+        invitation_link:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+      - invitation_link
+      - invitation_token
+      - message
+      - user
+    UserRequest:
+      type: object
+      description: Output serializer for User model.
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+      required:
+      - username
+    UserUpdate:
+      type: object
+      description: Input serializer for user updates.
+      properties:
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+    UserUpdateRequest:
+      type: object
+      description: Input serializer for user updates.
+      properties:
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+    ValidateInvitationResponse:
+      type: object
+      description: Output serializer for invitation validation response.
+      properties:
+        valid:
+          type: boolean
+        email:
+          type: string
+          format: email
+        company:
+          allOf:
+          - $ref: '#/components/schemas/CompanyInfo'
+          nullable: true
+      required:
+      - company
+      - email
+      - valid

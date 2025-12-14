@@ -46,7 +46,6 @@ export function StoreList() {
               name={store.name}
               store_code={store.store_code}
               slug={store.slug}
-              address={store.address}
             />
           ))}
         </div>

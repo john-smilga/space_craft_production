@@ -17,7 +17,7 @@ export function DisplayDetail({ displaySlug }: DisplayDetailProps) {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const { data, isLoading, error } = useDisplayQuery(displaySlug);
-  const display = data?.display || null;
+  const display = data || null;
 
   const deleteMutation = useDeleteDisplayMutation(displaySlug);
 
@@ -67,7 +67,7 @@ export function DisplayDetail({ displaySlug }: DisplayDetailProps) {
 
                 <div>
                   <label className='text-sm font-medium text-muted-foreground'>Type</label>
-                  <p className='text-lg capitalize text-foreground'>{display.type_display}</p>
+                  <p className='text-lg capitalize text-foreground'>{display.type}</p>
                 </div>
 
                 <div>
@@ -89,44 +89,27 @@ export function DisplayDetail({ displaySlug }: DisplayDetailProps) {
                   </div>
                 )}
 
-                {display.usage && (
-                  <div className='pt-4 border-t border-border'>
-                    <label className='text-sm font-medium text-muted-foreground'>Usage</label>
-                    <p className='text-lg text-foreground'>
-                      Used in {display.usage.pog_count} planogram{display.usage.pog_count !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                )}
-
                 <div>
                   <label className='text-sm font-medium text-muted-foreground'>Created At</label>
                   <p className='text-lg text-foreground'>{formatDate(display.created_at)}</p>
                 </div>
 
-                {display.created_by && (
-                  <div>
-                    <label className='text-sm font-medium text-muted-foreground'>Created By</label>
-                    <p className='text-lg text-foreground'>{display.created_by.username}</p>
-                  </div>
-                )}
+                <div>
+                  <label className='text-sm font-medium text-muted-foreground'>Created By</label>
+                  <p className='text-lg text-foreground'>{display.created_by_username}</p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <div className='flex gap-3 justify-end'>
-            {display.usage && display.usage.pog_count > 0 ? (
-              <p className='text-sm text-muted-foreground self-center'>Cannot delete display that is used in planograms</p>
-            ) : (
-              <>
-                <Button onClick={handleDelete} disabled={deleteMutation.isPending} variant={deleteConfirm ? 'destructive' : 'outline'} className={deleteConfirm ? '' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:text-red-800'}>
-                  {deleteMutation.isPending ? 'Deleting...' : deleteConfirm ? 'Confirm Delete' : 'Delete Display'}
-                </Button>
-                {deleteConfirm && (
-                  <Button onClick={() => setDeleteConfirm(false)} variant='outline'>
-                    Cancel
-                  </Button>
-                )}
-              </>
+            <Button onClick={handleDelete} disabled={deleteMutation.isPending} variant={deleteConfirm ? 'destructive' : 'outline'} className={deleteConfirm ? '' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:text-red-800'}>
+              {deleteMutation.isPending ? 'Deleting...' : deleteConfirm ? 'Confirm Delete' : 'Delete Display'}
+            </Button>
+            {deleteConfirm && (
+              <Button onClick={() => setDeleteConfirm(false)} variant='outline'>
+                Cancel
+              </Button>
             )}
           </div>
 

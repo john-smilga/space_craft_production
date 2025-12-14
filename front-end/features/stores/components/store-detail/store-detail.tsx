@@ -10,9 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import DetailField from '@/components/DetailField';
 import { formatDate } from '@/lib/utils';
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/axios';
-import type { ProjectsResponse } from '@/types/projects';
+import { useProjectsQuery } from '@/features/projects';
 import { useStoreQuery, useDeleteStoreMutation } from '../../queries';
 
 interface StoreDetailProps {
@@ -26,16 +24,10 @@ export function StoreDetail({ storeSlug }: StoreDetailProps) {
 
   const { data: store, isLoading, error } = useStoreQuery(storeSlug);
 
-  const { data: projectsData } = useQuery({
-    queryKey: ['projects'],
-    queryFn: async (): Promise<ProjectsResponse> => {
-      const response = await api.get('/projects/');
-      return response.data;
-    },
-  });
+  const { data: projectsData } = useProjectsQuery();
 
-  const allProjects = projectsData?.projects || [];
-  const storeProjects = store ? allProjects.filter((p) => p.store && p.store.slug === storeSlug) : [];
+  const allProjects = projectsData || [];
+  const storeProjects = store ? allProjects.filter((p) => p.store_code === store.store_code) : [];
 
   const deleteMutation = useDeleteStoreMutation(storeSlug);
 
@@ -92,7 +84,7 @@ export function StoreDetail({ storeSlug }: StoreDetailProps) {
               <DetailField label='Store Code' value={store.store_code} />
               <DetailField label='Address' value={store.address} valueClassName='line-clamp-2' />
               <DetailField label='Created At' value={formatDate(store.created_at)} />
-              <DetailField label='Created By' value={store.created_by?.username || 'N/A'} />
+              <DetailField label='Created By' value={store.created_by_username || 'N/A'} />
               <div className='md:col-start-1 md:row-start-2'></div>
               <div className='md:col-start-2 md:row-start-2'></div>
               <div className='md:col-start-3 md:row-start-2'></div>

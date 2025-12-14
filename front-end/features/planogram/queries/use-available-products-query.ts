@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { z } from 'zod';
 import api from '@/lib/axios';
+import { schemas } from '@/lib/generated/api-schemas';
 import { usePlanogramStore } from '../store';
 import type { AvailableItem } from '../types';
 
@@ -9,6 +11,8 @@ interface AvailableProductsParams {
   season: string;
 }
 
+type ProductType = z.infer<typeof schemas.Product>;
+
 async function fetchAvailableProducts(params: AvailableProductsParams): Promise<AvailableItem[]> {
   if (params.categoryIds.length === 0) {
     return [];
@@ -16,18 +20,10 @@ async function fetchAvailableProducts(params: AvailableProductsParams): Promise<
 
   const categoryIdsStr = params.categoryIds.join(',');
   const { data } = await api.get(`/products/by-categories/?category_ids=${categoryIdsStr}&season=${params.season}`);
-  const products = data.products || [];
+  const validatedResponse = schemas.ProductListResponse.parse(data);
+  const products = validatedResponse.products || [];
 
-  return products.map((product: {
-    id: number;
-    name: string;
-    category?: string;
-    color?: string;
-    overall_score?: number;
-    margin?: number;
-    pack_width_in: number;
-    pack_height_in: number;
-  }) => ({
+  return products.map((product: ProductType) => ({
     id: product.id,
     name: product.name,
     category: product.category || 'Unknown',

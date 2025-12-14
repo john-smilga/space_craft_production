@@ -1,5 +1,8 @@
 import Link from 'next/link';
-import type { Planogram } from '@/types/planograms';
+import { z } from 'zod';
+import { schemas } from '@/lib/generated/api-schemas';
+
+type PlanogramType = z.infer<typeof schemas.Planogram>;
 
 interface PlanogramCardProps {
   name: string;
@@ -7,7 +10,7 @@ interface PlanogramCardProps {
   projectSlug: string;
   displayName: string | null;
   seasonDisplay: string;
-  categories: Planogram['categories'];
+  categories: PlanogramType['categories'];
   categoryIds: number[];
   projectName?: string; // Optional - only show when viewing all planograms
 }

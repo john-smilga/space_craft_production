@@ -1,38 +1,12 @@
-export interface Project {
-  id: number;
-  name: string;
-  slug: string;
-  store?: {
-    id: number;
-    name: string;
-    store_code: string;
-    slug: string;
-  } | null;
-  store_name?: string;
-  store_code?: string;
-  company: {
-    id: number;
-    name: string;
-  } | null;
-  created_at: string;
-  created_by?: {
-    id: number;
-    username: string;
-  } | null;
-}
+import { z } from 'zod';
+import { schemas } from '@/lib/generated/api-schemas';
 
-export interface ProjectsResponse {
-  projects: Project[];
-}
-
-export type ProjectResponse = Project;
-
-export interface CreateProjectInput {
-  name: string;
-  store: number;
-}
-
-export interface UpdateProjectInput {
-  name?: string;
-}
+// Export the TYPE (not the schema) as Project for backward compatibility
+export type Project = z.infer<typeof schemas.Project>;
+export type ProjectListType = z.infer<typeof schemas.ProjectList>;
+export type ProjectType = z.infer<typeof schemas.Project>;
+export type CreateProjectInput = z.infer<typeof schemas.ProjectCreateRequest>;
+export type UpdateProjectInput = z.infer<typeof schemas.ProjectUpdateRequest>;
+export type ProjectsResponse = z.infer<typeof schemas.PaginatedProjectListList>;
+export type ProjectResponse = z.infer<typeof schemas.Project>;
 

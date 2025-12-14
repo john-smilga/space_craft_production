@@ -36,7 +36,7 @@ export default function CategoryTabs({ parentSlug, activeTab, onTabClick, select
         Options <span className='text-muted-foreground font-normal'>(Select one)</span>
       </Label>
       <div className='flex gap-2 border-b border-border mb-4'>
-        {subcategories.map((category) => (
+        {subcategories.map((category: { slug: string; name: string }) => (
           <Button key={category.slug} type='button' onClick={() => onTabClick(category.slug)} variant='ghost' className={`px-4 py-2 font-medium text-sm border-b-2 rounded-none transition-colors ${activeTab === category.slug ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
             {getCategoryIcon(category.slug)} {category.name}
           </Button>

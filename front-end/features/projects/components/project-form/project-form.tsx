@@ -36,7 +36,7 @@ export function ProjectForm({ projectSlug, mode }: ProjectFormProps) {
     if (mode === 'edit' && project && !name && !selectedStoreSlug) {
       Promise.resolve().then(() => {
         setName(project.name);
-        setSelectedStoreSlug(project.store?.slug || '');
+        setSelectedStoreSlug(project.store_slug || '');
       });
     }
   }, [mode, project, name, selectedStoreSlug]);
@@ -59,8 +59,8 @@ export function ProjectForm({ projectSlug, mode }: ProjectFormProps) {
     };
 
     try {
-      const result = await mutation.mutateAsync(input);
-      router.push(`/dashboard/projects/${result.slug}`);
+      await mutation.mutateAsync(input);
+      router.push('/dashboard/projects');
     } catch {
       // Error handled by mutation
     }

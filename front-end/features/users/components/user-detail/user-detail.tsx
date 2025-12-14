@@ -33,8 +33,7 @@ export function UserDetail({ userSlug }: UserDetailProps) {
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const { data, isLoading, error } = useUserQuery(userSlug);
-  const user = data?.user || null;
+  const { data: user, isLoading, error } = useUserQuery(userSlug);
 
   const deleteMutation = useDeleteUserMutation(userSlug);
 

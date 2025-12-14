@@ -3,6 +3,7 @@
 import logging
 from typing import Any
 
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -42,6 +43,11 @@ class StoreViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         queryset = super().get_queryset()
         return queryset.order_by("-created_at")
 
+    @extend_schema(
+        request=StoreCreateSerializer,
+        responses={201: StoreSerializer},
+        description="Create a new store (admin only).",
+    )
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Create a new store (admin only)."""
         if request.user.role != "admin":

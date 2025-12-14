@@ -1,29 +1,69 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
 import api from '@/lib/axios';
 import { useAppMutation } from '@/lib/react-query/hooks';
-import type { Planogram, LayoutItem } from '../types';
+import { schemas } from '@/lib/generated/api-schemas';
+import type { LayoutItem, Planogram } from '../types';
 
-interface UpdatePlanogramVariables {
+type UpdatePlanogramInput = z.infer<typeof schemas.PlanogramUpdateRequest>;
+
+interface UpdatePlanogramVariables extends UpdatePlanogramInput {
   slug: string;
-  name: string;
-  width_in: number;
-  height_in: number;
-  shelf_count: number;
-  display_id?: number;
-  season?: string;
-  category_ids?: number[];
   layout?: Record<number, LayoutItem[]>;
-  preserve_layout?: boolean;
 }
+
+// Schema for layout item structure
+const LayoutItemSchema = z.object({
+  i: z.string(),
+  x: z.number(),
+  y: z.number(),
+  w: z.number(),
+  h: z.number(),
+  meta: z.object({
+    id: z.number(),
+    name: z.string(),
+    category: z.string(),
+    color: z.string().optional(),
+    score: z.number(),
+    pack_width_in: z.number(),
+    pack_height_in: z.number(),
+  }),
+});
+
+const GridResponseSchema = z.object({
+  grid: z.object({
+    cols: z.number(),
+    rows: z.number(),
+    cellWidthIn: z.number(),
+  }),
+  rows: z.array(
+    z.object({
+      id: z.number(),
+      category: z.string().nullable(),
+      name: z.string(),
+      items: z.array(LayoutItemSchema),
+    })
+  ),
+});
+
+// API returns planogram fields spread out + layout field
+const PlanogramDetailResponseSchema = schemas.Planogram.extend({
+  layout: GridResponseSchema.optional(),
+});
 
 export function useUpdatePlanogramMutation() {
   const queryClient = useQueryClient();
 
   return useAppMutation<Planogram, UpdatePlanogramVariables>(
     async (variables) => {
-      const { slug, ...data } = variables;
-      const response = await api.put(`/planograms/${slug}/`, data);
-      return response.data;
+      const { slug, layout, ...data } = variables;
+      const validatedInput = schemas.PlanogramUpdateRequest.parse(data);
+      const response = await api.put(`/planograms/${slug}/`, validatedInput);
+      const validated = PlanogramDetailResponseSchema.parse(response.data);
+      
+      // Extract layout and return just the planogram data (not wrapped)
+      const { layout: responseLayout, ...planogramData } = validated;
+      return planogramData;
     },
     {
       successMessage: 'Planogram updated successfully',

@@ -1,0 +1,21 @@
+import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
+import api from '@/lib/axios';
+import { User } from '@/lib/generated/api-schemas';
+
+type UserResponse = z.infer<typeof User>;
+
+export function useUserQuery(userSlug: string | null) {
+  return useQuery({
+    queryKey: ['user', userSlug],
+    queryFn: async (): Promise<UserResponse> => {
+      if (!userSlug) {
+        throw new Error('User slug is required');
+      }
+      const response = await api.get(`/users/${userSlug}/`);
+      return User.parse(response.data);
+    },
+    enabled: !!userSlug,
+  });
+}
+

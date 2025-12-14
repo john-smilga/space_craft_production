@@ -1,24 +1,63 @@
+import { z } from 'zod';
 import api from '@/lib/axios';
 import { useAppMutation } from '@/lib/react-query/hooks';
-import type { Planogram } from '../types';
+import { schemas } from '@/lib/generated/api-schemas';
+import type { PlanogramDetailResponse, GridResponse } from '../types';
 
-interface CreatePlanogramInput {
-  name: string;
-  project: number;
-  season?: string;
-  width_in?: number;
-  height_in?: number;
-  depth_in?: number | null;
-  shelf_count?: number;
-  shelf_spacing?: number | null;
-  category_ids?: number[];
-}
+type CreatePlanogramInput = z.infer<typeof schemas.PlanogramCreateRequest>;
+
+// Schema for layout item structure
+const LayoutItemSchema = z.object({
+  i: z.string(),
+  x: z.number(),
+  y: z.number(),
+  w: z.number(),
+  h: z.number(),
+  meta: z.object({
+    id: z.number(),
+    name: z.string(),
+    category: z.string(),
+    color: z.string().optional(),
+    score: z.number(),
+    pack_width_in: z.number(),
+    pack_height_in: z.number(),
+  }),
+});
+
+const GridResponseSchema = z.object({
+  grid: z.object({
+    cols: z.number(),
+    rows: z.number(),
+    cellWidthIn: z.number(),
+  }),
+  rows: z.array(
+    z.object({
+      id: z.number(),
+      category: z.string().nullable(),
+      name: z.string(),
+      items: z.array(LayoutItemSchema),
+    })
+  ),
+});
+
+// API returns planogram fields spread out + layout field
+const PlanogramDetailResponseSchema = schemas.Planogram.extend({
+  layout: GridResponseSchema.optional(),
+});
 
 export function useCreatePlanogramMutation() {
-  return useAppMutation<Planogram, CreatePlanogramInput>(
+  return useAppMutation<PlanogramDetailResponse, CreatePlanogramInput>(
     async (input) => {
-      const response = await api.post<Planogram>('/planograms/', input);
-      return response.data;
+      const validatedInput = schemas.PlanogramCreateRequest.parse(input);
+      const response = await api.post('/planograms/', validatedInput);
+      const validated = PlanogramDetailResponseSchema.parse(response.data);
+      
+      // Extract layout and return structured response
+      const { layout, ...planogramData } = validated;
+      return {
+        planogram: planogramData,
+        layout,
+      };
     },
     {
       successMessage: 'Planogram created successfully',

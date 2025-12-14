@@ -38,7 +38,7 @@ export function DisplaySelector({ companyDisplays, standardDisplays, value, onCh
             })
             .map((display) => (
               <SelectItem key={display.id} value={display.id.toString()}>
-                [{display.display_category.charAt(0).toUpperCase() + display.display_category.slice(1)}] {display.name} ({display.type_display}) - {display.width_in}&quot; × {display.height_in}&quot; × {display.depth_in}&quot;{display.display_category === 'custom' ? ` (${display.shelf_count} shelves)` : ''}
+                [{display.display_category.charAt(0).toUpperCase() + display.display_category.slice(1)}] {display.name} ({display.type}) - {display.width_in}&quot; × {display.height_in}&quot; × {display.depth_in}&quot;{display.display_category === 'custom' ? ` (${display.shelf_count} shelves)` : ''}
               </SelectItem>
             ))}
         </SelectContent>

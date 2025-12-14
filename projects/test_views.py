@@ -3,7 +3,7 @@
 import pytest
 from rest_framework import status
 
-from factories import CompanyFactory, ProjectFactory, StoreFactory
+from factories import CompanyFactory, ProjectFactory, StoreFactory, UserFactory
 
 
 @pytest.mark.django_db
@@ -85,3 +85,83 @@ class TestProjectViewSet:
         response = api_client.get("/api/projects/")
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_list_project_planograms(
+        self, authenticated_client, project, standard_display, user
+    ):
+        """Test listing planograms for a specific project."""
+        from factories import PlanogramFactory
+
+        # Create planograms for this project
+        PlanogramFactory.create_batch(
+            3,
+            project=project,
+            company=project.company,
+            display=standard_display,
+            created_by=user,
+        )
+
+        # Create planograms for another project (should not appear)
+        other_project = ProjectFactory(company=project.company, store=project.store)
+        PlanogramFactory.create_batch(
+            2,
+            project=other_project,
+            company=project.company,
+            display=standard_display,
+            created_by=user,
+        )
+
+        response = authenticated_client.get(f"/api/projects/{project.slug}/planograms/")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "planograms" in response.data
+        assert len(response.data["planograms"]) == 3
+
+    def test_list_project_planograms_empty(self, authenticated_client, project):
+        """Test listing planograms when project has none."""
+        response = authenticated_client.get(f"/api/projects/{project.slug}/planograms/")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "planograms" in response.data
+        assert len(response.data["planograms"]) == 0
+
+    def test_list_project_planograms_company_isolation(
+        self, authenticated_client, project, standard_display, user
+    ):
+        """Test planograms from other companies are not visible."""
+        from factories import PlanogramFactory
+
+        # Create planograms for this project
+        PlanogramFactory.create_batch(
+            2,
+            project=project,
+            company=project.company,
+            display=standard_display,
+            created_by=user,
+        )
+
+        # Create another company's project with planograms
+        other_company = CompanyFactory()
+        other_store = StoreFactory(company=other_company)
+        other_user = UserFactory(company=other_company)
+        other_project = ProjectFactory(
+            company=other_company, store=other_store, created_by=other_user
+        )
+        PlanogramFactory.create_batch(
+            3,
+            project=other_project,
+            company=other_company,
+            display=standard_display,
+            created_by=other_user,
+        )
+
+        # Should only see own project's planograms
+        response = authenticated_client.get(f"/api/projects/{project.slug}/planograms/")
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data["planograms"]) == 2
+
+        # Should not be able to access other company's project
+        response = authenticated_client.get(
+            f"/api/projects/{other_project.slug}/planograms/"
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND

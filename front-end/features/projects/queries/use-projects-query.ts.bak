@@ -1,0 +1,17 @@
+import { z } from 'zod';
+import api from '@/lib/axios';
+import { usePaginatedQuery } from '@/lib/react-query/hooks';
+import { ProjectList, PaginatedProjectListList } from '@/lib/generated/api-schemas';
+
+type ProjectType = z.infer<typeof ProjectList>;
+
+export function useProjectsQuery() {
+  return usePaginatedQuery<ProjectType>(
+    ['projects'],
+    async () => {
+      const response = await api.get('/projects/');
+      return PaginatedProjectListList.parse(response.data);
+    }
+  );
+}
+

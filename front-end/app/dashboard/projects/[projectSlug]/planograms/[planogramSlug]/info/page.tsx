@@ -48,9 +48,9 @@ export default function PlanogramInfoPage() {
           <CardContent className='p-6'>
             <div className='grid grid-cols-2 md:grid-cols-4 gap-4 gap-y-8'>
               <DetailField label='Created At' value={formatDate(planogram.created_at)} />
-              <DetailField label='Created By' value={planogram.created_by?.username || 'N/A'} />
+              <DetailField label='Created By' value={planogram.created_by_username || 'N/A'} />
               <DetailField label='Modified At' value={formatDate(planogram.updated_at)} />
-              <DetailField label='Modified By' value={planogram.updated_by?.username || 'N/A'} />
+              <DetailField label='Modified By' value={planogram.updated_by_username || 'N/A'} />
             </div>
           </CardContent>
         </Card>

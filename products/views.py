@@ -2,10 +2,17 @@
 Product API views.
 """
 
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from .serializers import (
+    CategoryChildrenResponseSerializer,
+    CategoryIdsRequestSerializer,
+    CategoryListResponseSerializer,
+    ProductListResponseSerializer,
+)
 from .services import (
     get_category_names_by_ids,
     get_leaf_categories,
@@ -15,6 +22,10 @@ from .services import (
 )
 
 
+@extend_schema(
+    responses={200: CategoryListResponseSerializer},
+    description="Get all leaf categories (categories with products directly, not subcategories).",
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_leaf_categories(request):
@@ -35,6 +46,10 @@ def list_leaf_categories(request):
     return Response({"categories": categories})
 
 
+@extend_schema(
+    responses={200: CategoryListResponseSerializer},
+    description="Get top-level categories (e.g., fresh, frozen).",
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_top_level_categories(request):
@@ -52,6 +67,10 @@ def list_top_level_categories(request):
     return Response({"categories": categories})
 
 
+@extend_schema(
+    responses={200: CategoryListResponseSerializer},
+    description="Get subcategories under a parent category (e.g., meat, seafood, produce under fresh).",
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_subcategories(request, parent_slug):
@@ -72,6 +91,10 @@ def list_subcategories(request, parent_slug):
     return Response({"categories": categories})
 
 
+@extend_schema(
+    responses={200: CategoryListResponseSerializer},
+    description="Get selectable categories (with IDs) under a specific tab.",
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_selectable_categories(request, parent_slug, tab_slug):
@@ -96,6 +119,11 @@ def list_selectable_categories(request, parent_slug, tab_slug):
     return Response({"categories": categories})
 
 
+@extend_schema(
+    request=CategoryIdsRequestSerializer,
+    responses={200: CategoryListResponseSerializer},
+    description="Get category names from category IDs.",
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def get_categories_by_ids(request):
@@ -123,6 +151,19 @@ def get_categories_by_ids(request):
     return Response({"categories": categories})
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="season",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="Season for product filtering (default: summer)",
+        )
+    ],
+    responses={200: CategoryListResponseSerializer},
+    description="Get children at a specific path in the category hierarchy.",
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_children_by_path(request, path=""):
@@ -155,6 +196,10 @@ def get_children_by_path(request, path=""):
     return Response(result)
 
 
+@extend_schema(
+    responses={200: CategoryChildrenResponseSerializer},
+    description="Get children categories by parent category ID.",
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_children_by_category_id(request, category_id=None):
@@ -200,6 +245,19 @@ def get_children_by_category_id(request, category_id=None):
     return Response(result)
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="season",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="Season for metrics (default: summer)",
+        )
+    ],
+    responses={200: ProductListResponseSerializer},
+    description="Get products for a specific category ID with seasonal metrics.",
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_products_by_category(request, category_id):
@@ -242,6 +300,26 @@ def get_products_by_category(request, category_id):
     return Response({"products": products})
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="category_ids",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="Comma-separated list of category IDs (e.g., '1,2,6')",
+        ),
+        OpenApiParameter(
+            name="season",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="Season for metrics (default: summer)",
+        ),
+    ],
+    responses={200: ProductListResponseSerializer},
+    description="Get all products for multiple category IDs with seasonal metrics.",
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_products_by_category_ids(request):

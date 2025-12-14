@@ -5,6 +5,7 @@ from typing import Any
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -15,11 +16,16 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.permissions import IsAdmin
 from accounts.serializers import (
     LoginSerializer,
+    LogoutResponseSerializer,
+    RegisterRequestSerializer,
+    UserInviteResponseSerializer,
     UserInviteSerializer,
     UserSerializer,
     UserUpdateSerializer,
+    ValidateInvitationResponseSerializer,
     get_token_for_user,
 )
+from common.exceptions import UnauthorizedError, ValidationError
 from common.mixins import CompanyFilterMixin, SlugLookupMixin
 from common.viewsets import BaseViewSet
 
@@ -30,6 +36,19 @@ logger = logging.getLogger("accounts")
 # Auth endpoints (function-based for auth flow)
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="token",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="Invitation token to validate",
+        )
+    ],
+    responses={200: ValidateInvitationResponseSerializer},
+    description="Validate an invitation token and return company info.",
+)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def validate_invitation(request: Request) -> Response:
@@ -37,24 +56,16 @@ def validate_invitation(request: Request) -> Response:
     token = request.query_params.get("token")
 
     if not token:
-        return Response(
-            {"error": "Token is required"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        raise ValidationError("Token is required")
 
     try:
         user = User.objects.get(invitation_token=token)
 
         if not user.is_invitation_valid():
-            return Response(
-                {"error": "Invitation token has expired"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValidationError("Invitation token has expired")
 
         if user.is_active:
-            return Response(
-                {"error": "This invitation has already been used"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValidationError("This invitation has already been used")
 
         return Response(
             {
@@ -71,11 +82,14 @@ def validate_invitation(request: Request) -> Response:
             }
         )
     except User.DoesNotExist:
-        return Response(
-            {"error": "Invalid invitation token"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        raise ValidationError("Invalid invitation token")
 
 
+@extend_schema(
+    request=RegisterRequestSerializer,
+    responses={200: UserSerializer},
+    description="Register a new user using an invitation token.",
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def register(request: Request) -> Response:
@@ -85,25 +99,16 @@ def register(request: Request) -> Response:
     username = request.data.get("username")
 
     if not token or not password:
-        return Response(
-            {"error": "Token and password are required"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        raise ValidationError("Token and password are required")
 
     try:
         user = User.objects.get(invitation_token=token)
 
         if not user.is_invitation_valid():
-            return Response(
-                {"error": "Invitation token has expired"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValidationError("Invitation token has expired")
 
         if user.is_active:
-            return Response(
-                {"error": "This invitation has already been used"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValidationError("This invitation has already been used")
 
         user.set_password(password)
         if username:
@@ -127,11 +132,14 @@ def register(request: Request) -> Response:
         return response
 
     except User.DoesNotExist:
-        return Response(
-            {"error": "Invalid invitation token"}, status=status.HTTP_400_BAD_REQUEST
-        )
+        raise ValidationError("Invalid invitation token")
 
 
+@extend_schema(
+    request=LoginSerializer,
+    responses={200: UserSerializer},
+    description="Login existing user.",
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def login(request: Request) -> Response:
@@ -146,46 +154,37 @@ def login(request: Request) -> Response:
 
     try:
         user = User.objects.get(email=email)
-
-        if not user.check_password(password):
-            logger.warning(f"Failed login attempt for {email}")
-            return Response(
-                {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        if not user.is_active:
-            return Response(
-                {"error": "Account is not active"}, status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        refresh = get_token_for_user(user)
-
-        user_serializer = UserSerializer(user)
-        response = Response(user_serializer.data)
-
-        response.set_cookie(
-            settings.SIMPLE_JWT["AUTH_COOKIE"],
-            str(refresh.access_token),
-            httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
-            samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
-            secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
-        )
-
-        return response
-
     except User.DoesNotExist:
         logger.warning(f"Failed login attempt for {email}")
-        return Response(
-            {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
-        )
-    except Exception as e:
-        logger.error(f"Unexpected error during login: {e}")
-        return Response(
-            {"error": "An error occurred during login"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+        raise UnauthorizedError("Invalid credentials")
+
+    if not user.check_password(password):
+        logger.warning(f"Failed login attempt for {email}")
+        raise UnauthorizedError("Invalid credentials")
+
+    if not user.is_active:
+        raise UnauthorizedError("Account is not active")
+
+    refresh = get_token_for_user(user)
+
+    user_serializer = UserSerializer(user)
+    response = Response(user_serializer.data)
+
+    response.set_cookie(
+        settings.SIMPLE_JWT["AUTH_COOKIE"],
+        str(refresh.access_token),
+        httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+        samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+        secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+    )
+
+    return response
 
 
+@extend_schema(
+    responses={200: LogoutResponseSerializer},
+    description="Logout current user.",
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def logout(request: Request) -> Response:
@@ -195,6 +194,10 @@ def logout(request: Request) -> Response:
     return response
 
 
+@extend_schema(
+    responses={200: UserSerializer},
+    description="Get current user info.",
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request: Request) -> Response:
@@ -231,19 +234,18 @@ class UserViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         instance = self.get_object()
 
         if instance.id == request.user.id:
-            return Response(
-                {"error": "Cannot delete your own account"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValidationError("Cannot delete your own account")
 
         if instance.role == "admin":
-            return Response(
-                {"error": "Cannot delete admin user"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValidationError("Cannot delete admin user")
 
         return super().destroy(request, *args, **kwargs)
 
+    @extend_schema(
+        request=UserInviteSerializer,
+        responses={201: UserInviteResponseSerializer},
+        description="Create an invitation for a new user and return invitation details.",
+    )
     @action(detail=False, methods=["post"], url_path="invite")
     def invite(self, request: Request) -> Response:
         """Create an invitation for a new user."""
@@ -284,24 +286,24 @@ class UserViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @extend_schema(
+        responses={200: UserSerializer},
+        description="Update current user's username.",
+    )
     @action(detail=False, methods=["patch"], url_path="me/username")
     def update_username(self, request: Request) -> Response:
         """Update current user's username."""
         new_username = request.data.get("username")
 
         if not new_username:
-            return Response(
-                {"error": "Username is required"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError("Username is required")
 
         if (
             User.objects.filter(username=new_username)
             .exclude(id=request.user.id)
             .exists()
         ):
-            return Response(
-                {"error": "Username already taken"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError("Username already taken")
 
         request.user.username = new_username
         request.user.save()

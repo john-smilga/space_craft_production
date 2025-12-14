@@ -3,7 +3,7 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Text } from '@react-three/drei';
 import { Suspense, useEffect } from 'react';
-import type { GridResponse, LayoutItem } from '@/types/planograms';
+import type { GridResponse, LayoutItem } from '@/features/planogram/types';
 import { useThemeStore } from '@/stores/themeStore';
 
 interface ThreeJSViewProps {

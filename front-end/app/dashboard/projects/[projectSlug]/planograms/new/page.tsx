@@ -36,14 +36,14 @@ export default function CreatePlanogramPage() {
         project: project.id,
         // Provide minimal required defaults - user can edit later
         season: 'summer',
-        width_in: 48,
-        height_in: 60,
+        width_in: '48',
+        height_in: '60',
         shelf_count: 4,
         category_ids: [1], // Default to Beef category
       });
 
       // Redirect to planogram detail page
-      router.push(`/dashboard/projects/${projectSlug}/planograms/${result.slug}`);
+      router.push(`/dashboard/projects/${projectSlug}/planograms/${result.planogram.slug}`);
     } catch {
       // Error handled by mutation
     }

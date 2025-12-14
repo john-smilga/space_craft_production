@@ -1,335 +1,799 @@
-# Planogram Page - Form and Products Sidebar Fix - Step by Step Plan
+# API Contract Standardization - Implementation Plan
 
-## Overview
+**Purpose**: Permanently eliminate API contract mismatches between DRF backend and TypeScript/React/Next.js frontend.
 
-The planogram detail page is missing two critical components:
-1. **Edit Form** (name, season, shelf count, display selection, categories)
-2. **Available Products Sidebar** (right sidebar showing products to add)
+**Approach**: Server-first, contract-driven, type-safe, enforced by tooling.
 
-These components are defined in code but not displaying due to:
-- Form components not rendering (likely store initialization or rendering logic issue)
-- Products sidebar not showing products (API response mismatch or fetch logic issue)
-
-This plan fixes both issues systematically.
+**Last Updated**: December 13, 2025
 
 ---
 
-## Root Cause Analysis
+## Step 0: Repository Inspection
 
-### Issue 1: Form Components Missing
+### Goal
+Inspect and document the current state of API contracts across backend and frontend to identify inconsistencies and mismatches.
 
-**Components involved:**
-- `PlanogramNameField.tsx` - Uses `usePlanogramStore.use.name()` to get/set name
-- `PlanogramFormFields.tsx` - Uses store for season, shelf_count, display selection
-- `PlanogramCategoriesSelector.tsx` - Uses store for selected categories
-- `PlanogramActions.tsx` - Regenerate and Explore Products buttons
+### Files Analyzed
 
-**Root cause:** The Zustand store `usePlanogramStore` is likely not properly initialized with form data when the page loads. The `initializeForm()` function in `usePlanogramData` hook sets the store values, but there may be timing issues or the store selectors aren't working properly.
+#### Backend (DRF)
+- `spacecraft/settings.py` - DRF configuration
+- `common/exceptions.py` - Custom exception handler
+- `accounts/serializers.py`, `accounts/views.py`
+- `stores/serializers.py`, `stores/views.py`
+- `displays/serializers.py`, `displays/views.py`
+- `projects/serializers.py`, `projects/views.py`
+- `planograms/serializers.py`, `planograms/views.py`
+- `api-contracts.md` - Existing contract documentation
 
-### Issue 2: Available Products Sidebar Empty
+#### Frontend
+- `front-end/lib/axios.ts` - API client
+- `front-end/lib/react-query/hooks.ts` - Query/mutation wrappers
+- `front-end/lib/types/index.ts` - Shared types
+- `front-end/types/*.ts` - Legacy type definitions
+- `front-end/features/*/types.ts` - Feature type definitions
+- `front-end/features/*/schemas/*.ts` - Zod schemas
+- `front-end/features/*/queries/*.ts` - API calls
 
-**Component involved:**
-- `AvailableProductsSidebar.tsx` - Displays `availableItems` from store
+### What Changed
+- Initial inspection only, no code changes
 
-**Root cause:** The `fetchAvailableProducts()` function in `usePlanogramData` hook is called on mount, but:
-1. The API endpoint `/products/by-categories/` may be returning data in unexpected format
-2. The response mapping from `product.overall_score` to `score` field may not match actual API response
-3. The sidebar visibility flag may not be set to open
+### Verification Commands Executed
+- N/A (inspection only)
 
----
-
-## Step 1: Verify and Fix Store Initialization
-
-**Goal:** Ensure Zustand store is properly initialized with planogram data
-
-### Tasks
-
-- [ ] 1.1 **Check planogram-slice.ts store definition**
-  - Verify `initializeForm()` action exists and is correct
-  - Check selector hooks (`use.name()`, `use.season()`, etc.) are properly typed
-  - Verify initial state values
-
-- [ ] 1.2 **Check usePlanogramData hook**
-  - Verify `planogramQuery.data?.planogram` is being accessed correctly
-  - Check timing of `initializeForm()` call relative to data fetch
-  - Ensure dependencies in useEffect are correct to avoid skipping initialization
-
-- [ ] 1.3 **Add console logging to debug**
-  - Log when planogram data is fetched
-  - Log when initializeForm is called
-  - Log store state after initialization
-  - Temporarily add to understand data flow
-
-**Files to Review:**
-- `front-end/features/planogram/store/planogram-slice.ts`
-- `front-end/features/planogram/hooks/use-planogram-data.ts`
-- `front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/page.tsx`
+### Verification Results
+- Pass (no changes required)
 
 ---
 
-## Step 2: Verify Form Component Rendering
+### Backend Findings
 
-**Goal:** Ensure form components render when store is initialized
-
-### Tasks
-
-- [ ] 2.1 **Check PlanogramNameField rendering**
-  - Verify `usePlanogramStore.use.name()` hook selector is working
-  - Check if FormField component is properly accepting/displaying value
-  - Verify onChange handler is correctly updating store
-
-- [ ] 2.2 **Check PlanogramFormFields rendering**
-  - Verify all three field selectors (season, shelfCount, display) work
-  - Check if Select components are rendering options
-  - Test onChange handlers
-
-- [ ] 2.3 **Check PlanogramCategoriesSelector rendering**
-  - Verify categories are fetched via `leafCategoriesQuery`
-  - Check if multi-select dropdown displays categories
-  - Verify selected categories display as badges
-
-- [ ] 2.4 **Test form in browser**
-  - Open planogram page and check browser DevTools
-  - Look for JavaScript errors in console
-  - Check if form fields exist in DOM but hidden (CSS issue)
-  - Check if data is present in store but not in components
-
-**Files to Review:**
-- `front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramNameField.tsx`
-- `front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramFormFields.tsx`
-- `front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramCategoriesSelector.tsx`
-- `front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramActions.tsx`
-
----
-
-## Step 3: Verify Available Products API and Response Handling
-
-**Goal:** Ensure products are fetched correctly from API and stored in Zustand
-
-### Tasks
-
-- [ ] 3.1 **Check API endpoint and request format**
-  - Verify `/products/by-categories/` endpoint exists and works
-  - Check query params: `category_ids` (comma-separated) and `season`
-  - Test endpoint manually with curl or Postman
-
-- [ ] 3.2 **Verify API response format**
-  - Get actual response from `/products/by-categories/` endpoint
-  - Check if response has `products` key (current expectation: `response.data.products`)
-  - Check product field names: `overall_score`, `margin`, `pack_width_in`, etc.
-  - Compare with actual API response structure
-
-- [ ] 3.3 **Check fetchAvailableProducts logic**
-  - Verify function is called in useEffect
-  - Check if planogram.category_ids is non-empty
-  - Check try/catch error handling
-  - Add console logging to track execution
-
-- [ ] 3.4 **Check store persistence**
-  - Verify `setAvailableItems()` action properly sets store.availableItems
-  - Verify `setLoadingAvailableItems()` properly tracks loading state
-  - Check Zustand store selector `availableItems` in sidebar component
-
-- [ ] 3.5 **Check sidebar visibility**
-  - Verify sidebar is opening with `availableProductsSidebarOpen` flag
-  - Check if "Explore Products" button in actions sets this flag
-  - Verify sidebar render conditions
-
-**Files to Review:**
-- `front-end/features/planogram/hooks/use-planogram-data.ts` (lines 60-103)
-- `front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/AvailableProductsSidebar.tsx` (lines 1-60)
-- Backend: `/products/by-categories/` endpoint in Django views
-
----
-
-## Step 4: Fix Data Type Mismatches (API Contract Issue)
-
-**Goal:** Fix data format issues identified in api-contracts.md
-
-### Tasks
-
-- [ ] 4.1 **Check /displays/standards/ endpoint response**
-  - Current format: `{"standards": [...]}`
-  - Expected format: bare array `[...]`
-  - Fix in backend OR adjust frontend parsing
-
-- [ ] 4.2 **Check /displays/types/ endpoint response**
-  - Current format: `{"types": [...]}`
-  - Expected format: bare array `[...]`
-  - Fix in backend OR adjust frontend parsing
-
-- [ ] 4.3 **Check /planograms/{slug}/ endpoint response**
-  - Current format: `{"planogram": {...}, "layout": {...}}`
-  - Expected format: Merged object with both planogram and layout fields
-  - Fix in backend OR adjust frontend response handling (currently: `planogramQuery.data?.planogram`)
-
-- [ ] 4.4 **Check /products/by-categories/ response format**
-  - Determine actual response structure
-  - Update `fetchAvailableProducts()` to match actual format
-  - May need to adjust from `response.data.products` to different accessor
-
-**Files to Review:**
-- Backend API endpoints (Django views)
-- `front-end/features/planogram/hooks/use-planogram-data.ts`
-- `front-end/features/displays/queries/use-displays-query.ts`
-- `front-end/features/displays/queries/use-standard-displays-query.ts`
-
----
-
-## Step 5: Add Type Validation with Zod (Optional but Recommended)
-
-**Goal:** Add runtime validation to catch API response format issues
-
-### Tasks
-
-- [ ] 5.1 **Create Zod schemas for API responses**
-  - `front-end/features/planogram/schemas/planogram-detail-response-schema.ts`
-  - `front-end/features/products/schemas/available-products-response-schema.ts`
-  - Define expected structure to catch mismatches
-
-- [ ] 5.2 **Update hooks to validate responses**
-  - Use `schema.parse()` in `usePlanogramData` to validate planogram response
-  - Use `schema.parse()` in `fetchAvailableProducts` to validate products response
-  - Add error handling for validation failures
-
-**Files to Create/Modify:**
-- `front-end/features/planogram/schemas/planogram-detail-response-schema.ts`
-- `front-end/features/products/schemas/available-products-response-schema.ts`
-- `front-end/features/planogram/hooks/use-planogram-data.ts`
-
----
-
-## Step 6: Test and Debug
-
-**Goal:** Verify all components work correctly
-
-### Tasks
-
-- [ ] 6.1 **Manual browser testing**
-  - Load planogram page
-  - Check if form fields are visible and populated
-  - Check if you can edit form fields and store updates
-  - Check if "Explore Products" button opens sidebar
-  - Check if products appear in sidebar
-
-- [ ] 6.2 **Check browser DevTools**
-  - Console: No JavaScript errors
-  - Network: API calls returning correct status (200)
-  - Network: Response payloads match expectations
-  - Application: Zustand store state correct
-
-- [ ] 6.3 **Test specific workflows**
-  - [ ] Load planogram → Form visible with data populated
-  - [ ] Edit name field → Store updates, component re-renders
-  - [ ] Change season → Available products refetch
-  - [ ] Click "Explore Products" → Sidebar opens
-  - [ ] Select product quantity → Store updates
-  - [ ] Select shelf → targetRowId updates
-  - [ ] Click "Add Items" → Products added to grid
-
-- [ ] 6.4 **Edge cases**
-  - [ ] Planogram with no categories selected
-  - [ ] Planogram with invalid display ID
-  - [ ] API returns empty products list
-  - [ ] Network error during product fetch
-
----
-
-## Step 7: Implementation Summary
-
-**What Will Change:**
-
-1. **Form Components** - No code changes needed if store initialization is working
-2. **Store Initialization** - May need timing/dependency fixes in useEffect
-3. **API Response Handling** - Update parsers to match actual API response format
-4. **Zod Validation** - Add schemas for runtime validation (recommended)
-5. **Sidebar Visibility** - Ensure "Explore Products" button opens sidebar correctly
-
-**Expected Outcome:**
-
-- Form fields (Name, Season, Shelf Count, Display, Categories) are visible and editable
-- Form values populate from loaded planogram data
-- "Explore Products" button opens right sidebar
-- Available products sidebar shows list of products (name, score, margin, width)
-- Can select products and add to grid
-
----
-
-## Execution Order
-
-```
-Step 1: Verify Store Init
-    ├─ Check store definition
-    ├─ Check hook implementation
-    └─ Debug via console logs
-
-Step 2: Test Form Rendering
-    ├─ Verify each component
-    ├─ Browser DevTools inspection
-    └─ Identify rendering issues
-
-Step 3: Test Products Fetch
-    ├─ Verify API endpoint
-    ├─ Check response format
-    ├─ Debug fetch logic
-    └─ Check store persistence
-
-Step 4: Fix Data Type Mismatches
-    ├─ Identify format issues (backend vs frontend expectations)
-    └─ Fix either backend or frontend parsers
-
-Step 5: Add Zod Validation (Optional)
-    ├─ Create schemas
-    └─ Integrate into hooks
-
-Step 6: Full Testing
-    ├─ Manual browser testing
-    ├─ DevTools verification
-    ├─ Workflow testing
-    └─ Edge case testing
-
-Step 7: Commit Changes
+#### Current DRF Configuration
+```python
+# spacecraft/settings.py
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": ["accounts.authentication.CookieJWTAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 10,
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+}
 ```
 
----
+#### Custom Exception Handler Format
+```python
+# common/exceptions.py
+# Returns: { "error": { "code": "...", "message": "...", "details": {...} } }
+```
 
-## Critical Files Summary
-
-**Frontend Components:**
-- `/front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/page.tsx` - Main page
-- `/front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramNameField.tsx`
-- `/front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramFormFields.tsx`
-- `/front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/PlanogramCategoriesSelector.tsx`
-- `/front-end/app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/components/AvailableProductsSidebar.tsx`
-
-**Frontend State & Hooks:**
-- `/front-end/features/planogram/store/planogram-slice.ts` - Zustand store
-- `/front-end/features/planogram/hooks/use-planogram-data.ts` - Data fetching and initialization
-- `/front-end/features/planogram/types.ts` - TypeScript types
-
-**Backend Endpoints:**
-- `GET /planograms/{slug}/` - Fetch planogram details
-- `GET /products/by-categories/` - Fetch products by category
-- `GET /displays/` - Fetch custom displays
-- `GET /displays/standards/` - Fetch standard displays
-- `GET /categories/leaf/` - Fetch leaf categories
+#### Serializer Patterns
+- **List serializers**: `StoreListSerializer`, `ProjectListSerializer`, `DisplayListSerializer`, `PlanogramListSerializer`
+- **Detail serializers**: `StoreSerializer`, `ProjectSerializer`, `DisplaySerializer`, `PlanogramSerializer`
+- **Create/Update serializers**: Separate input serializers for each resource
+- **Flattened fields**: Uses `source="related.field"` pattern (e.g., `store_name`, `company_name`)
 
 ---
 
-## Rollback Plan
+### API Shape Inconsistencies (Backend) - 5 Identified
 
-If issues arise:
-1. Revert store changes (git revert)
-2. Revert API response parser changes
-3. Verify form and products appear again
-4. Re-run tests
+#### 1. Login Response vs Frontend Expectation
+**Location**: `accounts/views.py:163-164`
+**Backend**: Returns bare User object via `Response(user_serializer.data)`
+**Issue**: Frontend expects `{user: User}` wrapper based on schema
+
+#### 2. Planogram Retrieve - Layout Merge
+**Location**: `planograms/views.py:57-66`
+```python
+def retrieve(self, request, *args, **kwargs):
+    serializer = self.get_serializer(instance)
+    planogram_data = serializer.data
+    layout = get_or_compute_layout(instance)
+    return Response({**planogram_data, "layout": layout})  # Spreads planogram + layout
+```
+**Issue**: Response shape differs from create (which returns bare serializer.data without layout)
+
+#### 3. Planogram Update vs Create Inconsistency
+**Location**: `planograms/views.py:112-126`
+**Issue**: Update returns `{...planogramFields, layout}`, Create returns just planogram fields
+
+#### 4. User Serializer Extra Fields
+**Location**: `accounts/serializers.py:31-43`
+**Backend returns**: `first_name`, `last_name`, `is_active`
+**Frontend schema missing**: These fields not in Zod schema
+
+#### 5. Error Response Format Inconsistency
+- Custom exceptions: `{"error": {"code", "message", "details"}}`
+- Ad-hoc errors: `{"error": "message"}` (simpler format in views)
 
 ---
 
-## Notes
+### Frontend/Backend Mismatches - 6 Identified
 
-- The planogram page is already fully built and components exist in code
-- Issue is likely integration/initialization, not missing components
-- Start with debugging existing code rather than rewriting
-- Use browser DevTools Network tab to inspect API responses
-- Check Zustand store state in browser extensions (Redux DevTools works with Zustand)
+#### 1. Login Response Schema Mismatch
+**Backend** (`accounts/views.py:163-164`): Returns bare `User` object
+**Frontend** (`features/auth/schemas/login-schema.ts:9-11`):
+```typescript
+export const loginResponseSchema = z.object({
+  user: userSchema,  // Expects wrapped response
+});
+```
+
+#### 2. User Schema Missing Fields
+**Backend** (`accounts/serializers.py:31-43`): Returns `first_name`, `last_name`, `is_active`
+**Frontend** (`features/auth/schemas/user-schema.ts:8-16`):
+```typescript
+export const userSchema = z.object({
+  // Missing: first_name, last_name, is_active
+});
+```
+
+#### 3. Project Type Expects Nested Store Object
+**Backend** (`projects/serializers.py:23-39`): Returns flat fields `store_name`, `store_code`, `store_slug`
+**Frontend** (`features/projects/types.ts:5-10`):
+```typescript
+store?: {
+  id: number;
+  name: string;
+  store_code: string;
+  slug: string;
+} | null;  // Expects nested object
+```
+
+#### 4. Planogram Detail Response Structure
+**Backend**: Returns `{...planogramFields, layout: {...}}`
+**Frontend** (`features/planogram/types.ts:58-61`):
+```typescript
+export interface PlanogramDetailResponse {
+  planogram: Planogram;  // Expects `planogram` key wrapper
+  layout?: GridResponse;
+}
+```
+
+#### 5. Display Response Missing `type_display` Field
+**Backend** (`displays/serializers.py:22-38`): Does NOT include `type_display`
+**Frontend** (`features/displays/schemas/display-response-schema.ts:13`):
+```typescript
+type_display: z.string().optional(),  // Expected but not sent
+```
+
+#### 6. Company Schema Missing Fields
+**Backend** (`accounts/serializers.py:17-20`): Returns `tax_id`, `description`, `created_at`
+**Frontend**: Only expects `id` and `name`
+
+---
+
+### Interface Usage (Must Replace with Type) - 60+ Found
+
+#### High Priority (API Response Types)
+| File | Interfaces |
+|------|------------|
+| `types/auth.ts` | `Company`, `User` |
+| `types/projects.ts` | `Project`, `ProjectsResponse`, `ProjectResponse` |
+| `types/stores.ts` | `Store`, `StoresResponse` |
+| `types/products.ts` | `Product`, `ProductsResponse` |
+| `types/categories.ts` | `Category`, `SelectableCategory`, `CategoriesResponse` |
+| `types/planograms.ts` | `Planogram`, `PlanogramsResponse`, `LayoutItem`, `AvailableItem`, `GridResponse` |
+| `types/displays.ts` | `Display`, `DisplaysResponse`, `DisplayResponse`, `DisplayTypeOption` |
+
+#### Feature Types (Duplicated - Need Consolidation)
+| File | Interfaces |
+|------|------------|
+| `features/auth/types.ts` | `Company`, `User`, `LoginCredentials`, `RegisterData`, `LoginResponse`, `RegisterResponse` |
+| `features/stores/types.ts` | `Store`, `StoresResponse`, `CreateStoreInput`, `UpdateStoreInput` |
+| `features/displays/types.ts` | `Display`, `DisplaysResponse`, `DisplayResponse`, `DisplayTypeOption`, `DisplayTypesResponse`, `StandardDisplaysResponse`, `CreateDisplayInput` |
+| `features/projects/types.ts` | `Project`, `ProjectsResponse`, `CreateProjectInput`, `UpdateProjectInput` |
+| `features/planogram/types.ts` | `Planogram`, `PlanogramsResponse`, `PlanogramDetailResponse`, `LayoutItem`, `AvailableItem`, `GridResponse` |
+| `features/users/types.ts` | `UsersResponse`, `UserResponse`, `InviteUserInput`, `InviteResponse` |
+
+#### Utility Types
+| File | Interfaces |
+|------|------------|
+| `lib/types/index.ts` | `PaginatedResponse<T>`, `MutationOptions<TData>` |
+| `lib/navigation.ts` | `NavigationItem` |
+
+---
+
+### Existing Zod Schema Coverage
+
+#### Using Zod Properly
+| File | Schemas | Parsing API Response? |
+|------|---------|----------------------|
+| `features/auth/schemas/user-schema.ts` | `userSchema`, `companySchema` | Yes (in current-user query) |
+| `features/auth/schemas/login-schema.ts` | `loginCredentialsSchema`, `loginResponseSchema` | Yes |
+| `features/displays/schemas/display-response-schema.ts` | `displaySchema`, `displayTypeSchema` | Partial |
+| `features/planogram/schemas/planogram-response-schema.ts` | `planogramSchema`, `gridResponseSchema` | No |
+
+#### NOT Using Zod Validation (Must Fix)
+| File | Issue |
+|------|-------|
+| `features/projects/queries/use-projects-query.ts` | Returns `response.data` directly |
+| `features/projects/queries/use-project-query.ts` | Returns `response.data` directly |
+| `features/stores/queries/use-stores-query.ts` | Returns `response.data` directly |
+| `features/displays/queries/use-displays-query.ts` | Returns `response.data` directly |
+| `features/planogram/queries/use-planogram-query.ts` | Returns `response.data` directly |
+
+---
+
+## Step 1: API Response Standards (Final Decision)
+
+### Goal
+Define a single, global API contract enforced across all endpoints.
+
+### Files Touched
+- None (specification only)
+
+### What Changed
+- Documented final API response format specifications
+
+### Verification Commands Executed
+- N/A (specification only)
+
+### Verification Results
+- Pass
+
+---
+
+### Decision: Raw DRF Responses (No Envelope)
+
+**Justification**:
+1. Matches DRF's default behavior
+2. Simpler frontend handling
+3. Already used by most endpoints
+4. Reduces payload size
+5. Industry standard REST pattern
+
+---
+
+### Response Format Specifications
+
+#### Single Object Response
+```json
+{
+  "id": 1,
+  "name": "Resource Name",
+  "slug": "resource-name",
+  "created_at": "2025-01-01T00:00:00Z",
+  "updated_at": "2025-01-01T00:00:00Z"
+}
+```
+**Used for**: POST (create), GET (retrieve), PUT/PATCH (update)
+
+#### List Response (Paginated)
+```json
+{
+  "count": 42,
+  "next": "https://api.example.com/resource/?page=2",
+  "previous": null,
+  "results": [
+    { "id": 1, "name": "..." },
+    { "id": 2, "name": "..." }
+  ]
+}
+```
+**Used for**: GET (list)
+
+#### Array Response (Non-Paginated)
+```json
+[
+  { "value": "option1", "label": "Option 1" },
+  { "value": "option2", "label": "Option 2" }
+]
+```
+**Used for**: Enum endpoints (`/displays/types/`, `/displays/standards/`)
+
+#### Delete Response
+```
+HTTP 204 No Content
+(Empty body)
+```
+
+#### Error Response
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Human-readable error message",
+    "details": {
+      "field_name": ["Error 1", "Error 2"]
+    }
+  }
+}
+```
+
+---
+
+### Special Cases
+
+#### Planogram with Layout
+Layout merged into response (not wrapped):
+```json
+{
+  "id": 1,
+  "name": "Planogram Name",
+  "slug": "planogram-slug",
+  "layout": {
+    "grid": { "cols": 12, "rows": 5, "cellWidthIn": 4 },
+    "rows": [...]
+  }
+}
+```
+
+---
+
+## Step 2: List & Pagination Rules
+
+### Goal
+Define consistent pagination behavior for all list endpoints.
+
+### Files Touched
+- None (specification only)
+
+### What Changed
+- Documented pagination rules
+
+### Verification Commands Executed
+- N/A
+
+### Verification Results
+- Pass
+
+---
+
+### Rules
+
+| Rule | Value |
+|------|-------|
+| Default page size | 10 |
+| Maximum page size | 100 |
+| Page parameter | `?page=N` |
+| Page size parameter | `?page_size=N` |
+| Default sort | `-created_at` |
+| Sort parameter | `?ordering=field` |
+
+### Empty List Response
+```json
+{
+  "count": 0,
+  "next": null,
+  "previous": null,
+  "results": []
+}
+```
+
+### Exceptions (Non-Paginated)
+- `GET /api/displays/types/` - Fixed enum list
+- `GET /api/displays/standards/` - Small fixed list
+
+---
+
+## Step 3: CRUD Request Payload Standards
+
+### Goal
+Define strict rules for request payloads.
+
+### Files Touched
+- None (specification only)
+
+### What Changed
+- Documented payload standards
+
+### Verification Commands Executed
+- N/A
+
+### Verification Results
+- Pass
+
+---
+
+### Rules
+
+| Operation | Content-Type | ID Handling | Fields |
+|-----------|--------------|-------------|--------|
+| POST (create) | `application/json` | Never send ID | All required fields |
+| PUT (update) | `application/json` | ID in URL only | All writable fields |
+| PATCH (partial) | `application/json` | ID in URL only | Only changed fields |
+
+### Related Objects
+Use FK ID, not nested object:
+```json
+// CORRECT
+{ "name": "Project", "store": 42 }
+
+// WRONG
+{ "name": "Project", "store": { "id": 42, "name": "Store" } }
+```
+
+### Nullable Fields
+```json
+{ "display": null }  // Explicit null to clear
+```
+
+---
+
+## Step 4: Backend Implementation
+
+### Goal
+Apply API contract to all DRF endpoints.
+
+### Files Touched
+| File | Changes | Status |
+|------|---------|--------|
+| `planograms/views.py` | Fixed create to return layout + standardized error responses | ✅ DONE |
+| `accounts/views.py` | Standardized error responses to use custom exceptions | ✅ DONE |
+| `accounts/test_views.py` | Updated error assertions + added response shape tests | ✅ DONE |
+| `planograms/test_views.py` | Created comprehensive response shape tests | ✅ DONE |
+| `common/exceptions.py` | Already correct - defines standard error format | ✅ N/A |
+
+### What Changed
+
+#### Step 4.1: Planogram Create Layout Response ✅
+**File**: `planograms/views.py:109-113`
+
+**Problem**: Create method returned only planogram data, while retrieve and update returned planogram + layout. This caused inconsistent API responses.
+
+**Solution**: Modified `create()` method to compute and include layout in response:
+```python
+output_serializer = PlanogramSerializer(planogram)
+planogram_data = output_serializer.data
+layout = get_or_compute_layout(planogram)
+
+return Response({**planogram_data, "layout": layout}, status=status.HTTP_201_CREATED)
+```
+
+**Result**: Now all planogram operations (create, retrieve, update) return consistent shape with layout included.
+
+#### Step 4.2: Standardized Error Responses ✅
+**Files**:
+- `accounts/views.py`: Lines 23, 40-67, 78-112, 130-154, 207-211, 260-268
+- `planograms/views.py`: Lines 12, 81-83
+
+**Problem**: Error responses used ad-hoc format `{"error": "message"}` instead of the standardized error format defined in `common/exceptions.py`.
+
+**Solution**: Replaced all ad-hoc error responses with custom exception classes:
+- `ValidationError` for invalid input (400 errors)
+- `UnauthorizedError` for authentication failures (401 errors)
+- `NotFoundError` for missing resources (404 errors)
+
+**Changes Made**:
+1. Added imports: `from common.exceptions import UnauthorizedError, ValidationError` (accounts/views.py)
+2. Added import: `from common.exceptions import NotFoundError` (planograms/views.py)
+3. Replaced 15+ ad-hoc error responses with exception raising
+
+**Before**:
+```python
+if not token:
+    return Response({"error": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+```
+
+**After**:
+```python
+if not token:
+    raise ValidationError("Token is required")
+```
+
+**Result**: All error responses now follow the standardized format:
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Token is required",
+    "details": {}
+  }
+}
+```
+
+This is automatically handled by the custom exception handler in `common/exceptions.py`.
+
+#### Step 4.3: Response Shape Tests ✅
+**Files**:
+- `accounts/test_views.py`: Updated all error assertions + added response shape tests
+- `planograms/test_views.py`: Created comprehensive response shape tests
+
+**Problem**:
+1. Existing tests checked old error format (`response.data["error"]` as string)
+2. No tests verified response shapes match the API contract
+3. No tests verified planogram create/retrieve/update all return layout
+
+**Solution**:
+1. **Updated all error assertions** in `accounts/test_views.py` (15+ tests):
+   - Changed from `response.data["error"]` to `response.data["error"]["message"]`
+   - Added checks for `code` and `message` fields in error responses
+   - Verified correct error codes (`validation_error`, `unauthorized`)
+
+2. **Added response shape tests** for login and register:
+   - `test_login_response_shape`: Verifies all user fields present (id, username, email, first_name, last_name, role, company, slug, is_active, date_joined)
+   - `test_register_response_shape`: Verifies same fields for registration
+
+3. **Created `planograms/test_views.py`** with comprehensive tests:
+   - `TestPlanogramCreate`: Verify create includes layout
+   - `TestPlanogramRetrieve`: Verify retrieve includes layout
+   - `TestPlanogramUpdate`: Verify update includes layout
+   - `TestPlanogramCreateErrorFormat`: Verify standardized error format
+   - `TestPlanogramResponseConsistency`: Verify all CRUD operations return same shape
+
+**Examples**:
+
+Before (old error format):
+```python
+assert "expired" in response.data["error"].lower()
+```
+
+After (standardized error format):
+```python
+assert "error" in response.data
+assert response.data["error"]["code"] == "validation_error"
+assert "expired" in response.data["error"]["message"].lower()
+```
+
+New response shape test:
+```python
+def test_login_response_shape(self, api_client):
+    # Verify all required user fields are present
+    assert "id" in response.data
+    assert "username" in response.data
+    assert "email" in response.data
+    assert "first_name" in response.data
+    assert "last_name" in response.data
+    # ... etc
+```
+
+**Result**: All tests now verify:
+- Standardized error format is used consistently
+- Success responses include all required fields
+- Planogram operations (create/retrieve/update) all return layout
+
+#### Step 4.4: Test Fixes During Verification ✅
+**Files**:
+- `accounts/views.py:127-153` - Fixed login exception handling
+- `planograms/serializers.py:142-149` - Made dimension fields optional
+- `planograms/test_views.py:139-141, 205-231` - Fixed test isolation and assertions
+
+**Issues Found During Testing**:
+1. Login returning 500 instead of 401 when raising UnauthorizedError inside except block
+2. Planogram create failing validation - dimension fields required but view provides defaults
+3. Test isolation - displays from other tests persisting
+4. Response shape test too strict - checking exact key equality
+
+**Fixes Applied**:
+1. **Login exception handling**: Restructured to avoid raising exceptions inside except blocks
+   - Moved User.DoesNotExist check to its own try/except
+   - Removed generic `except Exception` that was catching our custom exceptions
+
+2. **Planogram serializer**: Made `width_in`, `height_in`, `shelf_count` optional
+   - Serializer now allows omitting these fields
+   - View fills them from display defaults (existing behavior)
+   - Model still enforces them as required
+
+3. **Test isolation**: Explicitly delete all displays before error test
+   ```python
+   Display.objects.filter(company=company).delete()
+   Display.objects.filter(company__isnull=True).delete()
+   ```
+
+4. **Response shape test**: Check core keys instead of exact equality
+   - Allows optional fields like `updated_by_username` to be omitted when null
+
+**Verification**: All 41 tests now pass ✅
+
+### Verification Commands
+```bash
+pytest
+pytest accounts/test_views.py -v
+pytest stores/test_views.py -v
+pytest displays/test_views.py -v
+pytest projects/test_views.py -v
+pytest planograms/test_views.py -v
+```
+
+### Verification Results
+- Step 4.1: ✅ Complete - Planogram create now returns layout
+- Step 4.2: ✅ Complete - All error responses use custom exceptions
+- Step 4.3: ✅ Complete - Response shape tests added and updated
+
+**Step 4: COMPLETE** ✅
+
+All backend API endpoints now follow the standardized contract with:
+- Consistent response shapes
+- Standardized error format
+- Comprehensive test coverage
+
+---
+
+## Step 5: Zod Schema Generation Pipeline
+
+### Goal
+Generate Zod schemas from OpenAPI spec.
+
+### Files Touched
+| File | Changes | Status |
+|------|---------|--------|
+| `pyproject.toml` / `poetry.lock` | Added `drf-spectacular==0.29.0` | ✅ DONE |
+| `spacecraft/settings.py` | Configured drf-spectacular | ✅ DONE |
+| `spacecraft/urls.py` | Added schema endpoint | ✅ DONE |
+| `openapi.yaml` | Generated OpenAPI 3.0 schema (65KB) | ✅ DONE |
+| `front-end/package.json` | Added generation scripts + @zodios/core | ✅ DONE |
+| `front-end/lib/generated/api-schemas.ts` | Generated Zod schemas (40KB) | ✅ DONE |
+
+### What Changed
+
+#### Step 5.1: Install drf-spectacular ✅
+**Command**: `poetry add drf-spectacular`
+
+**Result**: Installed drf-spectacular v0.29.0 with dependencies
+
+#### Step 5.2: Configure drf-spectacular in Django Settings ✅
+**File**: `spacecraft/settings.py`
+
+**Changes**:
+1. Added `"drf_spectacular"` to `INSTALLED_APPS`
+2. Added `"DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"` to `REST_FRAMEWORK`
+3. Added `SPECTACULAR_SETTINGS` configuration:
+   ```python
+   SPECTACULAR_SETTINGS = {
+       "TITLE": "Spacecraft API",
+       "DESCRIPTION": "Planogram management system API",
+       "VERSION": "1.0.0",
+       "SERVE_INCLUDE_SCHEMA": False,
+       "SCHEMA_PATH_PREFIX": "/api",
+       "COMPONENT_SPLIT_REQUEST": True,
+   }
+   ```
+
+#### Step 5.3: Add OpenAPI Schema Endpoint ✅
+**File**: `spacecraft/urls.py`
+
+**Changes**:
+- Added import: `from drf_spectacular.views import SpectacularAPIView`
+- Added endpoint: `path("api/schema/", SpectacularAPIView.as_view(), name="schema")`
+
+**Result**: OpenAPI schema now accessible at `/api/schema/`
+
+#### Step 5.4: Generate and Validate OpenAPI Schema ✅
+**Command**: `poetry run python manage.py spectacular --file openapi.yaml`
+
+**Result**:
+- Created `openapi.yaml` (65KB)
+- Schema includes all CRUD endpoints: stores, displays, projects, planograms, users
+- Some warnings for custom APIView endpoints (expected - can be enhanced later)
+- Validation passed
+
+#### Step 5.5: Install Frontend Schema Generation Tools ✅
+**Command**: `npm install --save-dev openapi-zod-client`
+
+**Result**: Installed openapi-zod-client v1.18.3 (37 packages)
+
+#### Step 5.6: Configure Schema Generation Scripts ✅
+**File**: `front-end/package.json`
+
+**Changes**:
+- Added script: `"generate:schema": "openapi-zod-client ../openapi.yaml -o ./lib/generated/api-schemas.ts"`
+
+#### Step 5.7: Generate Zod Schemas from OpenAPI ✅
+**Commands**:
+```bash
+mkdir -p lib/generated
+npm run generate:schema
+```
+
+**Result**:
+- Created `lib/generated/api-schemas.ts` (40KB)
+- Contains Zod schemas for all endpoints
+- Includes TypeScript types inferred from schemas
+- Includes Zodios API client setup
+
+#### Step 5.8: Verify Generated Schemas Compile ✅
+**Issue Found**: Generated code requires `@zodios/core` which has Zod v3 peer dependency (project uses Zod v4)
+
+**Solution**: Installed with `npm install @zodios/core --legacy-peer-deps`
+
+**Command**: `npx tsc --noEmit`
+
+**Result**: ✅ All schemas compile successfully with no TypeScript errors
+
+### Verification Commands
+```bash
+# Backend: Regenerate OpenAPI schema
+poetry run python manage.py spectacular --file openapi.yaml --validate
+
+# Frontend: Regenerate Zod schemas
+npm run generate:schema
+
+# Verify compilation
+npx tsc --noEmit
+```
+
+### Verification Results
+- ✅ Backend schema generation working
+- ✅ Frontend schema generation working
+- ✅ TypeScript compilation passing
+- ✅ Generated schemas include all core CRUD endpoints
+
+**Step 5: COMPLETE** ✅
+
+---
+
+## Step 6: Frontend Refactor (Zod-First)
+
+### Goal
+All types from Zod, all API data validated.
+
+### Files Touched (Planned)
+| File | Changes |
+|------|---------|
+| `types/*.ts` | Delete (60+ interfaces) |
+| `features/*/types.ts` | Delete (duplicates) |
+| `features/*/queries/*.ts` | Add Zod parsing |
+| `lib/axios.ts` | Add type-safe wrappers |
+
+### What Changed
+- Plan documented (no implementation yet)
+
+### Verification Commands
+```bash
+npm run test:run
+npm run lint
+npm run build
+grep -r "^export interface" front-end/src --include="*.ts"
+```
+
+### Verification Results
+- Pending implementation
+
+---
+
+## Step 7: Migration & Cleanup
+
+### Goal
+Remove deprecated code, finalize system.
+
+### Files Touched (Planned)
+| Action | Files |
+|--------|-------|
+| Delete | `front-end/types/*.ts` |
+| Delete | `front-end/features/*/types.ts` |
+| Update | All imports to use generated schemas |
+| Update | `CLAUDE.md`, `api-contracts.md` |
+
+### What Changed
+- Plan documented (no implementation yet)
+
+### Verification Commands
+```bash
+pytest
+npm run test:run
+npm run lint
+npm run build
+```
+
+### Verification Results
+- Pending implementation
+
+---
+
+## Risks & Mitigations
+
+| Risk | Mitigation |
+|------|------------|
+| OpenAPI schema generation issues | Use `@extend_schema` decorators where needed |
+| Breaking frontend during migration | Implement backend changes first, test in staging |
+| Generated types don't match needs | Allow manual overrides, review before commit |
+| Performance impact of Zod parsing | Validate in dev only, use safeParse for large responses |
+| Team bypassing validation | Make type-safe helpers the only export, add linting rules |
+
+---
+
+## Implementation Order
+
+| Step | Status | Depends On |
+|------|--------|------------|
+| Step 0: Inspection | ✅ COMPLETE | - |
+| Step 1: API Standards | ✅ COMPLETE | Step 0 |
+| Step 2: Pagination Rules | ✅ COMPLETE | Step 0 |
+| Step 3: Payload Standards | ✅ COMPLETE | Step 0 |
+| Step 4: Backend Implementation | ✅ COMPLETE | Steps 1-3 |
+| Step 5: Schema Generation | ✅ COMPLETE | Step 4 |
+| Step 6: Frontend Refactor | ⏳ PENDING | Step 5 |
+| Step 7: Cleanup | ⏳ PENDING | Step 6 |
+
+Each step must pass verification before proceeding.
