@@ -1,3 +1,4 @@
+'use client';
 import { z } from 'zod';
 import api from '@/lib/axios';
 import { usePaginatedQuery } from '@/lib/react-query/hooks';

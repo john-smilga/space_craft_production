@@ -1,3 +1,4 @@
+'use client';
 import type { LayoutItem } from '../types';
 import { usePlanogramStore } from '../store';
 

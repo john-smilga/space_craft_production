@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { z } from 'zod';
 import { schemas } from '@/lib/generated/api-schemas';
-
-type PlanogramListType = z.infer<typeof schemas.PlanogramList>;
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import EmptyState from '@/components/EmptyState';
-import PlanogramCard from '@/app/dashboard/planograms/components/PlanogramCard';
+import { PlanogramCard } from '@/features/planogram';
+
+type PlanogramListType = z.infer<typeof schemas.PlanogramList>;
 
 interface ProjectPlanogramsCardProps {
   projectSlug: string;

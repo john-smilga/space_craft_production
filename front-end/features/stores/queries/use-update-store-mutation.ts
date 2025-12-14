@@ -1,3 +1,4 @@
+'use client';
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import api from '@/lib/axios';

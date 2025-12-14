@@ -1,10 +1,9 @@
 'use client';
 
-import { usePlanogramsQuery } from '@/features/planogram';
+import { usePlanogramsQuery, PlanogramCard } from '@/features/planogram';
 import EmptyState from '@/components/EmptyState';
 import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import PlanogramCard from './components/PlanogramCard';
 
 export default function PlanogramsPage() {
   const { data, isLoading, error } = usePlanogramsQuery();

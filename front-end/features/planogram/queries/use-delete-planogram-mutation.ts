@@ -1,3 +1,4 @@
+'use client';
 import { useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { useMutation } from '@tanstack/react-query';

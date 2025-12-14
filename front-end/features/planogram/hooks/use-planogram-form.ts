@@ -1,3 +1,4 @@
+'use client';
 import { useUpdatePlanogramMutation, useSaveLayoutMutation, useDeletePlanogramMutation } from '../queries';
 import type { PlanogramDetailResponse, Planogram, LayoutItem } from '../types';
 import { usePlanogramStore } from '../store';

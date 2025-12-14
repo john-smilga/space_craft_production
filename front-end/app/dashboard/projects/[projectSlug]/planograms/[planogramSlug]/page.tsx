@@ -2,16 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { usePlanogramStore, usePlanogramData } from '@/features/planogram';
-import Grid from './components/Grid';
-import ThreeJSView from './components/ThreeJSView';
-import ProductSidebar from './components/ProductSidebar';
-import AvailableProductsSidebar from './components/AvailableProductsSidebar';
-import PlanogramNameField from './components/PlanogramNameField';
-import PlanogramFormFields from './components/PlanogramFormFields';
-import PlanogramCategoriesSelector from './components/PlanogramCategoriesSelector';
-import PlanogramActions from './components/PlanogramActions';
-import PlanogramDeleteButton from './components/PlanogramDeleteButton';
-import PlanogramHeader from './components/PlanogramHeader';
+import { Grid, ThreeJSView, ProductSidebar, AvailableProductsSidebar, PlanogramNameField, PlanogramFormFields, PlanogramCategoriesSelector, PlanogramActions, PlanogramDeleteButton, PlanogramHeader } from '@/features/planogram/components';
 import { Card, CardContent } from '@/components/ui/card';
 
 function PlanogramDetailContent() {
