@@ -4,7 +4,7 @@ import { z } from 'zod';
 import api from '@/lib/axios';
 import { schemas } from '@/lib/generated/api-schemas';
 import { usePlanogramStore } from '../store';
-import type { PlanogramDetailResponse, GridResponse } from '../types';
+import type { PlanogramDetailResponse } from '../types';
 
 // Schema for layout item structure
 const LayoutItemSchema = z.object({

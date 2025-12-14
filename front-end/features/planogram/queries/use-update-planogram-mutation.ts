@@ -56,13 +56,14 @@ export function useUpdatePlanogramMutation() {
 
   return useAppMutation<Planogram, UpdatePlanogramVariables>(
     async (variables) => {
-      const { slug, layout, ...data } = variables;
+      const { slug, ...data } = variables;
       const validatedInput = schemas.PlanogramUpdateRequest.parse(data);
       const response = await api.put(`/planograms/${slug}/`, validatedInput);
       const validated = PlanogramDetailResponseSchema.parse(response.data);
       
-      // Extract layout and return just the planogram data (not wrapped)
-      const { layout: responseLayout, ...planogramData } = validated;
+      // Return just the planogram data (layout field is omitted)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { layout, ...planogramData } = validated;
       return planogramData;
     },
     {

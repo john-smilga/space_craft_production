@@ -2,7 +2,7 @@ import { z } from 'zod';
 import api from '@/lib/axios';
 import { useAppMutation } from '@/lib/react-query/hooks';
 import { schemas } from '@/lib/generated/api-schemas';
-import type { PlanogramDetailResponse, GridResponse } from '../types';
+import type { PlanogramDetailResponse } from '../types';
 
 type CreatePlanogramInput = z.infer<typeof schemas.PlanogramCreateRequest>;
 

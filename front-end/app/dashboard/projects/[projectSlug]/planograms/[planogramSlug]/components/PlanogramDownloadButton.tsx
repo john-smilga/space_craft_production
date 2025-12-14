@@ -1,12 +1,12 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import type { PlanogramType } from '@/features/planogram/types';
+import type { Planogram } from '@/features/planogram/types';
 import { usePlanogramStore } from '@/features/planogram';
 import toast from 'react-hot-toast';
 
 interface PlanogramDownloadButtonProps {
-  planogram: PlanogramType | null;
+  planogram: Planogram | null;
 }
 
 export default function PlanogramDownloadButton({ planogram }: PlanogramDownloadButtonProps) {

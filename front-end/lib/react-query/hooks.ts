@@ -61,11 +61,10 @@ export function useAppMutation<TData, TVariables = void>(
     },
     onError: (error) => {
       // For axios errors, extract the response data which contains validation errors
-      const apiError = error as any;
+      const apiError = error as Error & { response?: { status?: number; statusText?: string; data?: unknown } };
       const errorDetails = apiError.response?.data;
       
       // Log the full error details to console for debugging
-      // eslint-disable-next-line no-console
       console.error('API Error Details:', {
         status: apiError.response?.status,
         statusText: apiError.response?.statusText,

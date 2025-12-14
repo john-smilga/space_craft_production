@@ -16,8 +16,6 @@ import { z } from 'zod';
 import api from '@/lib/axios';
 import { schemas } from '@/lib/generated/api-schemas';
 
-type PlanogramType = z.infer<typeof schemas.PlanogramList>;
-
 // Schema for the project planograms endpoint response
 const ProjectPlanogramsResponseSchema = z.object({
   planograms: z.array(schemas.PlanogramList)

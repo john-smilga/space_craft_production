@@ -8,7 +8,7 @@ export type UpdatePlanogramInput = z.infer<typeof schemas.PlanogramUpdateRequest
 export type Season = z.infer<typeof schemas.SeasonEnum>;
 
 export interface PlanogramDetailResponse {
-  planogram: PlanogramType;
+  planogram: Planogram;
   layout?: GridResponse;
 }
 
