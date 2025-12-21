@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import api from '@/lib/axios';
 import type { PlanogramDetailResponse, Planogram } from '../types';
-import type { AvailableItem } from '../types';
 import type { SelectableCategoriesResponse } from '@/types/categories';
 import { usePlanogramStore } from '../store';
 import { useStandardDisplaysQuery } from '@/features/displays';
@@ -52,9 +51,7 @@ const PlanogramDetailResponseSchema = schemas.Planogram.extend({
 
 export function usePlanogramData(planogramSlug: string | null) {
   const initializeForm = usePlanogramStore.use.initializeForm();
-  const initializeLayouts = usePlanogramStore.use.initializeLayouts();
-  const setAvailableItems = usePlanogramStore.use.setAvailableItems();
-  const setLoadingAvailableItems = usePlanogramStore.use.setLoadingAvailableItems();
+  const initializeFromResponse = usePlanogramStore.use.initializeFromResponse();
 
   // Fetch planogram data
   const planogramQuery = useQuery({
@@ -99,52 +96,15 @@ export function usePlanogramData(planogramSlug: string | null) {
   });
   const leafCategories = leafCategoriesQuery.data?.categories || [];
 
-  // Fetch available products
+  // Fetch available products - kept for backward compatibility with hooks that call it
   const fetchAvailableProducts = useCallback(
-    async (overridePlanogram?: Planogram) => {
-      const planogram = overridePlanogram || planogramQuery.data?.planogram;
-      if (!planogram) {
-        return;
-      }
-
-      const categoryIds = Array.isArray(planogram.category_ids) ? planogram.category_ids : [];
-      const currentSeason = planogram.season || 'summer';
-
-      if (categoryIds.length === 0) {
-        setAvailableItems([]);
-        return;
-      }
-
-      setLoadingAvailableItems(true);
-      try {
-        const categoryIdsStr = categoryIds.join(',');
-        const response = await api.get(`/products/by-categories/?category_ids=${categoryIdsStr}&season=${currentSeason}`);
-
-        // Validate response structure using generated schema
-        const validatedResponse = schemas.ProductListResponse.parse(response.data);
-        const products = validatedResponse.products || [];
-
-        // Convert to AvailableItem format
-        const items: AvailableItem[] = products.map((product) => ({
-          id: product.id,
-          name: product.name,
-          category: product.category ?? 'Unknown',
-          color: product.color ?? '#9ca3af',
-          score: product.overall_score,
-          margin: product.margin,
-          pack_width_in: product.pack_width_in,
-          pack_height_in: product.pack_height_in,
-        }));
-
-        setAvailableItems(items);
-      } catch (error) {
-        console.error('Error fetching available products:', error);
-        setAvailableItems([]);
-      } finally {
-        setLoadingAvailableItems(false);
-      }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async (_overridePlanogram?: Planogram) => {
+      // This is now a no-op since we use React Query for fetching products
+      // Kept for backward compatibility with existing code
+      return;
     },
-    [planogramQuery.data, setAvailableItems, setLoadingAvailableItems]
+    []
   );
 
   // Initialize form state from planogram data
@@ -165,20 +125,17 @@ export function usePlanogramData(planogramSlug: string | null) {
         height_in: parseFloat(planogram.height_in),
         category_ids: Array.isArray(planogram.category_ids) ? planogram.category_ids : [],
       });
-
-      // Fetch available products when planogram loads
-      fetchAvailableProducts();
     }
     // Only depend on planogram ID to avoid infinite loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planogramQuery.data?.planogram?.id]);
 
-  // Initialize layouts from planogram data
+  // Initialize grid layouts from planogram data
   useEffect(() => {
     if (planogramQuery.data?.layout) {
-      initializeLayouts(planogramQuery.data.layout);
+      initializeFromResponse(planogramQuery.data.layout);
     }
-  }, [planogramQuery.data?.layout, initializeLayouts]);
+  }, [planogramQuery.data?.layout, initializeFromResponse]);
 
   return {
     planogramData: planogramQuery.data,

@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { generatePlanogramCSV } from './planogramCSV';
 import type { GridResponse } from '@/features/planogram/types';
+import type { schemas } from '@/lib/generated/api-schemas';
+import type { z } from 'zod';
+
+type PlanogramType = z.infer<typeof schemas.Planogram>;
 
 describe('generatePlanogramCSV', () => {
   it('should return error message when planogram is null', () => {
@@ -25,7 +29,7 @@ describe('generatePlanogramCSV', () => {
       depth_in: 24,
       shelf_count: 5,
       shelf_spacing: 12,
-    };
+    } as unknown as PlanogramType;
 
     const result = generatePlanogramCSV(planogram, null);
     
@@ -53,40 +57,49 @@ describe('generatePlanogramCSV', () => {
       depth_in: 30,
       shelf_count: 6,
       shelf_spacing: 14,
-    };
+    } as unknown as PlanogramType;
 
     const layout: GridResponse = {
       rows: [
         {
+          id: 1,
+          category: 'poultry',
           name: 'Shelf 1',
           items: [
             {
-              id: '1',
+              i: '1',
               x: 0,
               y: 0,
               w: 2,
               h: 1,
               meta: {
+                id: 1,
                 name: 'Product A',
                 category: 'poultry',
                 score: 85,
+                pack_width_in: 2,
+                pack_height_in: 1,
               },
             },
             {
-              id: '2',
+              i: '2',
               x: 2,
               y: 0,
               w: 3,
               h: 1,
               meta: {
+                id: 2,
                 name: 'Product B',
                 category: 'poultry',
                 score: 92,
+                pack_width_in: 3,
+                pack_height_in: 1,
               },
             },
           ],
         },
       ],
+      grid: { cols: 10, rows: 6, cellWidthIn: 4 },
     };
 
     const result = generatePlanogramCSV(planogram, layout);
@@ -108,28 +121,34 @@ describe('generatePlanogramCSV', () => {
       depth_in: 25,
       shelf_count: 4,
       shelf_spacing: 10,
-    };
+    } as unknown as PlanogramType;
 
     const layout: GridResponse = {
       rows: [
         {
+          id: 1,
+          category: 'beef',
           name: 'Row "Top"',
           items: [
             {
-              id: '1',
+              i: '1',
               x: 0,
               y: 0,
               w: 2,
               h: 1,
               meta: {
+                id: 1,
                 name: 'Product "Best"',
                 category: 'beef',
                 score: 95,
+                pack_width_in: 2,
+                pack_height_in: 1,
               },
             },
           ],
         },
       ],
+      grid: { cols: 10, rows: 4, cellWidthIn: 5 },
     };
 
     const result = generatePlanogramCSV(planogram, layout);
@@ -152,7 +171,7 @@ describe('generatePlanogramCSV', () => {
       depth_in: null,
       shelf_count: null,
       shelf_spacing: null,
-    };
+    } as unknown as PlanogramType;
 
     const result = generatePlanogramCSV(planogram, null);
     
@@ -174,27 +193,34 @@ describe('generatePlanogramCSV', () => {
       depth_in: 20,
       shelf_count: 3,
       shelf_spacing: 8,
-    };
+    } as unknown as PlanogramType;
 
     const layout: GridResponse = {
       rows: [
         {
+          id: 1,
+          category: 'sausage',
           name: 'Shelf 1',
           items: [
             {
-              id: '1',
+              i: '1',
               x: 0,
               y: 0,
               w: 2,
               h: 1,
               meta: {
+                id: 1,
                 name: 'Product Without Score',
                 category: 'sausage',
+                score: 0,
+                pack_width_in: 2,
+                pack_height_in: 1,
               },
             },
           ],
         },
       ],
+      grid: { cols: 8, rows: 3, cellWidthIn: 5 },
     };
 
     const result = generatePlanogramCSV(planogram, layout);
@@ -214,27 +240,34 @@ describe('generatePlanogramCSV', () => {
       depth_in: 22,
       shelf_count: 4,
       shelf_spacing: 9,
-    };
+    } as unknown as PlanogramType;
 
     const layout: GridResponse = {
       rows: [
         {
+          id: 2,
+          category: 'lamb',
           name: 'Shelf 2',
           items: [
             {
-              id: '1',
+              i: '1',
               x: 1,
               y: 1,
               w: 1,
               h: 2,
               meta: {
+                id: 1,
                 name: 'Product No Category',
+                category: '',
                 score: 75,
+                pack_width_in: 1,
+                pack_height_in: 2,
               },
             },
           ],
         },
       ],
+      grid: { cols: 9, rows: 4, cellWidthIn: 5 },
     };
 
     const result = generatePlanogramCSV(planogram, layout);
@@ -254,10 +287,11 @@ describe('generatePlanogramCSV', () => {
       depth_in: 25,
       shelf_count: 5,
       shelf_spacing: 11,
-    };
+    } as unknown as PlanogramType;
 
     const layout: GridResponse = {
       rows: [],
+      grid: { cols: 10, rows: 5, cellWidthIn: 5 },
     };
 
     const result = generatePlanogramCSV(planogram, layout);
@@ -279,7 +313,7 @@ describe('generatePlanogramCSV', () => {
       depth_in: null,
       shelf_count: 4,
       shelf_spacing: 10,
-    };
+    } as unknown as PlanogramType;
 
     const result = generatePlanogramCSV(planogram, null);
     
@@ -299,7 +333,7 @@ describe('generatePlanogramCSV', () => {
       depth_in: 25,
       shelf_count: 5,
       shelf_spacing: 12,
-    };
+    } as unknown as PlanogramType;
 
     const result = generatePlanogramCSV(planogram, null);
     

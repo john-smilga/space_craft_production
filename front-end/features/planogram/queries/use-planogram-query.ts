@@ -60,8 +60,7 @@ async function fetchPlanogram(slug: string): Promise<PlanogramDetailResponse> {
 
 export function usePlanogramQuery(slug: string | null) {
   const initializeForm = usePlanogramStore.use.initializeForm();
-  const initializeLayouts = usePlanogramStore.use.initializeLayouts();
-  const setLoading = usePlanogramStore.use.setLoading();
+  const initializeFromResponse = usePlanogramStore.use.initializeFromResponse();
 
   const query = useQuery({
     queryKey: ['planograms', slug],
@@ -91,11 +90,9 @@ export function usePlanogramQuery(slug: string | null) {
 
   useEffect(() => {
     if (query.data?.layout) {
-      initializeLayouts(query.data.layout);
-    } else if (!query.isLoading) {
-      setLoading(false);
+      initializeFromResponse(query.data.layout);
     }
-  }, [query.data?.layout, query.isLoading, initializeLayouts, setLoading]);
+  }, [query.data?.layout, initializeFromResponse]);
 
   return query;
 }

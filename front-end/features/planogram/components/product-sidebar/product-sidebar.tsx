@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import api from '@/lib/axios';
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { usePlanogramStore } from '@/features/planogram';
+import { usePlanogramStore, usePlanogramData } from '@/features/planogram';
 
 interface PathResponse {
   products: boolean;
@@ -21,10 +22,18 @@ interface PathResponse {
 }
 
 export function ProductSidebar() {
-  const season = usePlanogramStore.use.season();
+  const params = useParams();
+  const planogramSlug = params?.planogramSlug as string;
+  
+  // Get planogram data for season
+  const { planogramData } = usePlanogramData(planogramSlug);
+  const season = planogramData?.planogram?.season || 'summer';
+  
+  // Product Browser slice state
   const sidebarExpanded = usePlanogramStore.use.sidebarExpanded();
   const toggleSidebar = usePlanogramStore.use.toggleSidebar();
   const toggleSidebarExpand = usePlanogramStore.use.toggleSidebarExpand();
+  
   const [selectedCategory, setSelectedCategory] = useState<string>('fresh');
 
   const url = `/categories/path/${selectedCategory}/?season=${season}`;

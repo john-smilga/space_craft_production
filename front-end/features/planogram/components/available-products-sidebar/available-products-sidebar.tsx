@@ -1,25 +1,45 @@
 'use client';
 
+import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react';
-import { usePlanogramStore, usePlanogramLayout } from '@/features/planogram';
+import { usePlanogramStore, usePlanogramLayout, usePlanogramData } from '@/features/planogram';
+import { useAvailableProductsQuery } from '@/features/planogram/queries';
 
 export function AvailableProductsSidebar() {
-  const availableItems = usePlanogramStore.use.availableItems();
-  const loadingAvailableItems = usePlanogramStore.use.loadingAvailableItems();
-  const selectedAvailableItems = usePlanogramStore.use.selectedAvailableItems();
-  const incrementItemQuantity = usePlanogramStore.use.incrementItemQuantity();
-  const decrementItemQuantity = usePlanogramStore.use.decrementItemQuantity();
-  const closeAvailableProductsSidebar = usePlanogramStore.use.closeAvailableProductsSidebar();
+  const params = useParams();
+  const planogramSlug = params?.planogramSlug as string;
+  
+  // Get planogram data for categories and season
+  const { planogramData } = usePlanogramData(planogramSlug);
+  const planogram = planogramData?.planogram;
+  
+  // Fetch available products based on planogram categories/season
+  const categoryIds = (planogram?.category_ids ?? []) as number[];
+  const season = planogram?.season ?? 'summer';
+  
+  const { data: availableItems = [], isLoading: loadingAvailableItems } = useAvailableProductsQuery({
+    categoryIds,
+    season,
+  });
+  
+  // Available Products slice state
+  const selectedAvailableItems = usePlanogramStore.use.selectedItems();
+  const incrementItem = usePlanogramStore.use.incrementItem();
+  const decrementItem = usePlanogramStore.use.decrementItem();
+  const closeAvailableProducts = usePlanogramStore.use.closeAvailableProducts();
   const targetRowId = usePlanogramStore.use.targetRowId();
   const setTargetRowId = usePlanogramStore.use.setTargetRowId();
   const availableProductsSidebarExpanded = usePlanogramStore.use.availableProductsSidebarExpanded();
   const toggleAvailableProductsSidebarExpand = usePlanogramStore.use.toggleAvailableProductsSidebarExpand();
+  
+  // Grid slice state
   const gridData = usePlanogramStore.use.gridData();
-  const { handleAddSelectedItems } = usePlanogramLayout();
+  
+  const { handleAddSelectedItems } = usePlanogramLayout(availableItems);
 
   const formatScore = (score: number) => {
     return (score * 100).toFixed(0);
@@ -48,7 +68,7 @@ export function AvailableProductsSidebar() {
             <Button variant='ghost' size='icon' onClick={toggleAvailableProductsSidebarExpand} className='h-8 w-8 cursor-pointer' title={availableProductsSidebarExpanded ? 'Collapse' : 'Expand'}>
               {availableProductsSidebarExpanded ? <ChevronRight className='h-4 w-4' /> : <ChevronLeft className='h-4 w-4' />}
             </Button>
-            <Button variant='ghost' size='icon' onClick={closeAvailableProductsSidebar} className='h-8 w-8 cursor-pointer' title='Close'>
+            <Button variant='ghost' size='icon' onClick={closeAvailableProducts} className='h-8 w-8 cursor-pointer' title='Close'>
               <X className='h-4 w-4' />
             </Button>
           </div>
@@ -80,11 +100,11 @@ export function AvailableProductsSidebar() {
                       </div>
                     </div>
                     <div className='flex items-center gap-2 shrink-0'>
-                      <Button size='icon' variant='outline' className='h-7 w-7' onClick={() => decrementItemQuantity(item.id)} disabled={quantity === 0}>
+                      <Button size='icon' variant='outline' className='h-7 w-7' onClick={() => decrementItem(item.id)} disabled={quantity === 0}>
                         <Minus className='h-3 w-3' />
                       </Button>
                       <span className='w-8 text-center text-sm font-medium'>{quantity}</span>
-                      <Button size='icon' variant='outline' className='h-7 w-7' onClick={() => incrementItemQuantity(item.id)}>
+                      <Button size='icon' variant='outline' className='h-7 w-7' onClick={() => incrementItem(item.id)}>
                         <Plus className='h-3 w-3' />
                       </Button>
                     </div>

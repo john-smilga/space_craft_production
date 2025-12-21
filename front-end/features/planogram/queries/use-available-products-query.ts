@@ -1,10 +1,8 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { z } from 'zod';
 import api from '@/lib/axios';
 import { schemas } from '@/lib/generated/api-schemas';
-import { usePlanogramStore } from '../store';
 import type { AvailableItem } from '../types';
 
 interface AvailableProductsParams {
@@ -37,26 +35,11 @@ async function fetchAvailableProducts(params: AvailableProductsParams): Promise<
 }
 
 export function useAvailableProductsQuery(params: AvailableProductsParams) {
-  const setAvailableItems = usePlanogramStore.use.setAvailableItems();
-  const setLoadingAvailableItems = usePlanogramStore.use.setLoadingAvailableItems();
-
-  const query = useQuery({
+  return useQuery({
     queryKey: ['available-products', params.categoryIds, params.season],
     queryFn: () => fetchAvailableProducts(params),
     enabled: params.categoryIds.length > 0,
     staleTime: 1000 * 60 * 10,
   });
-
-  useEffect(() => {
-    setLoadingAvailableItems(query.isLoading);
-  }, [query.isLoading, setLoadingAvailableItems]);
-
-  useEffect(() => {
-    if (query.data) {
-      setAvailableItems(query.data);
-    }
-  }, [query.data, setAvailableItems]);
-
-  return query;
 }
 

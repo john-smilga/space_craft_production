@@ -20,16 +20,12 @@ export function usePlanogramForm(
   const setSeason = usePlanogramStore.use.setSeason();
   const setShelfCount = usePlanogramStore.use.setShelfCount();
   const setSelectedCategoryIds = usePlanogramStore.use.setSelectedCategoryIds();
-  const setSkipNextInitialization = usePlanogramStore.use.setSkipNextInitialization();
-
   const updateMutation = useUpdatePlanogramMutation();
   const saveLayoutMutation = useSaveLayoutMutation();
   const deleteMutation = useDeletePlanogramMutation();
 
   // Save layout handler
   const handleSaveLayout = async (layout: Record<number, LayoutItem[]>) => {
-    // Set flag to skip next initialization to prevent flashing
-    setSkipNextInitialization(true);
 
     if (!planogramData?.planogram) {
       return;

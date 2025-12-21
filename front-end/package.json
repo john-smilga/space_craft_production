@@ -7,13 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "test:watch": "vitest --watch",
-    "generate:schema": "openapi-zod-client ../openapi.yaml -o ./lib/generated/api-schemas.ts --strict-objects --additional-props-default-value false"
+    "generate:schema": "openapi-zod-client ../openapi.yaml -o ./lib/generated/api-schemas.ts --strict-objects --additional-props-default-value false",
+    "check":"npm run lint && npm run typecheck"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^7.1.0",

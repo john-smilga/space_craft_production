@@ -1,5 +1,5 @@
 'use client';
-import type { LayoutItem } from '../types';
+import type { LayoutItem, AvailableItem } from '../types';
 import { usePlanogramStore } from '../store';
 
 // Helper function to calculate width in cells (matches backend logic)
@@ -15,19 +15,18 @@ function widthCellsFor(widthIn: number, cellWidthIn: number): number {
   return Math.max(2, Math.floor(widthIn / cellWidthIn));
 }
 
-export function usePlanogramLayout() {
+export function usePlanogramLayout(availableItems: AvailableItem[]) {
   const gridData = usePlanogramStore.use.gridData();
   const rowLayouts = usePlanogramStore.use.rowLayouts();
   const setRowLayouts = usePlanogramStore.use.setRowLayouts();
-  const availableItems = usePlanogramStore.use.availableItems();
-  const selectedAvailableItems = usePlanogramStore.use.selectedAvailableItems();
+  const selectedItems = usePlanogramStore.use.selectedItems();
   const targetRowId = usePlanogramStore.use.targetRowId();
-  const clearSelectedAvailableItems = usePlanogramStore.use.clearSelectedAvailableItems();
-  const closeAvailableProductsSidebar = usePlanogramStore.use.closeAvailableProductsSidebar();
+  const clearSelectedItems = usePlanogramStore.use.clearSelectedItems();
+  const closeAvailableProducts = usePlanogramStore.use.closeAvailableProducts();
 
   // Handle adding selected items to a row
   const handleAddSelectedItems = () => {
-    if (!gridData || targetRowId === null || selectedAvailableItems.size === 0) {
+    if (!gridData || targetRowId === null || selectedItems.size === 0) {
       return;
     }
 
@@ -35,7 +34,7 @@ export function usePlanogramLayout() {
     const newItems: LayoutItem[] = [];
 
     // Loop through each selected item and its quantity
-    selectedAvailableItems.forEach((quantity, itemId) => {
+    selectedItems.forEach((quantity, itemId) => {
       const item = availableItems.find((i) => i.id === itemId);
       if (!item) {
         return;
@@ -139,8 +138,8 @@ export function usePlanogramLayout() {
       setRowLayouts(updated);
 
       // Clear selections and close sidebar
-      clearSelectedAvailableItems();
-      closeAvailableProductsSidebar();
+      clearSelectedItems();
+      closeAvailableProducts();
     }
   };
 

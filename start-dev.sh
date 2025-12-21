@@ -12,7 +12,17 @@ echo -e "${GREEN}🚀 Starting development servers...${NC}\n"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-# Step 1: Check and install node_modules if needed
+# Step 1: Check and install Python dependencies
+echo -e "${YELLOW}🐍 Checking Python dependencies...${NC}"
+poetry install --no-interaction --no-root
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}   ✓ Python dependencies installed${NC}\n"
+else
+    echo -e "${RED}   ✗ Failed to install Python dependencies${NC}"
+    exit 1
+fi
+
+# Step 2: Check and install node_modules if needed
 echo -e "${YELLOW}📦 Checking front-end dependencies...${NC}"
 if [ ! -d "front-end/node_modules" ]; then
     echo -e "${YELLOW}   node_modules not found. Installing dependencies...${NC}"
@@ -24,7 +34,7 @@ else
     echo -e "${GREEN}   ✓ Dependencies already installed${NC}\n"
 fi
 
-# Step 2: Stop existing servers on ports 8000 (Django) and 3000 (Next.js)
+# Step 3: Stop existing servers on ports 8000 (Django) and 3000 (Next.js)
 echo -e "${YELLOW}🛑 Stopping existing servers...${NC}"
 
 # Kill process on port 8000 (Django)
@@ -62,7 +72,7 @@ cleanup() {
 # Trap Ctrl+C and call cleanup
 trap cleanup SIGINT SIGTERM
 
-# Step 3: Start Django backend server
+# Step 4: Start Django backend server
 echo -e "${GREEN}🐍 Starting Django server on http://localhost:8000${NC}"
 cd "$SCRIPT_DIR"
 poetry run python manage.py runserver &
@@ -71,7 +81,7 @@ DJANGO_PID=$!
 # Wait a moment for Django to start
 sleep 2
 
-# Step 4: Start Next.js front-end server
+# Step 5: Start Next.js front-end server
 echo -e "${GREEN}⚛️  Starting Next.js server on http://localhost:3000${NC}"
 cd "$SCRIPT_DIR/front-end"
 npm run dev &

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import GridLayout, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import { RowHeader } from '../row-header/row-header';
@@ -16,33 +16,30 @@ export function Grid() {
   const params = useParams();
   const planogramSlug = params?.planogramSlug as string;
 
+  // Grid slice state
   const gridData = usePlanogramStore.use.gridData();
-  const loading = usePlanogramStore.use.loading();
   const rowLayouts = usePlanogramStore.use.rowLayouts();
-  const setRowLayouts = usePlanogramStore.use.setRowLayouts();
+  const editMode = usePlanogramStore.use.editMode();
   const rowNotifications = usePlanogramStore.use.rowNotifications();
+  const setEditMode = usePlanogramStore.use.setEditMode();
+  const setRowLayouts = usePlanogramStore.use.setRowLayouts();
   const setRowNotification = usePlanogramStore.use.setRowNotification();
+  const initializeFromResponse = usePlanogramStore.use.initializeFromResponse();
+  
+  // Available products slice state
   const availableProductsSidebarOpen = usePlanogramStore.use.availableProductsSidebarOpen();
+  const openAvailableProductsForRow = usePlanogramStore.use.openAvailableProductsForRow();
   const toggleAvailableProductsSidebar = usePlanogramStore.use.toggleAvailableProductsSidebar();
-  const setTargetRowId = usePlanogramStore.use.setTargetRowId();
+  
   const { planogramData, refetchPlanogram, fetchAvailableProducts } = usePlanogramData(planogramSlug);
   const { handleSaveLayout: saveLayout } = usePlanogramForm(planogramSlug, planogramData ?? null, refetchPlanogram, fetchAvailableProducts);
 
-  const [editMode, setEditMode] = useState<boolean>(false);
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
-
-  // Initialize when gridData changes
+  // Initialize grid from layout data when planogram loads
   useEffect(() => {
-    if (gridData) {
-      // Mark as initialized after a brief delay to allow rowLayouts to be set
-      const timer = setTimeout(() => setIsInitialized(true), 100);
-      return () => clearTimeout(timer);
-    } else {
-      // Reset initialization when gridData is cleared
-      const timer = setTimeout(() => setIsInitialized(false), 0);
-      return () => clearTimeout(timer);
+    if (planogramData?.layout && !gridData) {
+      initializeFromResponse(planogramData.layout);
     }
-  }, [gridData]);
+  }, [planogramData?.layout, gridData, initializeFromResponse]);
 
   // Wrapper for setRowLayouts to match React Dispatch signature
   const handleSetRowLayouts = (value: React.SetStateAction<Record<number, LayoutItem[]>>) => {
@@ -88,14 +85,6 @@ export function Grid() {
     selectedItem: null,
   });
 
-  if (loading) {
-    return (
-      <div className='flex justify-center items-center py-12'>
-        <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600'></div>
-      </div>
-    );
-  }
-
   if (!gridData) {
     return null;
   }
@@ -123,10 +112,11 @@ export function Grid() {
 
   const handleToggleAddItems = () => {
     if (!availableProductsSidebarOpen && gridData?.rows.length > 0) {
-      // Set target to first row by default when opening
-      setTargetRowId(gridData.rows[0].id);
+      // Open sidebar for first row by default
+      openAvailableProductsForRow(gridData.rows[0].id);
+    } else {
+      toggleAvailableProductsSidebar();
     }
-    toggleAvailableProductsSidebar();
   };
 
   return (
@@ -170,23 +160,7 @@ export function Grid() {
               className='layout border-2 border-border bg-muted rounded'
               layout={currentLayout}
               onLayoutChange={(newLayout) => {
-                // Only handle layout changes in edit mode
-                if (!editMode) {
-                  return;
-                }
-
-                // Don't handle layout changes until initialized and we have valid meta data
-                if (!isInitialized) {
-                  return;
-                }
-
-                // Check if all items in newLayout have corresponding items with meta
-                const hasValidMeta = newLayout.every((newItem) => {
-                  const existingItem = currentLayout.find((item) => item.i === newItem.i);
-                  return existingItem && existingItem.meta && existingItem.meta.name && existingItem.meta.name !== 'Unknown';
-                });
-
-                if (hasValidMeta && currentLayout.length > 0) {
+                if (editMode && currentLayout.length > 0) {
                   handleLayoutChange(row.id, newLayout as LayoutItem[]);
                 }
               }}
