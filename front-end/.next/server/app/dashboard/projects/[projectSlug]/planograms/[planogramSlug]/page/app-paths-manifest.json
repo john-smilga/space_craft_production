@@ -1,0 +1,3 @@
+{
+  "/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/page": "app/dashboard/projects/[projectSlug]/planograms/[planogramSlug]/page.js"
+}

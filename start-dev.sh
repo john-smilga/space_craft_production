@@ -84,7 +84,7 @@ sleep 2
 # Step 5: Start Next.js front-end server
 echo -e "${GREEN}⚛️  Starting Next.js server on http://localhost:3000${NC}"
 cd "$SCRIPT_DIR/front-end"
-npm run dev &
+npm run dev:web &
 NEXTJS_PID=$!
 
 # Wait a moment for Next.js to start

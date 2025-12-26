@@ -11,7 +11,7 @@ downloads/
 eggs/
 .eggs/
 lib/
-!front-end/lib/
+!front-end/apps/web/lib/
 lib64/
 parts/
 sdist/
@@ -41,6 +41,9 @@ venv.bak/
 *.swp
 *.swo
 *~
+
+# Turborepo
+front-end/.turbo
 
 # OS
 .DS_Store

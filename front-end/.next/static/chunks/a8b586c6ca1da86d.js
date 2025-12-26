@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,14231,e=>{"use strict";var t=e.i(71645),u=e.i(92989);function r(){let e=(0,u.useRouter)(),r=(0,u.useParams)(),o=r?.projectSlug;return(0,t.useEffect)(()=>{o&&e.replace(`/dashboard/projects/${o}`)},[o,e]),null}e.s(["default",()=>r])}]);

@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/olya/Desktop/space_craft_production/front-end/app/dashboard/projects/%5BprojectSlug%5D/planograms/page.tsx"],"sourcesContent":["'use client';\n\nimport { useEffect } from 'react';\nimport { useRouter, useParams } from 'next/navigation';\n\nexport default function ProjectPlanogramsPage() {\n  const router = useRouter();\n  const params = useParams();\n  const projectSlug = params?.projectSlug as string;\n\n  useEffect(() => {\n    // Redirect to the project detail page where planograms are displayed\n    if (projectSlug) {\n      router.replace(`/dashboard/projects/${projectSlug}`);\n    }\n  }, [projectSlug, router]);\n\n  return null;\n}\n"],"names":[],"mappings":";;;;AAEA;AACA;;AAHA;;;AAKe,SAAS;;IACtB,MAAM,SAAS,IAAA,kJAAS;IACxB,MAAM,SAAS,IAAA,kJAAS;IACxB,MAAM,cAAc,QAAQ;IAE5B,IAAA,0KAAS;2CAAC;YACR,qEAAqE;YACrE,IAAI,aAAa;gBACf,OAAO,OAAO,CAAC,CAAC,oBAAoB,EAAE,aAAa;YACrD;QACF;0CAAG;QAAC;QAAa;KAAO;IAExB,OAAO;AACT;GAbwB;;QACP,kJAAS;QACT,kJAAS;;;KAFF"}}]
+}
