@@ -1,3 +1,0 @@
-[00:00:01.391] Server  LOG      ✓ Ready in 1152ms
-[00:01:06.170] Browser ERROR   React instrumentation encountered an error: %s. {}
-[00:03:46.917] Browser ERROR   uncaughtError: Error: Invalid argument not valid semver ('' received)
