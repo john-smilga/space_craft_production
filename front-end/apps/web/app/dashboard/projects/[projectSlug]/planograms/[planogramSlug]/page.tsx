@@ -1,9 +1,15 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { usePlanogramStore, usePlanogramData } from '@/features/planogram';
 import { Grid, ThreeJSView, ProductSidebar, AvailableProductsSidebar, PlanogramNameField, PlanogramFormFields, PlanogramCategoriesSelector, PlanogramActions, PlanogramDeleteButton, PlanogramHeader } from '@/features/planogram/components';
 import { Card, CardContent } from '@/components/ui/card';
+
+const KonvaGridWrapper = dynamic(
+  () => import('@/features/planogram/components/konva-grid-wrapper').then(mod => mod.KonvaGridWrapper),
+  { ssr: false }
+);
 
 function PlanogramDetailContent() {
   const params = useParams();
@@ -71,6 +77,7 @@ function PlanogramDetailContent() {
             {gridData ? (
               <>
                 <Grid />
+                <KonvaGridWrapper />
                 {Object.keys(rowLayouts).length > 0 && <ThreeJSView gridData={gridData} rowLayouts={rowLayouts} />}
               </>
             ) : (

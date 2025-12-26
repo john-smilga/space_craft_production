@@ -56,15 +56,26 @@ echo -e "${GREEN}   ✓ Ports cleared${NC}\n"
 # Function to cleanup on exit
 cleanup() {
     echo -e "\n${YELLOW}🛑 Shutting down servers...${NC}"
+
+    # Kill Django process and its children
     if [ ! -z "$DJANGO_PID" ]; then
+        pkill -P $DJANGO_PID 2>/dev/null
         kill $DJANGO_PID 2>/dev/null
     fi
+
+    # Kill Next.js process and its children
     if [ ! -z "$NEXTJS_PID" ]; then
+        pkill -P $NEXTJS_PID 2>/dev/null
         kill $NEXTJS_PID 2>/dev/null
     fi
-    # Kill any remaining processes
+
+    # Give processes time to exit gracefully
+    sleep 1
+
+    # Force kill any remaining processes on the ports
     lsof -ti:8000 | xargs kill -9 2>/dev/null
     lsof -ti:3000 | xargs kill -9 2>/dev/null
+
     echo -e "${GREEN}✓ Servers stopped${NC}"
     exit 0
 }
@@ -83,6 +94,14 @@ sleep 2
 
 # Step 5: Start Next.js front-end server
 echo -e "${GREEN}⚛️  Starting Next.js server on http://localhost:3000${NC}"
+cd "$SCRIPT_DIR/front-end/apps/web"
+
+# Clean .next folder to prevent corrupted cache issues
+if [ -d ".next" ]; then
+    echo -e "${YELLOW}   Cleaning .next cache...${NC}"
+    rm -rf .next
+fi
+
 cd "$SCRIPT_DIR/front-end"
 npm run dev:web &
 NEXTJS_PID=$!

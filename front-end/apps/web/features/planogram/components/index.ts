@@ -17,4 +17,3 @@ export { ProjectDisplay } from './project-display/project-display';
 export { RowHeader } from './row-header/row-header';
 export { ShelvesTable } from './shelves-table/shelves-table';
 export { ThreeJSView } from './three-js-view/three-js-view';
-
