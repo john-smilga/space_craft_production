@@ -251,12 +251,16 @@ class PlanogramUpdateSerializer(serializers.ModelSerializer):
     """Input serializer for planogram updates."""
 
     category_ids = CategoryIdsField(required=False)
+    display = serializers.PrimaryKeyRelatedField(
+        queryset=Display.objects.none(), required=False, allow_null=True
+    )
 
     class Meta:
         model = Planogram
         fields = [
             "name",
             "season",
+            "display",
             "width_in",
             "height_in",
             "depth_in",
@@ -265,6 +269,17 @@ class PlanogramUpdateSerializer(serializers.ModelSerializer):
             "category_ids",
             "preserve_layout",
         ]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize serializer and set querysets."""
+        from django.db.models import Q
+
+        super().__init__(*args, **kwargs)
+        company = self.context.get("company")
+        if company:
+            self.fields["display"].queryset = Display.objects.filter(
+                Q(company=company) | Q(company__isnull=True)
+            )
 
     def validate_name(self, value: str) -> str:
         """Validate planogram name."""
@@ -295,6 +310,18 @@ class PlanogramUpdateSerializer(serializers.ModelSerializer):
         if value is not None:
             return Decimal(str(validate_positive_number(float(value))))
         return value
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        """Validate planogram update data."""
+        company = self.context.get("company")
+
+        display = attrs.get("display")
+        if display and display.company and company and display.company != company:
+            raise serializers.ValidationError(
+                {"display": "Display does not belong to your company."}
+            )
+
+        return attrs
 
 
 class PlanogramLayoutSerializer(serializers.Serializer):

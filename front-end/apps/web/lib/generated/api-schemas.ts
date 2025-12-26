@@ -338,6 +338,7 @@ const PlanogramUpdateRequest = z
   .object({
     name: z.string().min(1).max(255),
     season: SeasonEnum.optional(),
+    display: z.number().int().nullish(),
     width_in: z.string().regex(/^-?\d{0,8}(?:\.\d{0,2})?$/),
     height_in: z.string().regex(/^-?\d{0,8}(?:\.\d{0,2})?$/),
     depth_in: z
@@ -361,6 +362,7 @@ const PatchedPlanogramUpdateRequest = z
   .object({
     name: z.string().min(1).max(255),
     season: SeasonEnum,
+    display: z.number().int().nullable(),
     width_in: z.string().regex(/^-?\d{0,8}(?:\.\d{0,2})?$/),
     height_in: z.string().regex(/^-?\d{0,8}(?:\.\d{0,2})?$/),
     depth_in: z
@@ -385,6 +387,7 @@ const PlanogramUpdate = z
   .object({
     name: z.string().max(255),
     season: SeasonEnum.optional(),
+    display: z.number().int().nullish(),
     width_in: z.string().regex(/^-?\d{0,8}(?:\.\d{0,2})?$/),
     height_in: z.string().regex(/^-?\d{0,8}(?:\.\d{0,2})?$/),
     depth_in: z

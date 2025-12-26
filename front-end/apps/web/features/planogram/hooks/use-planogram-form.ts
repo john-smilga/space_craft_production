@@ -15,6 +15,7 @@ export function usePlanogramForm(
   const widthIn = usePlanogramStore.use.widthIn();
   const heightIn = usePlanogramStore.use.heightIn();
   const selectedCategoryIds = usePlanogramStore.use.selectedCategoryIds();
+  const selectedDisplay = usePlanogramStore.use.selectedDisplay();
   const setName = usePlanogramStore.use.setName();
   const setSelectedDisplay = usePlanogramStore.use.setSelectedDisplay();
   const setSeason = usePlanogramStore.use.setSeason();
@@ -64,7 +65,6 @@ export function usePlanogramForm(
     }
 
     // Only include fields that have changed
-    // Note: Display cannot be changed after creation per API limitations
     if (season && season !== planogramData.planogram.season) {
       updates.season = season;
     }
@@ -76,6 +76,9 @@ export function usePlanogramForm(
       if (JSON.stringify(selectedCategoryIds.sort()) !== JSON.stringify(currentIds.sort())) {
         updates.category_ids = selectedCategoryIds;
       }
+    }
+    if (selectedDisplay && selectedDisplay !== planogramData.planogram.display?.toString()) {
+      updates.display = parseInt(selectedDisplay, 10);
     }
 
     // Always set preserve_layout to false when regenerating
@@ -107,6 +110,9 @@ export function usePlanogramForm(
           if (Array.isArray(updatedPlanogram.category_ids)) {
             setSelectedCategoryIds(updatedPlanogram.category_ids);
           }
+          if (updatedPlanogram.display) {
+            setSelectedDisplay(updatedPlanogram.display.toString());
+          }
 
           // Refetch to get latest state (including display and slug)
           await refetchPlanogram();
@@ -120,40 +126,11 @@ export function usePlanogramForm(
     }
   };
 
-  // Handle display change - regenerate planogram immediately
-  const handleDisplayChange = async (displayId: string) => {
-    setSelectedDisplay(displayId);
-    // Trigger regeneration when display changes
-    if (planogramData?.planogram) {
-      try {
-        // Note: Display cannot be changed after creation per API limitations
-        // Just update the UI state
-        const result = await updateMutation.mutateAsync({
-          slug: planogramSlug,
-          name: planogramData.planogram.name,
-          width_in: planogramData.planogram.width_in,
-          height_in: planogramData.planogram.height_in,
-          shelf_count: planogramData.planogram.shelf_count,
-          preserve_layout: false,
-        });
-        if (result) {
-          const updatedPlanogram = result;
-          // Update shelf count from the new display
-          setShelfCount(updatedPlanogram.shelf_count && updatedPlanogram.shelf_count > 0 ? updatedPlanogram.shelf_count : 1);
-          await refetchPlanogram();
-        }
-      } catch {
-        // Error handled by mutation
-      }
-    }
-  };
-
   return {
     updatePlanogramMutation: updateMutation,
     deleteMutation,
     handleSaveLayout,
     handleRegenerate,
-    handleDisplayChange,
   };
 }
 

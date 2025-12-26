@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { usePlanogramStore, usePlanogramData, usePlanogramForm } from '@/features/planogram';
+import { usePlanogramStore, usePlanogramData } from '@/features/planogram';
 import { useParams } from 'next/navigation';
 
 export function PlanogramFormFields() {
@@ -15,8 +15,8 @@ export function PlanogramFormFields() {
   const selectedDisplay = usePlanogramStore.use.selectedDisplay();
   const setSeason = usePlanogramStore.use.setSeason();
   const setShelfCount = usePlanogramStore.use.setShelfCount();
-  const { planogramData, companyDisplays, standardDisplays, refetchPlanogram, fetchAvailableProducts } = usePlanogramData(planogramSlug);
-  const { handleDisplayChange } = usePlanogramForm(planogramSlug, planogramData ?? null, refetchPlanogram, fetchAvailableProducts);
+  const setSelectedDisplay = usePlanogramStore.use.setSelectedDisplay();
+  const { companyDisplays, standardDisplays } = usePlanogramData(planogramSlug);
 
   return (
     <>
@@ -62,7 +62,7 @@ export function PlanogramFormFields() {
               Create Custom Display
             </Link>
           </div>
-          <Select value={selectedDisplay} onValueChange={handleDisplayChange}>
+          <Select value={selectedDisplay} onValueChange={setSelectedDisplay}>
             <SelectTrigger className='w-full'>
               <SelectValue placeholder='Select display' />
             </SelectTrigger>

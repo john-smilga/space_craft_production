@@ -1657,6 +1657,9 @@ components:
           maxLength: 255
         season:
           $ref: '#/components/schemas/SeasonEnum'
+        display:
+          type: integer
+          nullable: true
         width_in:
           type: string
           format: decimal
@@ -2066,6 +2069,9 @@ components:
           maxLength: 255
         season:
           $ref: '#/components/schemas/SeasonEnum'
+        display:
+          type: integer
+          nullable: true
         width_in:
           type: string
           format: decimal
@@ -2116,6 +2122,9 @@ components:
           maxLength: 255
         season:
           $ref: '#/components/schemas/SeasonEnum'
+        display:
+          type: integer
+          nullable: true
         width_in:
           type: string
           format: decimal

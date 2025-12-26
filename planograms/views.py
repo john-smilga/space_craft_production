@@ -130,9 +130,20 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         """Update planogram."""
         instance = self.get_object()
         serializer = self.get_serializer(
-            instance, data=request.data, partial=kwargs.get("partial", False)
+            instance, data=request.data, partial=kwargs.get("partial", False),
+            context={"company": request.user.company}
         )
         serializer.is_valid(raise_exception=True)
+
+        # Check if display changed and update dimensions from new display
+        new_display = serializer.validated_data.get("display")
+        if new_display and new_display != instance.display:
+            # Update dimensions from new display
+            serializer.validated_data["width_in"] = new_display.width_in
+            serializer.validated_data["height_in"] = new_display.height_in
+            serializer.validated_data["depth_in"] = new_display.depth_in
+            serializer.validated_data["shelf_count"] = new_display.shelf_count
+            serializer.validated_data["shelf_spacing"] = new_display.shelf_spacing
 
         planogram = serializer.save(updated_by=request.user)
 
