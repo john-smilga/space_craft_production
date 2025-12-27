@@ -1,37 +1,52 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useProjectQuery } from '@/features/projects';
 import { useCreatePlanogramMutation } from '@/features/planogram';
-import { NameInput, ProjectDisplay } from '@/features/planogram/components';
+import { ProjectDisplay } from '@/features/planogram/components';
 import { Button } from '@/components/ui/button';
+import { FormInput } from '@/components/ui/form-input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import InfoAlert from '@/components/InfoAlert';
+
+const planogramFormSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+});
+
+type PlanogramFormData = z.infer<typeof planogramFormSchema>;
 
 export default function CreatePlanogramPage() {
   const router = useRouter();
   const params = useParams();
   const projectSlug = params?.projectSlug as string;
 
-  const [name, setName] = useState('New Planogram');
-
   // Fetch project to verify it exists and get its name
   const { data: project } = useProjectQuery(projectSlug);
 
   const createPlanogramMutation = useCreatePlanogramMutation();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<PlanogramFormData>({
+    resolver: zodResolver(planogramFormSchema),
+    defaultValues: {
+      name: 'New Planogram',
+    },
+  });
 
+  const onSubmit = (data: PlanogramFormData) => {
     if (!project) {
       return;
     }
 
-    try {
-      const result = await createPlanogramMutation.mutateAsync({
-        name,
+    createPlanogramMutation.mutate(
+      {
+        name: data.name,
         project: project.id,
         // Provide minimal required defaults - user can edit later
         season: 'summer',
@@ -39,13 +54,13 @@ export default function CreatePlanogramPage() {
         height_in: '60',
         shelf_count: 4,
         category_ids: [1], // Default to Beef category
-      });
-
-      // Redirect to planogram detail page
-      router.push(`/dashboard/projects/${projectSlug}/planograms/${result.planogram.slug}`);
-    } catch {
-      // Error handled by mutation
-    }
+      },
+      {
+        onSuccess: (result) => {
+          router.push(`/dashboard/projects/${projectSlug}/planograms/${result.planogram.slug}`);
+        }
+      }
+    );
   };
 
   return (
@@ -62,22 +77,23 @@ export default function CreatePlanogramPage() {
 
         <Card>
         <CardContent className='p-6'>
-          <form onSubmit={handleSubmit} className='space-y-6'>
-            <NameInput value={name} onChange={setName} />
+          <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
+            <FormInput
+              name='name'
+              label='Name *'
+              type='text'
+              register={register}
+              error={errors.name}
+              placeholder='e.g., Summer Meat Display - Aisle 3'
+            />
 
             <ProjectDisplay projectName={project?.name || null} />
-
-            {createPlanogramMutation.isError && (
-              <Alert variant='destructive'>
-                <AlertDescription>{(createPlanogramMutation.error as Error)?.message || 'Failed to create planogram'}</AlertDescription>
-              </Alert>
-            )}
 
             <div className='flex gap-3 pt-4 border-t border-border'>
               <Button type='button' onClick={() => router.back()} variant='outline'>
                 Cancel
               </Button>
-              <Button type='submit' disabled={createPlanogramMutation.isPending || !name || !projectSlug}>
+              <Button type='submit' disabled={createPlanogramMutation.isPending || !projectSlug}>
                 {createPlanogramMutation.isPending ? 'Creating...' : 'Create Planogram'}
               </Button>
             </div>
