@@ -59,3 +59,10 @@ db.sqlite3
 Thumbs.db
 old_approach
 .cursorrules
+
+# Testing
+.coverage
+.hypothesis/
+
+# Notes
+steps.md
