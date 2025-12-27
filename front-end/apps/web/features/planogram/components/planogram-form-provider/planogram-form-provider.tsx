@@ -37,6 +37,7 @@ export function usePlanogramFormContext() {
 export function PlanogramFormProvider({ children, defaultValues }: PlanogramFormProviderProps) {
   const methods = useForm<PlanogramFormData>({
     resolver: zodResolver(planogramFormSchema),
+    mode: 'onChange', // Validate on every change to enable/disable button immediately
     defaultValues: {
       name: defaultValues?.name || '',
       season: defaultValues?.season || 'summer',
