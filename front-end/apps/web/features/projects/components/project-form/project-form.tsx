@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { FormField } from '@/components/ui/form-field';
+import { FormInput } from '@/components/ui/form-input';
 import { FormSelectField } from '@/components/ui/form-select-field';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -16,6 +19,13 @@ type ProjectFormProps = {
   mode: 'create' | 'edit';
 }
 
+const projectFormSchema = z.object({
+  name: z.string().min(1).max(255),
+  storeSlug: z.string().min(1).optional(),
+});
+
+type ProjectFormData = z.infer<typeof projectFormSchema>;
+
 export function ProjectForm({ projectSlug, mode }: ProjectFormProps) {
   const router = useRouter();
 
@@ -24,45 +34,63 @@ export function ProjectForm({ projectSlug, mode }: ProjectFormProps) {
   const { data: storesData } = useStoresQuery();
   const stores = storesData || [];
 
-  const [name, setName] = useState(mode === 'create' ? 'New Project 111' : '');
-  const [selectedStoreSlug, setSelectedStoreSlug] = useState<string>('');
-
   const createMutation = useCreateProjectMutation();
   const updateMutation = useUpdateProjectMutation(projectSlug || '');
 
   const mutation = mode === 'create' ? createMutation : updateMutation;
 
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<ProjectFormData>({
+    resolver: zodResolver(projectFormSchema),
+    defaultValues: {
+      name: mode === 'create' ? 'New Project 111' : '',
+      storeSlug: '',
+    },
+  });
+
   useEffect(() => {
-    if (mode === 'edit' && project && !name && !selectedStoreSlug) {
-      Promise.resolve().then(() => {
-        setName(project.name);
-        setSelectedStoreSlug(project.store_slug || '');
+    if (mode === 'edit' && project) {
+      reset({
+        name: project.name,
+        storeSlug: project.store_slug || '',
       });
     }
-  }, [mode, project, name, selectedStoreSlug]);
+  }, [mode, project, reset]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = (data: ProjectFormData) => {
+    if (mode === 'create') {
+      if (!data.storeSlug) return;
 
-    if (!selectedStoreSlug) {
-      return;
-    }
+      const selectedStore = stores.find((store) => store.slug === data.storeSlug);
+      if (!selectedStore) return;
 
-    const selectedStore = stores.find((store) => store.slug === selectedStoreSlug);
-    if (!selectedStore) {
-      return;
-    }
+      const submitData = {
+        name: data.name,
+        store: selectedStore.id,
+      };
 
-    const input = {
-      name,
-      store: selectedStore.id,
-    };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mutation.mutate(submitData as any, {
+        onSuccess: () => {
+          router.push('/dashboard/projects');
+        }
+      });
+    } else {
+      const submitData = {
+        name: data.name,
+      };
 
-    try {
-      await mutation.mutateAsync(input);
-      router.push('/dashboard/projects');
-    } catch {
-      // Error handled by mutation
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mutation.mutate(submitData as any, {
+        onSuccess: () => {
+          router.push('/dashboard/projects');
+        }
+      });
     }
   };
 
@@ -96,63 +124,44 @@ export function ProjectForm({ projectSlug, mode }: ProjectFormProps) {
       </div>
 
       <Card className='max-w-2xl'>
-        {mode === 'create' && (
-          <CardHeader>
-            <CardTitle>Project Information</CardTitle>
-            <CardDescription>Enter the details for the new project</CardDescription>
-          </CardHeader>
-        )}
-        {mode === 'edit' && (
-          <CardHeader>
-            <CardTitle>Project Information</CardTitle>
-            <CardDescription>Update the details for this project</CardDescription>
-          </CardHeader>
-        )}
-        <CardContent className={mode === 'create' ? '' : 'p-6'}>
+        <CardHeader>
+          <CardTitle>Project Information</CardTitle>
+          <CardDescription>{mode === 'create' ? 'Enter the details for the new project' : 'Update the details for this project'}</CardDescription>
+        </CardHeader>
+        <CardContent>
           {mode === 'create' && !hasStores && <NoStoresAlert />}
 
-          <form onSubmit={handleSubmit} className='space-y-4'>
-            {mode === 'edit' && (
-              <FormField
-                label='Project Name *'
-                type='text'
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                placeholder='e.g., Meat Section Remodel'
+          <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+            {mode === 'create' && (
+              <Controller
+                name='storeSlug'
+                control={control}
+                render={({ field }) => (
+                  <FormSelectField
+                    label='Store *'
+                    value={field.value || ''}
+                    onValueChange={field.onChange}
+                    options={storeOptions}
+                    placeholder='Select a store'
+                    disabled={!hasStores}
+                  />
+                )}
               />
             )}
-
-            <FormSelectField
-              label='Store *'
-              value={selectedStoreSlug}
-              onValueChange={setSelectedStoreSlug}
-              options={storeOptions}
-              placeholder='Select a store'
-              disabled={mode === 'create' && !hasStores}
-            />
 
             {mode === 'create' && !hasStores && (
               <p className='text-xs text-muted-foreground -mt-2'>No stores available. Please create a store first.</p>
             )}
 
-            {mode === 'create' && (
-              <FormField
-                label='Project Name *'
-                type='text'
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                disabled={!hasStores}
-                placeholder='e.g., Meat Section, Bakery'
-              />
-            )}
-
-            {mutation.isError && (
-              <Alert variant='destructive'>
-                <AlertDescription>{mutation.error?.message || `Failed to ${mode} project`}</AlertDescription>
-              </Alert>
-            )}
+            <FormInput
+              name='name'
+              label='Project Name *'
+              type='text'
+              register={register}
+              error={errors.name}
+              placeholder={mode === 'create' ? 'e.g., Meat Section, Bakery' : 'e.g., Meat Section Remodel'}
+              disabled={mode === 'create' && !hasStores}
+            />
 
             <div className='flex gap-2 pt-4'>
               <Button type='submit' disabled={mutation.isPending || (mode === 'create' && !hasStores)}>
@@ -173,4 +182,3 @@ export function ProjectForm({ projectSlug, mode }: ProjectFormProps) {
     </>
   );
 }
-

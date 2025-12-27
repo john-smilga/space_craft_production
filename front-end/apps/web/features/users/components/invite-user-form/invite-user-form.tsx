@@ -1,44 +1,64 @@
 'use client';
 
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { useAuthStore, useRequireAdmin } from '@/features/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FormInput } from '@/components/ui/form-input';
 import { FormField } from '@/components/ui/form-field';
 import { useInviteUserMutation } from '../../queries';
+
+const inviteFormSchema = z.object({
+  email: z.string().min(1).email(),
+  username: z.string().min(1).max(150),
+});
+
+type InviteFormData = z.infer<typeof inviteFormSchema>;
 
 export function InviteUserForm() {
   useRequireAdmin();
   const user = useAuthStore.use.user();
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
   const [success, setSuccess] = useState<{ link: string; token: string } | null>(null);
 
   const inviteMutation = useInviteUserMutation();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<InviteFormData>({
+    resolver: zodResolver(inviteFormSchema),
+    defaultValues: {
+      email: '',
+      username: '',
+    },
+  });
+
+  const onSubmit = (data: InviteFormData) => {
     setSuccess(null);
 
-    try {
-      const result = await inviteMutation.mutateAsync({
-        email,
-        username,
+    inviteMutation.mutate(
+      {
+        ...data,
         role: 'member',
-      });
-
-      setSuccess({
-        link: result.invitation_link,
-        token: result.invitation_token,
-      });
-      setEmail('');
-      setUsername('');
-    } catch {
-      // Error handled by mutation
-    }
+      },
+      {
+        onSuccess: (result) => {
+          setSuccess({
+            link: result.invitation_link,
+            token: result.invitation_token,
+          });
+          reset();
+        }
+      }
+    );
   };
 
   const copyToClipboard = (text: string) => {
@@ -55,22 +75,22 @@ export function InviteUserForm() {
           <CardTitle>Create Invitation</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className='space-y-4'>
-            <FormField
+          <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+            <FormInput
+              name='email'
               label='Email'
               type='email'
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              register={register}
+              error={errors.email}
               placeholder='user@example.com'
             />
 
-            <FormField
+            <FormInput
+              name='username'
               label='Username'
               type='text'
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
+              register={register}
+              error={errors.username}
               placeholder='username'
             />
 
@@ -85,12 +105,6 @@ export function InviteUserForm() {
                 />
                 <p className='text-xs text-muted-foreground'>Users will be added to your company as members</p>
               </>
-            )}
-
-            {inviteMutation.isError && (
-              <Alert variant='destructive'>
-                <AlertDescription>{inviteMutation.error?.message || 'Failed to create invitation'}</AlertDescription>
-              </Alert>
             )}
 
             <Button type='submit' disabled={inviteMutation.isPending} className='w-full'>
@@ -122,4 +136,3 @@ export function InviteUserForm() {
     </>
   );
 }
-
