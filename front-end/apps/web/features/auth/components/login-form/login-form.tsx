@@ -2,10 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useLoginMutation } from '@/features/auth';
+import { schemas } from '@/lib/generated/api-schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FormField } from '@/components/ui/form-field';
+import { FormInput } from '@/components/ui/form-input';
 import { FormSelectField } from '@/components/ui/form-select-field';
 
 const DEMO_USERS = [
@@ -13,41 +17,42 @@ const DEMO_USERS = [
   { label: 'Walmart Admin', value: 'walmart', email: 'admin_walmart@walmart.com', password: 'admin123' },
 ];
 
+type LoginFormData = z.infer<typeof schemas.LoginRequest>;
+
 export function LoginForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [demoUser, setDemoUser] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const loginMutation = useLoginMutation();
   const router = useRouter();
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(schemas.LoginRequest),
+  });
 
   const handleDemoUserChange = (value: string) => {
     setDemoUser(value);
     if (value) {
       const user = DEMO_USERS.find((u) => u.value === value);
       if (user) {
-        setEmail(user.email);
-        setPassword(user.password);
+        setValue('email', user.email);
+        setValue('password', user.password);
       }
     } else {
-      setEmail('');
-      setPassword('');
+      setValue('email', '');
+      setValue('password', '');
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      await loginMutation.mutateAsync({ email, password });
-      router.push('/dashboard');
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setError(error.message || 'Login failed');
-      } else {
-        setError('Login failed');
+  const onSubmit = (data: LoginFormData) => {
+    loginMutation.mutate(data, {
+      onSuccess: () => {
+        router.push('/dashboard');
       }
-    }
+    });
   };
 
   return (
@@ -56,7 +61,7 @@ export function LoginForm() {
         <CardTitle className='text-2xl text-center'>Login</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className='space-y-4'>
+        <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
           <FormSelectField
             label='Demo User'
             value={demoUser}
@@ -64,23 +69,22 @@ export function LoginForm() {
             options={DEMO_USERS.map((user) => ({ label: user.label, value: user.value }))}
             placeholder='Select a demo user...'
           />
-          <FormField
+          <FormInput
+            name='email'
             label='Email'
             type='email'
             placeholder='Email'
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
+            register={register}
+            error={errors.email}
           />
-          <FormField
+          <FormInput
+            name='password'
             label='Password'
             type='password'
             placeholder='Password'
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
+            register={register}
+            error={errors.password}
           />
-          {error && <p className='text-destructive text-sm'>{error}</p>}
           <Button type='submit' disabled={loginMutation.isPending} className='w-full'>
             {loginMutation.isPending ? 'Loading...' : 'Login'}
           </Button>

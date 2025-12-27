@@ -2,30 +2,43 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useRegisterMutation } from '@/features/auth';
+import { schemas } from '@/lib/generated/api-schemas';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FormField } from '@/components/ui/form-field';
+import { FormInput } from '@/components/ui/form-input';
+
+const registerFormSchema = schemas.RegisterRequestRequest.omit({ token: true });
+type RegisterFormData = z.infer<typeof registerFormSchema>;
 
 export function RegisterForm() {
   const [token, setToken] = useState<string | null>(null);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tokenError, setTokenError] = useState<string | null>(null);
   const [invitationData, setInvitationData] = useState<{ email: string; company: { id: number; name: string } | null } | null>(null);
   const registerMutation = useRegisterMutation();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerFormSchema),
+  });
 
   useEffect(() => {
     const tokenParam = searchParams.get('token');
 
     const validateToken = async () => {
       if (!tokenParam) {
-        setError('Invalid invitation link. Token is missing.');
+        setTokenError('Invalid invitation link. Token is missing.');
         setLoading(false);
         return;
       }
@@ -40,11 +53,11 @@ export function RegisterForm() {
             company: response.data.company,
           });
         } else {
-          setError('Invalid or expired invitation token');
+          setTokenError('Invalid or expired invitation token');
         }
       } catch (err: unknown) {
         const errorMessage = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Invalid invitation token';
-        setError(errorMessage);
+        setTokenError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -53,23 +66,15 @@ export function RegisterForm() {
     validateToken();
   }, [searchParams]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      await registerMutation.mutateAsync({
-        token: token!,
-        password,
-        username: username || undefined,
-      });
-      router.push('/dashboard');
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setError(error.message || 'Registration failed');
-      } else {
-        setError('Registration failed');
+  const onSubmit = (data: RegisterFormData) => {
+    registerMutation.mutate(
+      { ...data, token: token! },
+      {
+        onSuccess: () => {
+          router.push('/dashboard');
+        }
       }
-    }
+    );
   };
 
   if (loading) {
@@ -80,13 +85,13 @@ export function RegisterForm() {
     );
   }
 
-  if (error && !invitationData) {
+  if (tokenError && !invitationData) {
     return (
       <div className='flex min-h-screen items-center justify-center bg-gray-50 p-4'>
         <Card className='w-full max-w-md mx-auto'>
           <CardContent className='p-6 text-center'>
             <Alert variant='destructive' className='mb-4'>
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{tokenError}</AlertDescription>
             </Alert>
             <Button onClick={() => router.push('/login')} variant='outline'>
               Go to Login
@@ -118,27 +123,24 @@ export function RegisterForm() {
               </AlertDescription>
             </Alert>
           )}
-          <form onSubmit={handleSubmit} className='space-y-4'>
-            <FormField
+          <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+            <FormInput
+              name='username'
               label='Username'
               type='text'
               placeholder='Username (optional)'
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              register={register}
+              error={errors.username}
             />
-            <FormField
+            <FormInput
+              name='password'
               label='Password'
               type='password'
               placeholder='Password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              register={register}
+              error={errors.password}
               required
             />
-            {error && (
-              <Alert variant='destructive'>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
             <Button type='submit' disabled={registerMutation.isPending} className='w-full'>
               {registerMutation.isPending ? 'Registering...' : 'Complete Registration'}
             </Button>
