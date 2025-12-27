@@ -13,7 +13,7 @@ const DEMO_USERS = [
   { label: 'Walmart Admin', value: 'walmart', email: 'admin_walmart@walmart.com', password: 'admin123' },
 ];
 
-export default function LoginForm() {
+export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [demoUser, setDemoUser] = useState('');
