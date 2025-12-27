@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatDate } from '@/lib/utils';
 import { useDisplayQuery, useDeleteDisplayMutation } from '../../queries';
 
-interface DisplayDetailProps {
+type DisplayDetailProps = {
   displaySlug: string;
 }
 

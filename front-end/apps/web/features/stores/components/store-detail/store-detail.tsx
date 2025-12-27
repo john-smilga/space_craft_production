@@ -13,7 +13,7 @@ import { formatDate } from '@/lib/utils';
 import { useProjectsQuery } from '@/features/projects';
 import { useStoreQuery, useDeleteStoreMutation } from '../../queries';
 
-interface StoreDetailProps {
+type StoreDetailProps = {
   storeSlug: string;
 }
 

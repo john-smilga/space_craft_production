@@ -3,12 +3,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
-interface SelectOption {
+type SelectOption = {
   label: string;
   value: string;
 }
 
-interface FormSelectFieldProps {
+type FormSelectFieldProps = {
   label: string;
   id?: string;
   value: string;

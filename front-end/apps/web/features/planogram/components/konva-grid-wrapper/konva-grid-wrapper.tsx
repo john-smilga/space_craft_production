@@ -22,10 +22,6 @@ export function KonvaGridWrapper() {
   // Available products slice state
   const toggleAvailableProductsSidebar = usePlanogramStore.use.toggleAvailableProductsSidebar();
 
-  if (!gridData) {
-    return null;
-  }
-
   // Wrapper for setRowLayouts to match React Dispatch signature
   const handleSetRowLayouts = (value: React.SetStateAction<Record<number, LayoutItem[]>>) => {
     if (typeof value === 'function') {
@@ -65,6 +61,10 @@ export function KonvaGridWrapper() {
     setRowNotifications: handleSetRowNotifications,
     selectedItem: null,
   });
+
+  if (!gridData) {
+    return null;
+  }
 
   const handleItemDelete = (rowId: number, itemId: string) => {
     if (!gridData) return;

@@ -7,7 +7,7 @@ const DEFAULT_ITEM_COLOR = '#9ca3af';
 const TEXT_COLOR = '#ffffff';
 const TEXT_SHADOW_COLOR = 'rgba(0, 0, 0, 0.5)';
 
-interface GridItemProps {
+type GridItemProps = {
   item: LayoutItem;
   x: number;
   y: number;

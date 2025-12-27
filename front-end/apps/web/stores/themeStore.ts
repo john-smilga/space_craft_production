@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-interface ThemeState {
+type ThemeState = {
   isDark: boolean;
   setIsDark: (isDark: boolean) => void;
   initTheme: () => () => void;

@@ -1,13 +1,13 @@
 import type { LayoutItem } from '../types';
 
-interface CalculatePositionsParams {
+type CalculatePositionsParams = {
   items: LayoutItem[];
   cellWidth: number;
   itemGap: number;
   rowHeight: number;
 }
 
-interface ItemPosition {
+type ItemPosition = {
   item: LayoutItem;
   x: number;
   y: number;
@@ -37,13 +37,13 @@ export function calculateItemPositions({
   });
 }
 
-interface CollisionCheckParams {
+type CollisionCheckParams = {
   item: LayoutItem;
   newX: number;
   otherItems: LayoutItem[];
 }
 
-interface CollisionResult {
+type CollisionResult = {
   hasCollision: boolean;
   collidingItems: LayoutItem[];
 }
@@ -74,7 +74,7 @@ export function checkItemCollision({
   };
 }
 
-interface PixelToGridParams {
+type PixelToGridParams = {
   pixelX: number;
   cellWidth: number;
   itemGap: number;

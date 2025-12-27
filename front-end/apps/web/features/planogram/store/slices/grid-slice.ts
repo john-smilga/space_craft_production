@@ -1,15 +1,15 @@
 import type { StateCreator } from 'zustand';
 import type { GridResponse, LayoutItem } from '../../types';
 
-export interface GridSlice {
+export type GridSlice = {
   // Data
   gridData: GridResponse | null;
   rowLayouts: Record<number, LayoutItem[]>;
-  
+
   // UI
   editMode: boolean;
   rowNotifications: Record<number, string>;
-  
+
   // Actions
   setGridData: (data: GridResponse | null) => void;
   setRowLayouts: (layouts: Record<number, LayoutItem[]>) => void;

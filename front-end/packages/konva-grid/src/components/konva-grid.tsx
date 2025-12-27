@@ -6,7 +6,7 @@ import type { LayoutItem } from '../types';
 import { GridRow } from './grid-row';
 import { useGridDimensions } from '../hooks';
 
-export interface GridResponse {
+export type GridResponse = {
   grid: {
     cols: number;
     cellWidthIn: number;
@@ -22,7 +22,7 @@ export interface GridResponse {
 const DEFAULT_ROW_HEIGHT = 108;
 const DEFAULT_ITEM_GAP = 4;
 
-interface KonvaGridProps {
+type KonvaGridProps = {
   gridData: GridResponse;
   rowLayouts: Record<number, LayoutItem[]>;
   width?: number;

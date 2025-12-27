@@ -11,7 +11,7 @@ import { useCreateProjectMutation, useUpdateProjectMutation, useProjectQuery } f
 import { useStoresQuery } from '@/features/stores';
 import { NoStoresAlert } from '../no-stores-alert/no-stores-alert';
 
-interface ProjectFormProps {
+type ProjectFormProps = {
   projectSlug?: string;
   mode: 'create' | 'edit';
 }

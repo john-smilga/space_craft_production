@@ -4,7 +4,7 @@ import api from '@/lib/axios';
 import { schemas } from '@/lib/generated/api-schemas';
 import { usePlanogramStore } from '../store';
 
-interface AIOverviewVariables {
+type AIOverviewVariables = {
   slug: string;
 }
 

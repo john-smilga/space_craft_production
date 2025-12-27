@@ -22,7 +22,7 @@ const ProjectPlanogramsResponseSchema = z.object({
 });
 type PlanogramsResponse = z.infer<typeof ProjectPlanogramsResponseSchema>;
 
-interface ProjectDetailProps {
+type ProjectDetailProps = {
   projectSlug: string;
 }
 

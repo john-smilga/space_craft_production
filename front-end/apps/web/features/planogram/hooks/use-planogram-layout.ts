@@ -105,7 +105,7 @@ export function usePlanogramLayout(availableItems: AvailableItem[]) {
             meta: {
               id: item.id,
               name: item.name,
-              category: item.category,
+              category: item.category || '',
               color: item.color || '#9ca3af',
               score: item.score,
               pack_width_in: item.pack_width_in,

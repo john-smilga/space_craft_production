@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 
-interface EmptyStateProps {
+type EmptyStateProps = {
   message: string;
 }
 

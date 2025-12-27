@@ -3,7 +3,7 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ReactNode } from 'react';
 
-interface InfoAlertProps {
+type InfoAlertProps = {
   children: ReactNode;
   className?: string;
 }

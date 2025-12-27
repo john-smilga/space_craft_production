@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-interface UseGridDimensionsParams {
+type UseGridDimensionsParams = {
   width: number;
   cols: number;
   rowCount: number;
@@ -8,7 +8,7 @@ interface UseGridDimensionsParams {
   itemGap: number;
 }
 
-interface GridDimensions {
+type GridDimensions = {
   cellWidth: number;
   stageHeight: number;
 }

@@ -16,7 +16,7 @@ import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePlanogramStore, usePlanogramData } from '@/features/planogram';
 
-interface PathResponse {
+type PathResponse = {
   products: boolean;
   items: Array<{ key: string; name: string } | { id: number; name: string; [key: string]: unknown }>;
 }
@@ -107,7 +107,7 @@ export function ProductSidebar() {
   );
 }
 
-interface CategoryItemProps {
+type CategoryItemProps = {
   path: string;
   categoryName: string;
   season: string;

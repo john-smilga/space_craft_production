@@ -5,7 +5,7 @@ import type { Planogram } from '../../types';
 import { usePlanogramStore } from '../../store';
 import toast from 'react-hot-toast';
 
-interface PlanogramDownloadButtonProps {
+type PlanogramDownloadButtonProps = {
   planogram: Planogram | null;
 }
 

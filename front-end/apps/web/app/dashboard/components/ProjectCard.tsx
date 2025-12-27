@@ -1,9 +1,10 @@
 import Link from 'next/link';
+import { z } from 'zod';
+import { schemas } from '@/lib/generated/api-schemas';
 
-interface ProjectCardProps {
-  id: number;
-  name: string;
-  pogCount?: number;
+// Derive props from ProjectList API schema
+type ProjectCardProps = Pick<z.infer<typeof schemas.ProjectList>, 'id' | 'name'> & {
+  pogCount?: number; // Frontend computed count
 }
 
 export default function ProjectCard({ id, name, pogCount = 0 }: ProjectCardProps) {

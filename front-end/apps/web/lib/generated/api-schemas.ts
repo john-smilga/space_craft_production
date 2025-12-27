@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const LoginRequest = z
   .object({ email: z.string().min(1).email(), password: z.string().min(1) })
-  .strict();
+  .passthrough();
 const RoleEnum = z.enum(["admin", "member"]);
 const Company = z
   .object({
@@ -13,7 +13,7 @@ const Company = z
     description: z.string().nullish(),
     created_at: z.string().datetime({ offset: true }),
   })
-  .strict();
+  .passthrough();
 const User = z
   .object({
     id: z.number().int(),
@@ -30,25 +30,25 @@ const User = z
     is_active: z.boolean().optional(),
     date_joined: z.string().datetime({ offset: true }),
   })
-  .strict();
-const LogoutResponse = z.object({ message: z.string() }).strict();
+  .passthrough();
+const LogoutResponse = z.object({ message: z.string() }).passthrough();
 const RegisterRequestRequest = z
   .object({
     token: z.string().min(1),
     password: z.string().min(1),
     username: z.string().min(1).max(150).optional(),
   })
-  .strict();
+  .passthrough();
 const CompanyInfo = z
   .object({ id: z.number().int(), name: z.string() })
-  .strict();
+  .passthrough();
 const ValidateInvitationResponse = z
   .object({
     valid: z.boolean(),
     email: z.string().email(),
     company: CompanyInfo.nullable(),
   })
-  .strict();
+  .passthrough();
 const Category = z
   .object({
     id: z.number().int(),
@@ -57,16 +57,16 @@ const Category = z
     path: z.string().optional(),
     has_children: z.boolean().optional(),
   })
-  .strict();
+  .passthrough();
 const CategoryListResponse = z
   .object({ categories: z.array(Category) })
-  .strict();
+  .passthrough();
 const CategoryChildrenResponse = z
   .object({ categories: z.array(Category), has_children: z.boolean() })
-  .strict();
+  .passthrough();
 const CategoryIdsRequestRequest = z
   .object({ category_ids: z.array(z.number().int()) })
-  .strict();
+  .passthrough();
 const Product = z
   .object({
     id: z.number().int(),
@@ -81,8 +81,10 @@ const Product = z
     expiration_stability: z.number().optional(),
     seasonality: z.number().optional(),
   })
-  .strict();
-const ProductListResponse = z.object({ products: z.array(Product) }).strict();
+  .passthrough();
+const ProductListResponse = z
+  .object({ products: z.array(Product) })
+  .passthrough();
 const TypeEnum = z.enum([
   "gondola",
   "endcap",
@@ -113,7 +115,7 @@ const DisplayList = z
     display_category: DisplayCategoryEnum,
     slug: z.string(),
   })
-  .strict();
+  .passthrough();
 const PaginatedDisplayListList = z
   .object({
     count: z.number().int(),
@@ -121,7 +123,7 @@ const PaginatedDisplayListList = z
     previous: z.string().url().nullish(),
     results: z.array(DisplayList),
   })
-  .strict();
+  .passthrough();
 const DisplayCreateRequest = z
   .object({
     name: z.string().min(1).max(255),
@@ -139,7 +141,7 @@ const DisplayCreateRequest = z
       .regex(/^-?\d{0,8}(?:\.\d{0,2})?$/)
       .nullish(),
   })
-  .strict();
+  .passthrough();
 const Display = z
   .object({
     id: z.number().int(),
@@ -165,7 +167,7 @@ const Display = z
     created_by_username: z.string(),
     created_at: z.string().datetime({ offset: true }),
   })
-  .strict();
+  .passthrough();
 const DisplayUpdateRequest = z
   .object({
     name: z.string().min(1).max(255),
@@ -183,7 +185,7 @@ const DisplayUpdateRequest = z
       .regex(/^-?\d{0,8}(?:\.\d{0,2})?$/)
       .nullish(),
   })
-  .strict();
+  .passthrough();
 const DisplayUpdate = z
   .object({
     name: z.string().max(255),
@@ -201,7 +203,7 @@ const DisplayUpdate = z
       .regex(/^-?\d{0,8}(?:\.\d{0,2})?$/)
       .nullish(),
   })
-  .strict();
+  .passthrough();
 const PatchedDisplayUpdateRequest = z
   .object({
     name: z.string().min(1).max(255),
@@ -220,7 +222,7 @@ const PatchedDisplayUpdateRequest = z
       .nullable(),
   })
   .partial()
-  .strict();
+  .passthrough();
 const PaginatedDisplayList = z
   .object({
     count: z.number().int(),
@@ -228,8 +230,10 @@ const PaginatedDisplayList = z
     previous: z.string().url().nullish(),
     results: z.array(Display),
   })
-  .strict();
-const DisplayType = z.object({ value: z.string(), label: z.string() }).strict();
+  .passthrough();
+const DisplayType = z
+  .object({ value: z.string(), label: z.string() })
+  .passthrough();
 const PaginatedDisplayTypeList = z
   .object({
     count: z.number().int(),
@@ -237,7 +241,7 @@ const PaginatedDisplayTypeList = z
     previous: z.string().url().nullish(),
     results: z.array(DisplayType),
   })
-  .strict();
+  .passthrough();
 const SeasonEnum = z.enum(["spring", "summer", "fall", "winter"]);
 const PlanogramList = z
   .object({
@@ -254,12 +258,12 @@ const PlanogramList = z
       .gte(-9223372036854776000)
       .lte(9223372036854776000),
     category_ids: z.unknown().optional(),
-    categories: z.array(z.object({}).partial().strict().passthrough()),
+    categories: z.array(z.object({}).partial().passthrough()),
     preserve_layout: z.boolean().optional(),
     created_at: z.string().datetime({ offset: true }),
     updated_at: z.string().datetime({ offset: true }),
   })
-  .strict();
+  .passthrough();
 const PaginatedPlanogramListList = z
   .object({
     count: z.number().int(),
@@ -267,7 +271,7 @@ const PaginatedPlanogramListList = z
     previous: z.string().url().nullish(),
     results: z.array(PlanogramList),
   })
-  .strict();
+  .passthrough();
 const PlanogramCreateRequest = z
   .object({
     name: z.string().min(1).max(255),
@@ -293,7 +297,7 @@ const PlanogramCreateRequest = z
       .nullish(),
     category_ids: z.array(z.number().int()),
   })
-  .strict();
+  .passthrough();
 const Planogram = z
   .object({
     id: z.number().int(),
@@ -323,8 +327,7 @@ const Planogram = z
       .regex(/^-?\d{0,8}(?:\.\d{0,2})?$/)
       .nullish(),
     category_ids: z.unknown().optional(),
-    categories: z.array(z.object({}).partial().strict().passthrough()),
-    layout: z.unknown().nullish(),
+    categories: z.array(z.object({}).partial().passthrough()),
     preserve_layout: z.boolean().optional(),
     created_by: z.number().int().nullable(),
     created_by_username: z.string(),
@@ -333,7 +336,82 @@ const Planogram = z
     created_at: z.string().datetime({ offset: true }),
     updated_at: z.string().datetime({ offset: true }),
   })
-  .strict();
+  .passthrough();
+const GridConfig = z
+  .object({
+    cols: z.number().int(),
+    rows: z.number().int(),
+    cellWidthIn: z.number(),
+  })
+  .passthrough();
+const LayoutItemMeta = z
+  .object({
+    id: z.number().int(),
+    name: z.string(),
+    category: z.string(),
+    color: z.string().optional(),
+    score: z.number(),
+    pack_width_in: z.number(),
+    pack_height_in: z.number(),
+  })
+  .passthrough();
+const LayoutItem = z
+  .object({
+    i: z.string(),
+    x: z.number().int(),
+    y: z.number().int(),
+    w: z.number().int(),
+    h: z.number().int(),
+    meta: LayoutItemMeta,
+  })
+  .passthrough();
+const LayoutRow = z
+  .object({
+    id: z.number().int(),
+    category: z.string().nullable(),
+    name: z.string(),
+    items: z.array(LayoutItem),
+  })
+  .passthrough();
+const Layout = z
+  .object({ grid: GridConfig, rows: z.array(LayoutRow) })
+  .passthrough();
+const PlanogramDetail = z
+  .object({
+    id: z.number().int(),
+    name: z.string(),
+    slug: z.string(),
+    season: z.string(),
+    project: z.number().int(),
+    project_name: z.string(),
+    project_slug: z.string(),
+    display: z.number().int().nullable(),
+    display_name: z.string(),
+    company: z.number().int(),
+    company_name: z.string(),
+    width_in: z.string().regex(/^-?\d{0,8}(?:\.\d{0,2})?$/),
+    height_in: z.string().regex(/^-?\d{0,8}(?:\.\d{0,2})?$/),
+    depth_in: z
+      .string()
+      .regex(/^-?\d{0,8}(?:\.\d{0,2})?$/)
+      .nullable(),
+    shelf_count: z.number().int(),
+    shelf_spacing: z
+      .string()
+      .regex(/^-?\d{0,8}(?:\.\d{0,2})?$/)
+      .nullable(),
+    category_ids: z.unknown(),
+    categories: z.array(Category),
+    preserve_layout: z.boolean(),
+    created_by: z.number().int().nullable(),
+    created_by_username: z.string(),
+    updated_by: z.number().int().nullable(),
+    updated_by_username: z.string(),
+    created_at: z.string().datetime({ offset: true }),
+    updated_at: z.string().datetime({ offset: true }),
+    layout: Layout.nullish(),
+  })
+  .passthrough();
 const PlanogramUpdateRequest = z
   .object({
     name: z.string().min(1).max(255),
@@ -357,7 +435,7 @@ const PlanogramUpdateRequest = z
     category_ids: z.array(z.number().int()).optional(),
     preserve_layout: z.boolean().optional(),
   })
-  .strict();
+  .passthrough();
 const PatchedPlanogramUpdateRequest = z
   .object({
     name: z.string().min(1).max(255),
@@ -382,7 +460,7 @@ const PatchedPlanogramUpdateRequest = z
     preserve_layout: z.boolean(),
   })
   .partial()
-  .strict();
+  .passthrough();
 const PlanogramUpdate = z
   .object({
     name: z.string().max(255),
@@ -406,7 +484,46 @@ const PlanogramUpdate = z
     category_ids: z.array(z.number().int()).optional(),
     preserve_layout: z.boolean().optional(),
   })
-  .strict();
+  .passthrough();
+const GridConfigRequest = z
+  .object({
+    cols: z.number().int(),
+    rows: z.number().int(),
+    cellWidthIn: z.number(),
+  })
+  .passthrough();
+const LayoutItemMetaRequest = z
+  .object({
+    id: z.number().int(),
+    name: z.string().min(1),
+    category: z.string().min(1),
+    color: z.string().optional(),
+    score: z.number(),
+    pack_width_in: z.number(),
+    pack_height_in: z.number(),
+  })
+  .passthrough();
+const LayoutItemRequest = z
+  .object({
+    i: z.string().min(1),
+    x: z.number().int(),
+    y: z.number().int(),
+    w: z.number().int(),
+    h: z.number().int(),
+    meta: LayoutItemMetaRequest,
+  })
+  .passthrough();
+const LayoutRowRequest = z
+  .object({
+    id: z.number().int(),
+    category: z.string().min(1).nullable(),
+    name: z.string().min(1),
+    items: z.array(LayoutItemRequest),
+  })
+  .passthrough();
+const LayoutRequest = z
+  .object({ grid: GridConfigRequest, rows: z.array(LayoutRowRequest) })
+  .passthrough();
 const PlanogramRequest = z
   .object({
     name: z.string().min(1).max(255),
@@ -429,17 +546,17 @@ const PlanogramRequest = z
       .regex(/^-?\d{0,8}(?:\.\d{0,2})?$/)
       .nullish(),
     category_ids: z.unknown().optional(),
-    layout: z.unknown().nullish(),
+    layout: LayoutRequest.nullish(),
     preserve_layout: z.boolean().optional(),
   })
-  .strict();
-const AIOverviewResponse = z.object({ overview: z.string() }).strict();
+  .passthrough();
+const AIOverviewResponse = z.object({ overview: z.string() }).passthrough();
 const PlanogramLayoutRequest = z
   .object({
-    layout: z.unknown(),
+    layout: LayoutRequest,
     preserve_layout: z.boolean().optional().default(true),
   })
-  .strict();
+  .passthrough();
 const ProjectList = z
   .object({
     id: z.number().int(),
@@ -449,7 +566,7 @@ const ProjectList = z
     store_code: z.string(),
     created_at: z.string().datetime({ offset: true }),
   })
-  .strict();
+  .passthrough();
 const PaginatedProjectListList = z
   .object({
     count: z.number().int(),
@@ -457,10 +574,10 @@ const PaginatedProjectListList = z
     previous: z.string().url().nullish(),
     results: z.array(ProjectList),
   })
-  .strict();
+  .passthrough();
 const ProjectCreateRequest = z
   .object({ name: z.string().min(1).max(255), store: z.number().int() })
-  .strict();
+  .passthrough();
 const Project = z
   .object({
     id: z.number().int(),
@@ -476,15 +593,15 @@ const Project = z
     created_by_username: z.string(),
     created_at: z.string().datetime({ offset: true }),
   })
-  .strict();
+  .passthrough();
 const ProjectUpdateRequest = z
   .object({ name: z.string().min(1).max(255) })
-  .strict();
-const ProjectUpdate = z.object({ name: z.string().max(255) }).strict();
+  .passthrough();
+const ProjectUpdate = z.object({ name: z.string().max(255) }).passthrough();
 const PatchedProjectUpdateRequest = z
   .object({ name: z.string().min(1).max(255) })
   .partial()
-  .strict();
+  .passthrough();
 const StoreList = z
   .object({
     id: z.number().int(),
@@ -494,7 +611,7 @@ const StoreList = z
     company_name: z.string(),
     created_at: z.string().datetime({ offset: true }),
   })
-  .strict();
+  .passthrough();
 const PaginatedStoreListList = z
   .object({
     count: z.number().int(),
@@ -502,14 +619,14 @@ const PaginatedStoreListList = z
     previous: z.string().url().nullish(),
     results: z.array(StoreList),
   })
-  .strict();
+  .passthrough();
 const StoreCreateRequest = z
   .object({
     name: z.string().min(1).max(255),
     store_code: z.string().min(1).max(50),
     address: z.string().min(1),
   })
-  .strict();
+  .passthrough();
 const Store = z
   .object({
     id: z.number().int(),
@@ -523,17 +640,17 @@ const Store = z
     created_by_username: z.string(),
     created_at: z.string().datetime({ offset: true }),
   })
-  .strict();
+  .passthrough();
 const StoreUpdateRequest = z
   .object({ name: z.string().min(1).max(255), address: z.string().min(1) })
-  .strict();
+  .passthrough();
 const StoreUpdate = z
   .object({ name: z.string().max(255), address: z.string() })
-  .strict();
+  .passthrough();
 const PatchedStoreUpdateRequest = z
   .object({ name: z.string().min(1).max(255), address: z.string().min(1) })
   .partial()
-  .strict();
+  .passthrough();
 const PaginatedUserList = z
   .object({
     count: z.number().int(),
@@ -541,7 +658,7 @@ const PaginatedUserList = z
     previous: z.string().url().nullish(),
     results: z.array(User),
   })
-  .strict();
+  .passthrough();
 const UserRequest = z
   .object({
     username: z
@@ -555,7 +672,7 @@ const UserRequest = z
     role: RoleEnum.optional(),
     is_active: z.boolean().optional(),
   })
-  .strict();
+  .passthrough();
 const UserUpdateRequest = z
   .object({
     first_name: z.string().max(150),
@@ -564,7 +681,7 @@ const UserUpdateRequest = z
     role: RoleEnum,
   })
   .partial()
-  .strict();
+  .passthrough();
 const UserUpdate = z
   .object({
     first_name: z.string().max(150),
@@ -573,7 +690,7 @@ const UserUpdate = z
     role: RoleEnum,
   })
   .partial()
-  .strict();
+  .passthrough();
 const PatchedUserUpdateRequest = z
   .object({
     first_name: z.string().max(150),
@@ -582,7 +699,7 @@ const PatchedUserUpdateRequest = z
     role: RoleEnum,
   })
   .partial()
-  .strict();
+  .passthrough();
 const UserInviteRequest = z
   .object({
     email: z.string().min(1).email(),
@@ -591,7 +708,7 @@ const UserInviteRequest = z
     last_name: z.string().max(150).optional(),
     role: RoleEnum.optional().default("member"),
   })
-  .strict();
+  .passthrough();
 const UserInviteResponse = z
   .object({
     message: z.string(),
@@ -599,7 +716,7 @@ const UserInviteResponse = z
     invitation_link: z.string(),
     user: User,
   })
-  .strict();
+  .passthrough();
 const PatchedUserRequest = z
   .object({
     username: z
@@ -614,7 +731,7 @@ const PatchedUserRequest = z
     is_active: z.boolean(),
   })
   .partial()
-  .strict();
+  .passthrough();
 
 export const schemas = {
   LoginRequest,
@@ -648,9 +765,20 @@ export const schemas = {
   PaginatedPlanogramListList,
   PlanogramCreateRequest,
   Planogram,
+  GridConfig,
+  LayoutItemMeta,
+  LayoutItem,
+  LayoutRow,
+  Layout,
+  PlanogramDetail,
   PlanogramUpdateRequest,
   PatchedPlanogramUpdateRequest,
   PlanogramUpdate,
+  GridConfigRequest,
+  LayoutItemMetaRequest,
+  LayoutItemRequest,
+  LayoutRowRequest,
+  LayoutRequest,
   PlanogramRequest,
   AIOverviewResponse,
   PlanogramLayoutRequest,
@@ -700,7 +828,7 @@ const endpoints = makeApi([
     alias: "auth_logout_create",
     description: `Logout current user.`,
     requestFormat: "json",
-    response: z.object({ message: z.string() }).strict(),
+    response: z.object({ message: z.string() }).passthrough(),
   },
   {
     method: "post",
@@ -1049,7 +1177,7 @@ const endpoints = makeApi([
         schema: z.string(),
       },
     ],
-    response: Planogram,
+    response: PlanogramDetail,
   },
   {
     method: "put",
@@ -1124,7 +1252,7 @@ const endpoints = makeApi([
         schema: z.string(),
       },
     ],
-    response: z.object({ overview: z.string() }).strict(),
+    response: z.object({ overview: z.string() }).passthrough(),
   },
   {
     method: "post",
@@ -1136,12 +1264,7 @@ const endpoints = makeApi([
       {
         name: "body",
         type: "Body",
-        schema: z
-          .object({
-            layout: z.unknown(),
-            preserve_layout: z.boolean().optional().default(true),
-          })
-          .strict(),
+        schema: PlanogramLayoutRequest,
       },
       {
         name: "slug",
@@ -1226,7 +1349,7 @@ const endpoints = makeApi([
       {
         name: "body",
         type: "Body",
-        schema: z.object({ name: z.string().min(1).max(255) }).strict(),
+        schema: z.object({ name: z.string().min(1).max(255) }).passthrough(),
       },
       {
         name: "slug",
@@ -1234,7 +1357,7 @@ const endpoints = makeApi([
         schema: z.string(),
       },
     ],
-    response: z.object({ name: z.string().max(255) }).strict(),
+    response: z.object({ name: z.string().max(255) }).passthrough(),
   },
   {
     method: "patch",
@@ -1249,7 +1372,7 @@ const endpoints = makeApi([
         schema: z
           .object({ name: z.string().min(1).max(255) })
           .partial()
-          .strict(),
+          .passthrough(),
       },
       {
         name: "slug",
@@ -1257,7 +1380,7 @@ const endpoints = makeApi([
         schema: z.string(),
       },
     ],
-    response: z.object({ name: z.string().max(255) }).strict(),
+    response: z.object({ name: z.string().max(255) }).passthrough(),
   },
   {
     method: "delete",
@@ -1287,7 +1410,7 @@ const endpoints = makeApi([
         schema: z.string(),
       },
     ],
-    response: z.object({ planograms: z.array(PlanogramList) }).strict(),
+    response: z.object({ planograms: z.array(PlanogramList) }).passthrough(),
   },
   {
     method: "get",

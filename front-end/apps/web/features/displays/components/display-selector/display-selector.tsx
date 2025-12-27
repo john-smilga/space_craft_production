@@ -3,7 +3,7 @@ import type { Display } from '../../types';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface DisplaySelectorProps {
+type DisplaySelectorProps = {
   companyDisplays: Display[];
   standardDisplays: Display[];
   value: string;

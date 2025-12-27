@@ -1,58 +1,40 @@
 import { z } from 'zod';
 import { schemas } from '@/lib/generated/api-schemas';
 
-// Export the TYPE (not the schema) as Planogram for backward compatibility
+// Export types from generated schemas
 export type Planogram = z.infer<typeof schemas.Planogram>;
+export type PlanogramDetail = z.infer<typeof schemas.PlanogramDetail>;
 export type CreatePlanogramInput = z.infer<typeof schemas.PlanogramCreateRequest>;
 export type UpdatePlanogramInput = z.infer<typeof schemas.PlanogramUpdateRequest>;
 export type Season = z.infer<typeof schemas.SeasonEnum>;
 
-export interface PlanogramDetailResponse {
+// Layout types from generated schemas
+export type Layout = z.infer<typeof schemas.Layout>;
+export type LayoutItem = z.infer<typeof schemas.LayoutItem>;
+export type LayoutItemMeta = z.infer<typeof schemas.LayoutItemMeta>;
+export type LayoutRow = z.infer<typeof schemas.LayoutRow>;
+export type GridConfig = z.infer<typeof schemas.GridConfig>;
+
+// Backward compatibility alias
+export type GridResponse = Layout;
+
+// Structured response combining planogram + layout
+export type PlanogramDetailResponse = {
   planogram: Planogram;
-  layout?: GridResponse;
+  layout?: Layout | null;
 }
 
-export interface LayoutItem {
-  i: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  meta: {
-    id: number;
-    name: string;
-    category: string;
-    color?: string;
-    score: number;
-    pack_width_in: number;
-    pack_height_in: number;
-  };
+// Derive from Product API schema
+type ProductFields = Pick<
+  z.infer<typeof schemas.Product>,
+  'id' | 'name' | 'category' | 'color' | 'margin' | 'pack_width_in' | 'pack_height_in'
+>;
+
+// AvailableItem extends Product with score (mapped from overall_score)
+export type AvailableItem = ProductFields & {
+  score: number; // Mapped from Product.overall_score
 }
 
-export interface AvailableItem {
-  id: number;
-  name: string;
-  category: string;
-  color?: string;
-  score: number;
-  margin: number;
-  pack_width_in: number;
-  pack_height_in: number;
-}
-
-export interface GridResponse {
-  grid: { cols: number; rows: number; cellWidthIn: number };
-  rows: Array<{
-    id: number;
-    category: string | null;
-    name: string;
-    items: LayoutItem[];
-  }>;
-}
-
-export interface PlanogramCategory {
-  id: number;
-  name: string;
-  slug?: string;
-}
+// Derive from API schema Category type
+export type PlanogramCategory = Pick<z.infer<typeof schemas.Category>, 'id' | 'name' | 'slug'>;
 

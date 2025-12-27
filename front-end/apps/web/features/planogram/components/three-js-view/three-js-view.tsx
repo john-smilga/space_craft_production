@@ -6,7 +6,7 @@ import { Suspense, useEffect } from 'react';
 import type { GridResponse, LayoutItem } from '@/features/planogram/types';
 import { useThemeStore } from '@/stores/themeStore';
 
-interface ThreeJSViewProps {
+type ThreeJSViewProps = {
   gridData: GridResponse;
   rowLayouts: Record<number, LayoutItem[]>;
 }

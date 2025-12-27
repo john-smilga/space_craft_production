@@ -8,7 +8,7 @@ import type { LayoutItem, Planogram } from '../types';
 
 type UpdatePlanogramInput = z.infer<typeof schemas.PlanogramUpdateRequest>;
 
-interface UpdatePlanogramVariables extends UpdatePlanogramInput {
+type UpdatePlanogramVariables = UpdatePlanogramInput & {
   slug: string;
   layout?: Record<number, LayoutItem[]>;
 }

@@ -7,7 +7,7 @@ import type { Planogram } from '@/features/planogram/types';
 import { usePlanogramStore, useAIOverviewMutation } from '@/features/planogram';
 import { PlanogramDownloadButton } from '../planogram-download-button/planogram-download-button';
 
-interface PlanogramHeaderProps {
+type PlanogramHeaderProps = {
   planogram: Planogram | null;
 }
 

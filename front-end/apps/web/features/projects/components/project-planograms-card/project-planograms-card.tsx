@@ -8,7 +8,7 @@ import { PlanogramCard } from '@/features/planogram';
 
 type PlanogramListType = z.infer<typeof schemas.PlanogramList>;
 
-interface ProjectPlanogramsCardProps {
+type ProjectPlanogramsCardProps = {
   projectSlug: string;
   planograms: PlanogramListType[];
 }
@@ -32,11 +32,12 @@ export function ProjectPlanogramsCard({ projectSlug, planograms }: ProjectPlanog
                 key={planogram.id}
                 name={planogram.name}
                 slug={planogram.slug}
-                projectSlug={projectSlug}
-                displayName={planogram.display_name || null}
+                project_name={planogram.project_name}
+                project_slug={projectSlug}
+                display_name={planogram.display_name}
                 seasonDisplay={planogram.season || ''}
                 categories={planogram.categories}
-                categoryIds={
+                category_ids={
                   Array.isArray(planogram.category_ids)
                     ? (planogram.category_ids as number[])
                     : []

@@ -1,9 +1,9 @@
 import type { StateCreator } from 'zustand';
 import type { Planogram, GridResponse } from '../../types';
 
-export interface DownloadSlice {
+export type DownloadSlice = {
   downloadLoading: boolean;
-  
+
   setDownloadLoading: (loading: boolean) => void;
   downloadPlanogram: (planogram: Planogram, gridData: GridResponse | null) => Promise<void>;
 }

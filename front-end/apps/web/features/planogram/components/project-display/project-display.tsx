@@ -1,6 +1,6 @@
 import { Label } from '@/components/ui/label';
 
-interface ProjectDisplayProps {
+type ProjectDisplayProps = {
   projectName: string | null;
 }
 

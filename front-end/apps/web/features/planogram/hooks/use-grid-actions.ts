@@ -15,7 +15,7 @@ function widthCellsFor(widthIn: number, cellWidthIn: number): number {
   return Math.max(2, Math.floor(widthIn / cellWidthIn));
 }
 
-interface UseGridActionsParams {
+type UseGridActionsParams = {
   gridData: GridResponse | null;
   rowLayouts: Record<number, LayoutItem[]>;
   setRowLayouts: Dispatch<SetStateAction<Record<number, LayoutItem[]>>>;
@@ -138,8 +138,8 @@ export function useGridActions({ gridData, rowLayouts, setRowLayouts, setSelecte
               meta: {
                 id: newItem.id,
                 name: newItem.name,
-                category: newItem.category,
-                color: newItem.color,
+                category: newItem.category || '',
+                color: newItem.color || '#9ca3af',
                 score: newItem.score,
                 pack_width_in: newItem.pack_width_in,
                 pack_height_in: newItem.pack_height_in,
@@ -196,8 +196,8 @@ export function useGridActions({ gridData, rowLayouts, setRowLayouts, setSelecte
       meta: {
         id: item.id,
         name: item.name,
-        category: item.category,
-        color: item.color,
+        category: item.category || '',
+        color: item.color || '#9ca3af',
         score: item.score,
         pack_width_in: item.pack_width_in,
         pack_height_in: item.pack_height_in,

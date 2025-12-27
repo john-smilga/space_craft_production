@@ -6,7 +6,7 @@ import { schemas } from '@/lib/generated/api-schemas';
 
 type UserType = z.infer<typeof schemas.User>;
 
-interface AuthState {
+type AuthState = {
   user: UserType | null;
   setUser: (user: UserType | null) => void;
   clearUser: () => void;

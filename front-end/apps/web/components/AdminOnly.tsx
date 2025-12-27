@@ -2,7 +2,7 @@
 
 import { useAuthStore } from '@/features/auth';
 
-interface AdminOnlyProps {
+type AdminOnlyProps = {
   fallback?: React.ReactNode;
   children: React.ReactNode;
 }

@@ -5,13 +5,8 @@ import { schemas } from '@/lib/generated/api-schemas';
 export type Category = z.infer<typeof schemas.Category>;
 export type CategoriesResponse = z.infer<typeof schemas.CategoryListResponse>;
 
-// Custom type for selectable categories (with IDs)
-export interface SelectableCategory {
-  id: number;
-  slug: string;
-  name: string;
-}
+// Derive SelectableCategory from API schema (no duplication)
+export type SelectableCategory = Pick<Category, 'id' | 'slug' | 'name'>;
 
-export interface SelectableCategoriesResponse {
-  categories: SelectableCategory[];
-}
+// Use CategoryListResponse from API schema
+export type SelectableCategoriesResponse = CategoriesResponse;

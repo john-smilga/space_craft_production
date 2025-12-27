@@ -1,4 +1,4 @@
-export interface LayoutItem {
+export type LayoutItem = {
   i: string;
   x: number;
   y: number;

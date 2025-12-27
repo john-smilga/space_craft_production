@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import type { DisplayListType } from '../../types';
 
-interface DisplayCardProps {
+type DisplayCardProps = {
   display: DisplayListType;
 }
 

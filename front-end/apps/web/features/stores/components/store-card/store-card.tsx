@@ -1,11 +1,14 @@
 import Link from 'next/link';
+import { z } from 'zod';
+import { schemas } from '@/lib/generated/api-schemas';
 
-interface StoreCardProps {
-  name: string;
-  store_code: string;
-  slug: string;
-  address?: string;
-}
+// Derive props from StoreList (list view) + optional address from Store (detail view)
+type StoreCardProps = Pick<
+  z.infer<typeof schemas.StoreList>,
+  'name' | 'store_code' | 'slug'
+> & {
+  address?: string; // From Store schema (detail), optional for list views
+};
 
 export function StoreCard({ name, store_code, slug, address }: StoreCardProps) {
   return (

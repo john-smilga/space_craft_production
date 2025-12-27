@@ -10,7 +10,7 @@ import { AdminOnly } from '@/components/AdminOnly';
 import { formatDate } from '@/lib/utils';
 import { useUserQuery, useDeleteUserMutation } from '../../queries';
 
-interface UserFieldProps {
+type UserFieldProps = {
   label: string;
   children: React.ReactNode;
 }
@@ -24,7 +24,7 @@ function UserField({ label, children }: UserFieldProps) {
   );
 }
 
-interface UserDetailProps {
+type UserDetailProps = {
   userSlug: string;
 }
 

@@ -1,9 +1,9 @@
 import type { StateCreator } from 'zustand';
 
-export interface ProductBrowserSlice {
+export type ProductBrowserSlice = {
   sidebarOpen: boolean;
   sidebarExpanded: boolean;
-  
+
   setSidebarOpen: (open: boolean) => void;
   setSidebarExpanded: (expanded: boolean) => void;
   toggleSidebar: () => void;

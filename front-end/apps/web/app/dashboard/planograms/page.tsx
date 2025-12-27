@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 export default function PlanogramsPage() {
   const { data, isLoading, error } = usePlanogramsQuery();
   const planograms = data || [];
-
+  
   if (isLoading) {
     return <div className='text-center py-8'>Loading...</div>;
   }
@@ -48,12 +48,12 @@ export default function PlanogramsPage() {
               key={planogram.id}
               name={planogram.name}
               slug={planogram.slug}
-              projectName={planogram.project_name || 'Unknown'}
-              projectSlug={planogram.project_slug || ''}
-              displayName={planogram.display_name || null}
+              project_name={planogram.project_name || 'Unknown'}
+              project_slug={planogram.project_slug || ''}
+              display_name={planogram.display_name}
               seasonDisplay={planogram.season || 'summer'}
               categories={[]}
-              categoryIds={[]}
+              category_ids={[]}
             />
           ))}
         </div>

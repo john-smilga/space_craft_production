@@ -6,14 +6,14 @@ import { calculateItemPositions } from '../utils';
 const ROW_BG_COLOR = '#f4f4f5';
 const ROW_BORDER_COLOR = '#e4e4e7';
 
-interface GridRowData {
+type GridRowData = {
   id: number;
   category: string | null;
   name: string;
   items: LayoutItem[];
 }
 
-interface GridRowProps {
+type GridRowProps = {
   row: GridRowData;
   items: LayoutItem[];
   yOffset: number;

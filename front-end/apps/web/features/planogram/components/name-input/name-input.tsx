@@ -1,7 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-interface NameInputProps {
+type NameInputProps = {
   value: string;
   onChange: (value: string) => void;
 }

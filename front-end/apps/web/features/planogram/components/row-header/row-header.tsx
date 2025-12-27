@@ -2,7 +2,7 @@
 
 import { usePlanogramStore } from '../../store';
 
-interface RowHeaderProps {
+type RowHeaderProps = {
   rowName: string;
   rowId: number;
 }

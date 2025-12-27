@@ -1,11 +1,11 @@
 import type { StateCreator } from 'zustand';
 
-export interface AISlice {
+export type AISlice = {
   aiDialogOpen: boolean;
   aiLoading: boolean;
   aiError: string | null;
   aiOverview: string | null;
-  
+
   setAIDialogOpen: (open: boolean) => void;
   setAILoading: (loading: boolean) => void;
   setAIError: (error: string | null) => void;

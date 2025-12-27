@@ -1,60 +1,23 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { z } from 'zod';
 import api from '@/lib/axios';
 import { schemas } from '@/lib/generated/api-schemas';
 import { usePlanogramStore } from '../store';
 import type { PlanogramDetailResponse } from '../types';
 
-// Schema for layout item structure
-const LayoutItemSchema = z.object({
-  i: z.string(),
-  x: z.number(),
-  y: z.number(),
-  w: z.number(),
-  h: z.number(),
-  meta: z.object({
-    id: z.number(),
-    name: z.string(),
-    category: z.string(),
-    color: z.string().optional(),
-    score: z.number(),
-    pack_width_in: z.number(),
-    pack_height_in: z.number(),
-  }),
-});
-
-const GridResponseSchema = z.object({
-  grid: z.object({
-    cols: z.number(),
-    rows: z.number(),
-    cellWidthIn: z.number(),
-  }),
-  rows: z.array(
-    z.object({
-      id: z.number(),
-      category: z.string().nullable(),
-      name: z.string(),
-      items: z.array(LayoutItemSchema),
-    })
-  ),
-});
-
-// API returns planogram fields spread out + layout field
-const PlanogramDetailResponseSchema = schemas.Planogram.extend({
-  layout: GridResponseSchema.optional(),
-});
+// Use PlanogramDetail schema from generated API schemas
+const PlanogramDetailResponseSchema = schemas.PlanogramDetail;
 
 async function fetchPlanogram(slug: string): Promise<PlanogramDetailResponse> {
   const { data } = await api.get(`/planograms/${slug}/`);
   const validated = PlanogramDetailResponseSchema.parse(data);
-  
+
   // Extract layout and return structured response
   const { layout, ...planogramData } = validated;
   return {
-    planogram: planogramData,
-    layout,
+    planogram: planogramData as import('../types').Planogram,
+    layout: layout ?? undefined,
   };
 }
 

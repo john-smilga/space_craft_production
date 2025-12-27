@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 
-export interface FormSlice {
+export type FormSlice = {
   // Form state
   name: string;
   isEditingName: boolean;
@@ -10,7 +10,7 @@ export interface FormSlice {
   widthIn: number;
   heightIn: number;
   selectedCategoryIds: number[];
-  
+
   // Actions
   setName: (name: string) => void;
   setIsEditingName: (isEditing: boolean) => void;

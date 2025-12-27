@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useCreateStoreMutation, useUpdateStoreMutation, useStoreQuery } from '../../queries';
 
-interface StoreFormProps {
+type StoreFormProps = {
   storeSlug?: string;
   mode: 'create' | 'edit';
 }

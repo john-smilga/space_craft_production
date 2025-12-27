@@ -1,4 +1,4 @@
-interface DetailFieldProps {
+type DetailFieldProps = {
   label: string;
   value: string | React.ReactNode;
   valueClassName?: string;

@@ -4,7 +4,7 @@ import api from '@/lib/axios';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
-interface DeletePlanogramVariables {
+type DeletePlanogramVariables = {
   slug: string;
 }
 

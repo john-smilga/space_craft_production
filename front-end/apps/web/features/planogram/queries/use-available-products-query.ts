@@ -5,7 +5,7 @@ import api from '@/lib/axios';
 import { schemas } from '@/lib/generated/api-schemas';
 import type { AvailableItem } from '../types';
 
-interface AvailableProductsParams {
+type AvailableProductsParams = {
   categoryIds: number[];
   season: string;
 }

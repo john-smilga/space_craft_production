@@ -4,7 +4,7 @@ import { useAppMutation } from '@/lib/react-query/hooks';
 import { schemas } from '@/lib/generated/api-schemas';
 import type { Planogram, LayoutItem } from '../types';
 
-interface SaveLayoutVariables {
+type SaveLayoutVariables = {
   slug: string;
   layout: Record<number, LayoutItem[]>;
   preserve_layout?: boolean;

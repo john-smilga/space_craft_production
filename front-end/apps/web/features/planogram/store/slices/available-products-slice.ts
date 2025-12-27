@@ -1,24 +1,24 @@
 import type { StateCreator } from 'zustand';
 
-export interface AvailableProductsSlice {
+export type AvailableProductsSlice = {
   // Sidebar UI
   availableProductsSidebarOpen: boolean;
   availableProductsSidebarExpanded: boolean;
-  
+
   // Selection
   selectedItems: Map<number, number>; // itemId -> quantity
   targetRowId: number | null;
-  
+
   // Actions
   setAvailableProductsSidebarOpen: (open: boolean) => void;
   setAvailableProductsSidebarExpanded: (expanded: boolean) => void;
   toggleAvailableProductsSidebar: () => void;
   toggleAvailableProductsSidebarExpand: () => void;
-  
+
   incrementItem: (itemId: number) => void;
   decrementItem: (itemId: number) => void;
   clearSelectedItems: () => void;
-  
+
   setTargetRowId: (rowId: number | null) => void;
   openAvailableProductsForRow: (rowId: number) => void;
   closeAvailableProducts: () => void;
