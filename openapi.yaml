@@ -484,7 +484,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Planogram'
+                $ref: '#/components/schemas/PlanogramDetail'
           description: ''
     put:
       operationId: planograms_update
@@ -1431,6 +1431,209 @@ components:
       - shelf_count
       - type
       - width_in
+    GridConfig:
+      type: object
+      description: Serializer for grid configuration.
+      properties:
+        cols:
+          type: integer
+        rows:
+          type: integer
+        cellWidthIn:
+          type: number
+          format: double
+      required:
+      - cellWidthIn
+      - cols
+      - rows
+    GridConfigRequest:
+      type: object
+      description: Serializer for grid configuration.
+      properties:
+        cols:
+          type: integer
+        rows:
+          type: integer
+        cellWidthIn:
+          type: number
+          format: double
+      required:
+      - cellWidthIn
+      - cols
+      - rows
+    Layout:
+      type: object
+      description: Serializer for complete planogram layout structure.
+      properties:
+        grid:
+          $ref: '#/components/schemas/GridConfig'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/LayoutRow'
+      required:
+      - grid
+      - rows
+    LayoutItem:
+      type: object
+      description: Serializer for individual layout items (grid items).
+      properties:
+        i:
+          type: string
+        x:
+          type: integer
+        y:
+          type: integer
+        w:
+          type: integer
+        h:
+          type: integer
+        meta:
+          $ref: '#/components/schemas/LayoutItemMeta'
+      required:
+      - h
+      - i
+      - meta
+      - w
+      - x
+      - y
+    LayoutItemMeta:
+      type: object
+      description: Serializer for layout item metadata.
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        color:
+          type: string
+        score:
+          type: number
+          format: double
+        pack_width_in:
+          type: number
+          format: double
+        pack_height_in:
+          type: number
+          format: double
+      required:
+      - category
+      - id
+      - name
+      - pack_height_in
+      - pack_width_in
+      - score
+    LayoutItemMetaRequest:
+      type: object
+      description: Serializer for layout item metadata.
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+        category:
+          type: string
+          minLength: 1
+        color:
+          type: string
+        score:
+          type: number
+          format: double
+        pack_width_in:
+          type: number
+          format: double
+        pack_height_in:
+          type: number
+          format: double
+      required:
+      - category
+      - id
+      - name
+      - pack_height_in
+      - pack_width_in
+      - score
+    LayoutItemRequest:
+      type: object
+      description: Serializer for individual layout items (grid items).
+      properties:
+        i:
+          type: string
+          minLength: 1
+        x:
+          type: integer
+        y:
+          type: integer
+        w:
+          type: integer
+        h:
+          type: integer
+        meta:
+          $ref: '#/components/schemas/LayoutItemMetaRequest'
+      required:
+      - h
+      - i
+      - meta
+      - w
+      - x
+      - y
+    LayoutRequest:
+      type: object
+      description: Serializer for complete planogram layout structure.
+      properties:
+        grid:
+          $ref: '#/components/schemas/GridConfigRequest'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/LayoutRowRequest'
+      required:
+      - grid
+      - rows
+    LayoutRow:
+      type: object
+      description: Serializer for layout rows (shelves).
+      properties:
+        id:
+          type: integer
+        category:
+          type: string
+          nullable: true
+        name:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LayoutItem'
+      required:
+      - category
+      - id
+      - items
+      - name
+    LayoutRowRequest:
+      type: object
+      description: Serializer for layout rows (shelves).
+      properties:
+        id:
+          type: integer
+        category:
+          type: string
+          nullable: true
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LayoutItemRequest'
+      required:
+      - category
+      - id
+      - items
+      - name
     LoginRequest:
       type: object
       description: Input serializer for login.
@@ -1692,6 +1895,7 @@ components:
           type: array
           items:
             type: integer
+          description: List of category IDs
         preserve_layout:
           type: boolean
           description: If True, use saved layout instead of regenerating
@@ -1833,9 +2037,6 @@ components:
             additionalProperties: {}
           description: Derive category names from category_ids.
           readOnly: true
-        layout:
-          nullable: true
-          description: Stored layout data from frontend
         preserve_layout:
           type: boolean
           description: If True, use saved layout instead of regenerating
@@ -1927,15 +2128,117 @@ components:
           type: array
           items:
             type: integer
+          description: List of category IDs
       required:
       - category_ids
       - name
       - project
+    PlanogramDetail:
+      type: object
+      description: Response serializer for planogram detail with computed layout.
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        season:
+          type: string
+        project:
+          type: integer
+        project_name:
+          type: string
+        project_slug:
+          type: string
+        display:
+          type: integer
+          nullable: true
+        display_name:
+          type: string
+        company:
+          type: integer
+        company_name:
+          type: string
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        shelf_count:
+          type: integer
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        category_ids: {}
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        preserve_layout:
+          type: boolean
+        created_by:
+          type: integer
+          nullable: true
+        created_by_username:
+          type: string
+        updated_by:
+          type: integer
+          nullable: true
+        updated_by_username:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        layout:
+          allOf:
+          - $ref: '#/components/schemas/Layout'
+          nullable: true
+      required:
+      - categories
+      - category_ids
+      - company
+      - company_name
+      - created_at
+      - created_by
+      - created_by_username
+      - depth_in
+      - display
+      - display_name
+      - height_in
+      - id
+      - name
+      - preserve_layout
+      - project
+      - project_name
+      - project_slug
+      - season
+      - shelf_count
+      - shelf_spacing
+      - slug
+      - updated_at
+      - updated_by
+      - updated_by_username
+      - width_in
     PlanogramLayoutRequest:
       type: object
       description: Input serializer for layout save.
       properties:
-        layout: {}
+        layout:
+          $ref: '#/components/schemas/LayoutRequest'
         preserve_layout:
           type: boolean
           default: true
@@ -2049,8 +2352,10 @@ components:
         category_ids:
           description: List of selected category IDs
         layout:
+          allOf:
+          - $ref: '#/components/schemas/LayoutRequest'
+          writeOnly: true
           nullable: true
-          description: Stored layout data from frontend
         preserve_layout:
           type: boolean
           description: If True, use saved layout instead of regenerating
@@ -2104,6 +2409,7 @@ components:
           type: array
           items:
             type: integer
+          description: List of category IDs
         preserve_layout:
           type: boolean
           description: If True, use saved layout instead of regenerating
@@ -2157,6 +2463,7 @@ components:
           type: array
           items:
             type: integer
+          description: List of category IDs
         preserve_layout:
           type: boolean
           description: If True, use saved layout instead of regenerating

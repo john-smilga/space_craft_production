@@ -17,6 +17,7 @@ from planograms.models import Planogram
 from planograms.serializers import (
     AIOverviewResponseSerializer,
     PlanogramCreateSerializer,
+    PlanogramDetailSerializer,
     PlanogramLayoutSerializer,
     PlanogramListSerializer,
     PlanogramSerializer,
@@ -58,7 +59,7 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         return queryset.order_by("-created_at")
 
     @extend_schema(
-        responses={200: PlanogramSerializer},
+        responses={200: PlanogramDetailSerializer},
         description="Retrieve planogram with layout.",
     )
     def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Response:

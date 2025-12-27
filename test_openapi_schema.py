@@ -11,10 +11,15 @@ Schemathesis will:
 import pytest
 import schemathesis
 from pathlib import Path
+from django.core.wsgi import get_wsgi_application
+import os
 
-# Load the OpenAPI schema from file
+# Setup Django settings
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'spacecraft.settings')
+
+# Load the OpenAPI schema from file with WSGI app
 schema_path = Path(__file__).parent / "openapi.yaml"
-schema = schemathesis.from_path(str(schema_path))
+schema = schemathesis.from_path(str(schema_path), app=get_wsgi_application())
 
 
 @schema.parametrize()
@@ -54,28 +59,3 @@ def test_register_endpoint_schema(case):
     """Focused schema validation test for registration endpoint."""
     response = case.call_wsgi()
     case.validate_response(response)
-
-
-# Custom hooks for schemathesis
-@schema.hooks.register
-def before_call(context, case):
-    """Hook that runs before each API call.
-
-    Can be used to:
-    - Set up test data
-    - Add authentication headers
-    - Modify request parameters
-    """
-    pass
-
-
-@schema.hooks.register
-def after_call(context, case, response):
-    """Hook that runs after each API call.
-
-    Can be used to:
-    - Additional custom validations
-    - Clean up test data
-    - Log test results
-    """
-    pass
