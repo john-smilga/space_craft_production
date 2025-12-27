@@ -10,6 +10,7 @@ export { PlanogramCategoriesSelector } from './planogram-categories-selector/pla
 export { PlanogramDeleteButton } from './planogram-delete-button/planogram-delete-button';
 export { PlanogramDownloadButton } from './planogram-download-button/planogram-download-button';
 export { PlanogramFormFields } from './planogram-form-fields/planogram-form-fields';
+export { PlanogramFormProvider, usePlanogramFormContext } from './planogram-form-provider';
 export { PlanogramHeader } from './planogram-header/planogram-header';
 export { PlanogramNameField } from './planogram-name-field/planogram-name-field';
 export { ProductSidebar } from './product-sidebar/product-sidebar';

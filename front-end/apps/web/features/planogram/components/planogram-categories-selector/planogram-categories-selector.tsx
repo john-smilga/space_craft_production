@@ -3,7 +3,7 @@
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { usePlanogramStore } from '../../store';
+import { usePlanogramFormContext } from '../planogram-form-provider';
 import { usePlanogramData } from '../../hooks';
 import { useParams } from 'next/navigation';
 import type { PlanogramCategory } from '../../types';
@@ -12,9 +12,16 @@ export function PlanogramCategoriesSelector() {
   const params = useParams();
   const planogramSlug = params?.planogramSlug as string;
 
-  const selectedCategoryIds = usePlanogramStore.use.selectedCategoryIds();
-  const toggleCategory = usePlanogramStore.use.toggleCategory();
-  
+  const { watch, setValue } = usePlanogramFormContext();
+  const selectedCategoryIds = watch('selectedCategoryIds');
+
+  const toggleCategory = (categoryId: number) => {
+    const newIds = selectedCategoryIds.includes(categoryId)
+      ? selectedCategoryIds.filter((id) => id !== categoryId)
+      : [...selectedCategoryIds, categoryId];
+    setValue('selectedCategoryIds', newIds);
+  };
+
   const { planogramData, leafCategories, leafCategoriesLoading, leafCategoriesError } = usePlanogramData(planogramSlug);
   const planogram = planogramData?.planogram;
 

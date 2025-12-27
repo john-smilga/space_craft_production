@@ -2,20 +2,18 @@
 import { useUpdatePlanogramMutation, useSaveLayoutMutation, useDeletePlanogramMutation } from '../queries';
 import type { PlanogramDetailResponse, Planogram, LayoutItem } from '../types';
 import { usePlanogramStore } from '../store';
+import type { PlanogramFormData } from '../components/planogram-form-provider';
 
 export function usePlanogramForm(
   planogramSlug: string,
   planogramData: PlanogramDetailResponse | null | undefined,
   refetchPlanogram: () => Promise<unknown>,
-  fetchAvailableProducts: (overridePlanogram?: Planogram) => Promise<void>
+  fetchAvailableProducts: (overridePlanogram?: Planogram) => Promise<void>,
+  formValues?: PlanogramFormData
 ) {
-  const name = usePlanogramStore.use.name();
-  const season = usePlanogramStore.use.season();
-  const shelfCount = usePlanogramStore.use.shelfCount();
+  // Still read widthIn and heightIn from Zustand as they're set by display selection
   const widthIn = usePlanogramStore.use.widthIn();
   const heightIn = usePlanogramStore.use.heightIn();
-  const selectedCategoryIds = usePlanogramStore.use.selectedCategoryIds();
-  const selectedDisplay = usePlanogramStore.use.selectedDisplay();
   const setName = usePlanogramStore.use.setName();
   const setSelectedDisplay = usePlanogramStore.use.setSelectedDisplay();
   const setSeason = usePlanogramStore.use.setSeason();
@@ -52,33 +50,38 @@ export function usePlanogramForm(
       return;
     }
 
+    // If formValues not provided, function is being called from grid/delete button (not from form)
+    if (!formValues) {
+      return;
+    }
+
     // Validate name is not empty
-    if (!name || !name.trim()) {
+    if (!formValues.name || !formValues.name.trim()) {
       return;
     }
 
     const updates: Record<string, unknown> = {};
 
     // Include name if it changed
-    if (name.trim() !== planogramData.planogram.name) {
-      updates.name = name.trim();
+    if (formValues.name.trim() !== planogramData.planogram.name) {
+      updates.name = formValues.name.trim();
     }
 
     // Only include fields that have changed
-    if (season && season !== planogramData.planogram.season) {
-      updates.season = season;
+    if (formValues.season && formValues.season !== planogramData.planogram.season) {
+      updates.season = formValues.season;
     }
-    if (shelfCount > 0 && shelfCount !== (planogramData.planogram.shelf_count ?? 1)) {
-      updates.shelf_count = shelfCount;
+    if (formValues.shelfCount > 0 && formValues.shelfCount !== (planogramData.planogram.shelf_count ?? 1)) {
+      updates.shelf_count = formValues.shelfCount;
     }
-    if (selectedCategoryIds.length > 0) {
+    if (formValues.selectedCategoryIds.length > 0) {
       const currentIds = Array.isArray(planogramData.planogram.category_ids) ? planogramData.planogram.category_ids : [];
-      if (JSON.stringify(selectedCategoryIds.sort()) !== JSON.stringify(currentIds.sort())) {
-        updates.category_ids = selectedCategoryIds;
+      if (JSON.stringify(formValues.selectedCategoryIds.sort()) !== JSON.stringify(currentIds.sort())) {
+        updates.category_ids = formValues.selectedCategoryIds;
       }
     }
-    if (selectedDisplay && selectedDisplay !== planogramData.planogram.display?.toString()) {
-      updates.display = parseInt(selectedDisplay, 10);
+    if (formValues.selectedDisplay && formValues.selectedDisplay !== planogramData.planogram.display?.toString()) {
+      updates.display = parseInt(formValues.selectedDisplay, 10);
     }
 
     // Always set preserve_layout to false when regenerating
@@ -89,16 +92,16 @@ export function usePlanogramForm(
       try {
         const result = await updateMutation.mutateAsync({
           slug: planogramSlug,
-          name: name.trim(),
+          name: formValues.name.trim(),
           width_in: widthIn.toString(),
           height_in: heightIn.toString(),
-          shelf_count: shelfCount > 0 ? shelfCount : (planogramData!.planogram.shelf_count ?? 1),
+          shelf_count: formValues.shelfCount > 0 ? formValues.shelfCount : (planogramData!.planogram.shelf_count ?? 1),
           ...updates,
         });
         if (result) {
           const updatedPlanogram = result;
 
-          // Update state directly from the response
+          // Update Zustand state for canvas sync
           if (updatedPlanogram.name) {
             setName(updatedPlanogram.name);
           }
@@ -116,7 +119,7 @@ export function usePlanogramForm(
 
           // Refetch to get latest state (including display and slug)
           await refetchPlanogram();
-          
+
           // Refetch available products after regeneration (in case season or categories changed)
           await fetchAvailableProducts();
         }

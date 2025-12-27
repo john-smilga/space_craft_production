@@ -1,19 +1,19 @@
 'use client';
 
-import { FormField } from '@/components/ui/form-field';
-import { usePlanogramStore } from '../../store';
+import { FormInput } from '@/components/ui/form-input';
+import { usePlanogramFormContext } from '../planogram-form-provider';
 
 export function PlanogramNameField() {
-  const name = usePlanogramStore.use.name();
-  const setName = usePlanogramStore.use.setName();
+  const { register, formState: { errors } } = usePlanogramFormContext();
 
   return (
-    <FormField
-      label='Name'
-      value={name}
-      onChange={(e) => setName(e.target.value)}
+    <FormInput
+      name='name'
+      label='Name *'
+      type='text'
+      register={register}
+      error={errors.name}
       placeholder='Planogram name'
-      required
       containerClassName='lg:col-span-2'
     />
   );

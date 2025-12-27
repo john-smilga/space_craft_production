@@ -2,8 +2,9 @@
 
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { usePlanogramStore, usePlanogramData } from '@/features/planogram';
-import { Grid, ThreeJSView, ProductSidebar, AvailableProductsSidebar, PlanogramNameField, PlanogramFormFields, PlanogramCategoriesSelector, PlanogramActions, PlanogramDeleteButton, PlanogramHeader } from '@/features/planogram/components';
+import { Grid, ThreeJSView, ProductSidebar, AvailableProductsSidebar, PlanogramNameField, PlanogramFormFields, PlanogramCategoriesSelector, PlanogramActions, PlanogramDeleteButton, PlanogramHeader, PlanogramFormProvider } from '@/features/planogram/components';
 import { Card, CardContent } from '@/components/ui/card';
 
 const KonvaGridWrapper = dynamic(
@@ -23,6 +24,23 @@ function PlanogramDetailContent() {
 
   // Use custom hooks
   const { planogramData, planogramLoading } = usePlanogramData(planogramSlug);
+
+  // Initialize Zustand form state from planogram data (for backwards compatibility with canvas)
+  const initializeForm = usePlanogramStore.use.initializeForm();
+
+  useEffect(() => {
+    if (planogramData?.planogram) {
+      initializeForm({
+        name: planogramData.planogram.name,
+        display_id: planogramData.planogram.display?.toString(),
+        season: planogramData.planogram.season,
+        shelf_count: planogramData.planogram.shelf_count,
+        width_in: parseFloat(planogramData.planogram.width_in),
+        height_in: parseFloat(planogramData.planogram.height_in),
+        category_ids: Array.isArray(planogramData.planogram.category_ids) ? planogramData.planogram.category_ids : [],
+      });
+    }
+  }, [planogramData, initializeForm]);
 
   // Loading state
   if (planogramLoading) {
@@ -59,18 +77,28 @@ function PlanogramDetailContent() {
 
           {/* Horizontal Form at top */}
           {planogram && (
-            <Card className='mb-8'>
-              <CardContent className='p-6'>
-                <div className='space-y-4'>
-                  <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4'>
-                    <PlanogramNameField />
-                    <PlanogramFormFields />
+            <PlanogramFormProvider
+              defaultValues={{
+                name: planogram.name,
+                season: planogram.season || 'summer',
+                selectedDisplay: planogram.display?.toString() || '',
+                shelfCount: planogram.shelf_count || 1,
+                selectedCategoryIds: Array.isArray(planogram.category_ids) ? planogram.category_ids : [],
+              }}
+            >
+              <Card className='mb-8'>
+                <CardContent className='p-6'>
+                  <div className='space-y-4'>
+                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4'>
+                      <PlanogramNameField />
+                      <PlanogramFormFields />
+                    </div>
+                    <PlanogramCategoriesSelector />
                   </div>
-                  <PlanogramCategoriesSelector />
-                </div>
-                <PlanogramActions />
-              </CardContent>
-            </Card>
+                  <PlanogramActions />
+                </CardContent>
+              </Card>
+            </PlanogramFormProvider>
           )}
 
           <div className='space-y-6'>
