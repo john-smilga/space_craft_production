@@ -1,24 +1,32 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { FormField } from '@/components/ui/form-field';
+import { FormInput } from '@/components/ui/form-input';
 import { FormSelectField } from '@/components/ui/form-select-field';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCreateDisplayMutation, useDisplayTypesQuery, useStandardDisplaysQuery } from '../../queries';
+import { schemas } from '@/lib/generated/api-schemas';
+
+const displayFormSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  type: schemas.TypeEnum,
+  width_in: z.string().min(1, 'Width is required').regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid number'),
+  height_in: z.string().min(1, 'Height is required').regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid number'),
+  depth_in: z.string().min(1, 'Depth is required').regex(/^\d+(\.\d{1,2})?$/, 'Must be a valid number'),
+  shelf_count: z.string().min(1, 'Shelf count is required').regex(/^\d+$/, 'Must be a whole number'),
+  shelf_spacing: z.string().regex(/^\d*(\.\d{1,2})?$/, 'Must be a valid number').optional(),
+  selectedStandard: z.string().optional(),
+});
+
+type DisplayFormData = z.infer<typeof displayFormSchema>;
 
 export function DisplayForm() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [type, setType] = useState('');
-  const [widthIn, setWidthIn] = useState('60');
-  const [heightIn, setHeightIn] = useState('48');
-  const [depthIn, setDepthIn] = useState('24');
-  const [shelfCount, setShelfCount] = useState('4');
-  const [shelfSpacing, setShelfSpacing] = useState('');
-  const [selectedStandard, setSelectedStandard] = useState('');
 
   const { data: typesData } = useDisplayTypesQuery();
   const displayTypes = typesData?.types || [];
@@ -28,45 +36,67 @@ export function DisplayForm() {
 
   const createMutation = useCreateDisplayMutation();
 
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<DisplayFormData>({
+    resolver: zodResolver(displayFormSchema),
+    defaultValues: {
+      name: '',
+      type: undefined,
+      width_in: '60',
+      height_in: '48',
+      depth_in: '24',
+      shelf_count: '4',
+      shelf_spacing: '',
+      selectedStandard: '',
+    },
+  });
+
+  const selectedStandard = watch('selectedStandard');
+
+  // Handle standard template selection
   useEffect(() => {
     if (!selectedStandard) {
       return;
     }
-    
-    const standard = standards.find((s: { id: number; [key: string]: unknown }) => s.id.toString() === selectedStandard);
+
+    const standard = standards.find((s) => s.id.toString() === selectedStandard);
+
     if (!standard) {
       return;
     }
 
-    Promise.resolve().then(() => {
-      setName(standard.name);
-      setType(standard.type);
-      setWidthIn(standard.width_in.toString());
-      setHeightIn(standard.height_in.toString());
-      setDepthIn(standard.depth_in?.toString() || '24');
-      setShelfCount(standard.shelf_count.toString());
-      setShelfSpacing(standard.shelf_spacing?.toString() || '');
-    });
-  }, [selectedStandard, standards]);
+    setValue('name', standard.name);
+    setValue('type', standard.type as z.infer<typeof schemas.TypeEnum>);
+    setValue('width_in', standard.width_in);
+    setValue('height_in', standard.height_in);
+    setValue('depth_in', standard.depth_in || '24');
+    setValue('shelf_count', standard.shelf_count.toString());
+    setValue('shelf_spacing', standard.shelf_spacing || '');
+  }, [selectedStandard, standards, setValue]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      const result = await createMutation.mutateAsync({
-        name,
-        type: type as "gondola" | "endcap" | "wall_unit" | "refrigerated_case" | "freezer_case" | "island_display" | "checkout_counter" | "shelf" | "rack" | "bin" | "other",
-        width_in: widthIn,
-        height_in: heightIn,
-        depth_in: depthIn,
-        shelf_count: parseInt(shelfCount),
-        shelf_spacing: shelfSpacing || null,
-      });
-
-      router.push(`/dashboard/displays/${result.slug}`);
-    } catch {
-      // Error handled by mutation
-    }
+  const onSubmit = (data: DisplayFormData) => {
+    createMutation.mutate(
+      {
+        name: data.name,
+        type: data.type!,
+        width_in: data.width_in,
+        height_in: data.height_in,
+        depth_in: data.depth_in,
+        shelf_count: parseInt(data.shelf_count),
+        shelf_spacing: data.shelf_spacing || null,
+      },
+      {
+        onSuccess: (result) => {
+          router.push(`/dashboard/displays/${result.slug}`);
+        }
+      }
+    );
   };
 
   return (
@@ -82,109 +112,111 @@ export function DisplayForm() {
           <CardDescription>Enter the details for the new display</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className='space-y-4'>
+          <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
             <div>
-              <FormSelectField
-                label='Start from Standard Template (Optional)'
-                id='standard'
-                value={selectedStandard}
-                onValueChange={setSelectedStandard}
-                options={standards.map((standard) => ({
-                  label: `${standard.name} (${standard.type}) - ${standard.width_in}" × ${standard.height_in}" × ${standard.depth_in || 24}"`,
-                  value: standard.id.toString(),
-                }))}
-                placeholder='None'
+              <Controller
+                name='selectedStandard'
+                control={control}
+                render={({ field }) => (
+                  <FormSelectField
+                    label='Start from Standard Template (Optional)'
+                    value={field.value || ''}
+                    onValueChange={field.onChange}
+                    options={standards.map((standard) => ({
+                      label: `${standard.name} (${standard.type}) - ${standard.width_in}" × ${standard.height_in}" × ${standard.depth_in || 24}"`,
+                      value: standard.id.toString(),
+                    }))}
+                    placeholder='None'
+                  />
+                )}
               />
               <p className='text-xs text-muted-foreground mt-1'>Select a standard template to pre-fill all fields, then customize as needed</p>
             </div>
 
             <div>
-              <FormField
+              <FormInput
+                name='name'
                 label='Display Name *'
-                id='name'
                 type='text'
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
+                register={register}
+                error={errors.name}
                 placeholder='e.g., 5-Foot Gondola'
               />
               <p className='text-xs text-muted-foreground mt-1'>Tip: Include width in the name (e.g., &quot;5-Foot Gondola&quot;) to help identify the display</p>
             </div>
 
-            <FormSelectField
-              label='Type *'
-              id='type'
-              value={type}
-              onValueChange={setType}
-              options={displayTypes.map((typeOption) => ({
-                label: typeOption.label,
-                value: typeOption.value,
-              }))}
-              placeholder='Select a type'
-            />
+            <div>
+              <Controller
+                name='type'
+                control={control}
+                render={({ field }) => (
+                  <FormSelectField
+                    label='Type *'
+                    value={field.value || ''}
+                    onValueChange={field.onChange}
+                    options={displayTypes.map((typeOption) => ({
+                      label: typeOption.label,
+                      value: typeOption.value,
+                    }))}
+                    placeholder='Select a type'
+                  />
+                )}
+              />
+              {errors.type && <p className='text-sm text-destructive -mt-2'>{errors.type.message}</p>}
+            </div>
 
             <div className='grid grid-cols-2 gap-4'>
-              <FormField
+              <FormInput
+                name='width_in'
                 label='Width (inches) *'
-                id='width'
                 type='number'
                 step='1'
-                value={widthIn}
-                onChange={(e) => setWidthIn(e.target.value)}
-                required
+                register={register}
+                error={errors.width_in}
                 placeholder='e.g., 48'
               />
 
-              <FormField
+              <FormInput
+                name='height_in'
                 label='Height (inches) *'
-                id='height'
                 type='number'
                 step='1'
-                value={heightIn}
-                onChange={(e) => setHeightIn(e.target.value)}
-                required
+                register={register}
+                error={errors.height_in}
                 placeholder='e.g., 72'
               />
             </div>
 
             <div className='grid grid-cols-3 gap-4'>
-              <FormField
+              <FormInput
+                name='shelf_count'
                 label='Shelf Count *'
-                id='shelfCount'
                 type='number'
-                value={shelfCount}
-                onChange={(e) => setShelfCount(e.target.value)}
-                required
+                register={register}
+                error={errors.shelf_count}
                 placeholder='e.g., 4'
               />
 
-              <FormField
+              <FormInput
+                name='depth_in'
                 label='Depth (inches) *'
-                id='depth'
                 type='number'
                 step='1'
-                value={depthIn}
-                onChange={(e) => setDepthIn(e.target.value)}
-                required
+                register={register}
+                error={errors.depth_in}
                 placeholder='e.g., 24'
               />
 
-              <FormField
+              <FormInput
+                name='shelf_spacing'
                 label='Shelf Spacing (inches)'
-                id='shelfSpacing'
                 type='number'
                 step='1'
-                value={shelfSpacing}
-                onChange={(e) => setShelfSpacing(e.target.value)}
+                register={register}
+                error={errors.shelf_spacing}
                 placeholder='e.g., 12'
               />
             </div>
-
-            {createMutation.isError && (
-              <Alert variant='destructive'>
-                <AlertDescription>{createMutation.error?.message || 'Failed to create display'}</AlertDescription>
-              </Alert>
-            )}
 
             <div className='flex gap-2 pt-4'>
               <Button type='submit' disabled={createMutation.isPending}>
