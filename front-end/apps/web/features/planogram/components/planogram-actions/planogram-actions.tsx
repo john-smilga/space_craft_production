@@ -14,7 +14,7 @@ export function PlanogramActions() {
   const sidebarOpen = usePlanogramStore.use.sidebarOpen();
   const toggleSidebar = usePlanogramStore.use.toggleSidebar();
 
-  const { watch, formState } = usePlanogramFormContext();
+  const { watch } = usePlanogramFormContext();
   const formValues = watch();
 
   const { planogramData, refetchPlanogram, fetchAvailableProducts } = usePlanogramData(planogramSlug);
@@ -31,7 +31,7 @@ export function PlanogramActions() {
       <div className='mt-4 pt-4 border-t flex gap-4'>
         <Button
           onClick={handleRegenerate}
-          disabled={updatePlanogramMutation.isPending || !formValues.name?.trim() || !formState.isValid}
+          disabled={updatePlanogramMutation.isPending || !formValues.name?.trim()}
           className='w-full md:w-auto cursor-pointer'
         >
           {updatePlanogramMutation.isPending ? 'Updating...' : 'Regenerate'}

@@ -47,6 +47,7 @@ export function PlanogramFormProvider({ children, defaultValues }: PlanogramForm
     },
   });
 
+
   // Sync form values to Zustand for canvas integration
   const setName = usePlanogramStore.use.setName();
   const setSeason = usePlanogramStore.use.setSeason();
