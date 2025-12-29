@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRequireAdmin } from '@/features/auth';
+import { PageLoader } from '@/components/PageLoader';
+import { ErrorState } from '@/components/ErrorState';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -55,17 +57,12 @@ export function UserDetail({ userSlug }: UserDetailProps) {
   };
 
   if (isLoading) {
-    return <div className='text-center py-8'>Loading...</div>;
+    return <PageLoader message='Loading user details...' />;
   }
 
   if (error && !user) {
     return (
-      <Alert variant='destructive' className='mb-4'>
-        <AlertDescription>{error.message}</AlertDescription>
-        <Button onClick={() => router.push('/dashboard/users')} variant='outline' className='mt-4'>
-          Back to Users
-        </Button>
-      </Alert>
+      <ErrorState error={error} onBack={() => router.push('/dashboard/users')} />
     );
   }
 

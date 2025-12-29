@@ -11,9 +11,9 @@ export interface PaginatedResponse<T> {
 /**
  * Options for mutation wrapper
  */
-export interface MutationOptions<TData = unknown> {
+export interface MutationOptions<TData = unknown, TVariables = unknown> {
   successMessage?: string;
   errorMessage?: string;
   invalidateQueries?: string[][];
-  onSuccess?: (data: TData) => void | Promise<void>;
+  onSuccess?: (data: TData, variables: TVariables) => void | Promise<void>;
 }

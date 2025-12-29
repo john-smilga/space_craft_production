@@ -4,6 +4,7 @@ Grid geometry computation service functions.
 
 import logging
 import math
+import time
 from typing import Any
 
 from products.data.category_hierarchy import get_category_color
@@ -107,11 +108,6 @@ def layout_by_score(
     rows_cnt = int(grid["rows"])
     cell_w = float(grid["cellWidthIn"])
 
-    logger.info("=== layout_by_score CALLED ===")
-    logger.info(f"Grid: cols={cols}, rows={rows_cnt}, cellWidthIn={cell_w}")
-    logger.info(f"Categories received: {len(products_by_category)}")
-    logger.info(f"Continuation mode: {continuation}")
-
     def width_cells_for(p: dict[str, Any]) -> int:
         w_in = p.get("pack_width_in", None)
         if w_in is None:
@@ -132,16 +128,6 @@ def layout_by_score(
     ranked = _rank_categories(products_by_category, method=rank_method)
     ranked_cats = [c for c, _ in ranked]
     num_categories = len(ranked_cats)
-
-    # Log request details
-    logger.info("=== LAYOUT REQUEST ===")
-    logger.info(f"Rows requested: {rows_cnt}")
-    logger.info(f"Categories provided: {num_categories}")
-    logger.info(f"Category names: {list(products_by_category.keys())}")
-    logger.info(f"Ranked categories: {ranked_cats}")
-    logger.info(
-        f"Items per category: {[(cat, len(items)) for cat, items in products_by_category.items()]}"
-    )
 
     if num_categories == 0:
         # No categories - return empty rows
@@ -174,9 +160,6 @@ def layout_by_score(
                 "cols": category_cols,
             }
         )
-        logger.info(
-            f"Category '{cat}' assigned columns {start_col} to {end_col-1} ({category_cols} cols)"
-        )
         start_col = end_col
 
     # Determine which rows allow bulky items (bottom 2 rows)
@@ -208,9 +191,6 @@ def layout_by_score(
                 category_items, key=lambda p: p.get("overall_score", 0.0), reverse=True
             )
             highest_score_products_per_category[cat] = sorted_by_score[0].get("id")
-            logger.info(
-                f"Category '{cat}' highest score product ID: {highest_score_products_per_category[cat]}"
-            )
 
     # Track how many times highest score products have been used globally
     highest_score_product_counts = {
@@ -223,8 +203,6 @@ def layout_by_score(
 
         # Track which products have been used in THIS row only (for uniqueness within row)
         used_product_ids_in_row = set()
-
-        logger.info(f"Filling row {r+1}, allow_bulky={allow_bulky}")
 
         # Fill each category's column section
         for cat_range in category_column_ranges:
@@ -377,17 +355,139 @@ def layout_by_score(
             "items": row_items,
         }
 
-        logger.info(f"Row {r+1} result: {len(row_items)} items placed")
         rows_payload.append(row)
 
-    # Final verification logging
-    logger.info("=== FINAL VERIFICATION ===")
-    logger.info(f"Requested rows: {rows_cnt}, Categories: {num_categories}")
-    logger.info(f"Rows returned: {len(rows_payload)}")
-    total_items_placed = sum(len(row.get("items", [])) for row in rows_payload)
-    logger.info(f"Total items placed: {total_items_placed}")
-
     return {
-        "grid": {"cols": cols, "rows": rows_cnt, "cellWidthIn": cell_w},
+        "grid": grid,
         "rows": rows_payload,
     }
+
+
+def add_products_to_layout(
+    layout: dict[str, Any],
+    target_row_id: int,
+    products_to_add: list[dict[str, Any]],
+    product_data: dict[int, dict[str, Any]],
+) -> dict[str, Any]:
+    """
+    Add products to the layout starting from target row, placing from left.
+
+    Args:
+        layout: Current layout dict with grid and rows
+        target_row_id: 0-based row index to start placing products
+        products_to_add: List of {id: int, quantity: int}
+        product_data: Dict mapping product_id -> product info
+
+    Returns:
+        Updated layout dict
+    """
+    grid = layout["grid"]
+    rows = layout["rows"]
+    cols = int(grid["cols"])
+    cell_w = float(grid["cellWidthIn"])
+
+    def width_cells_for(p: dict[str, Any]) -> int:
+        """Calculate width in cells for a product (matches layout_by_score logic)."""
+        w_in = p.get("pack_width_in", None)
+        if w_in is None:
+            return 0
+        try:
+            w_in = float(w_in)
+            if w_in <= 0:
+                return 0
+            if w_in < 12:
+                return 1
+            return max(2, math.floor(w_in / cell_w))
+        except Exception:
+            return 0
+
+    # Expand products_to_add based on quantities
+    items_to_place = []
+    for product_item in products_to_add:
+        product_id = product_item["id"]
+        quantity = product_item["quantity"]
+        for _ in range(quantity):
+            items_to_place.append(product_id)
+
+    # Place items starting from target row
+    timestamp = int(time.time() * 1000)
+    counter = 0
+
+    # Get target row
+    if target_row_id >= len(rows):
+        logger.warning(f"Target row {target_row_id} is out of bounds, cannot place products")
+        return layout
+
+    target_row = rows[target_row_id]
+    row_items = target_row["items"]
+
+    # Find the rightmost position and maximum y in the target row
+    # This determines where we'll start placing new items
+    rightmost_x = 0
+    max_y = target_row_id
+    for item in row_items:
+        if item["y"] == target_row_id:
+            # Track rightmost position in the target row
+            item_right_edge = item["x"] + item["w"]
+            if item_right_edge > rightmost_x:
+                rightmost_x = item_right_edge
+        # Track maximum y value across all items (for sub-rows)
+        if item["y"] > max_y:
+            max_y = item["y"]
+
+    # Place all items starting from rightmost position of target row
+    # When row is full, wrap to next sub-row starting from left (x=0)
+    current_x = rightmost_x
+    current_y = target_row_id
+
+    for product_id in items_to_place:
+        product = product_data.get(product_id)
+        if not product:
+            logger.warning(f"Product {product_id} not found in product_data, skipping")
+            continue
+
+        w_cells = width_cells_for(product)
+        if w_cells <= 0:
+            logger.warning(f"Product {product_id} has invalid width, skipping")
+            continue
+
+        # Check if item would exceed grid width
+        if current_x + w_cells > cols:
+            # Wrap to next sub-row
+            current_x = 0
+            current_y += 1
+
+        counter += 1
+
+        # Extract leaf category from path
+        # Handle both formats: "fresh/meat/beef" or "fresh > meat > lamb"
+        category_path = product.get("category", "")
+        if " > " in category_path:
+            category_slug = category_path.split(" > ")[-1]
+        elif "/" in category_path:
+            category_slug = category_path.split("/")[-1]
+        else:
+            category_slug = category_path
+
+        color = get_category_color(category_slug)
+
+        new_item = {
+            "i": f"{product_id}-{target_row_id}-{timestamp}-{counter}",
+            "x": current_x,
+            "y": current_y,
+            "w": w_cells,
+            "h": 1,
+            "meta": {
+                "id": product_id,
+                "name": product.get("name"),
+                "category": category_path,
+                "color": color,
+                "score": product.get("overall_score", 0.0),
+                "pack_width_in": product.get("pack_width_in"),
+                "pack_height_in": product.get("pack_height_in"),
+            },
+        }
+        row_items.append(new_item)
+        current_x += w_cells
+
+    return layout

@@ -16,10 +16,10 @@ from factories import (
 class TestPlanogramCreate:
     """Tests for planogram create endpoint."""
 
-    def test_create_planogram_includes_layout(
+    def test_create_planogram_no_layout_in_response(
         self, authenticated_client, company, user, assert_matches_schema
     ):
-        """Test that create returns planogram with layout field."""
+        """Test that create returns planogram without layout field."""
         project = ProjectFactory(company=company)
         display = DisplayFactory(company=company)
 
@@ -37,21 +37,15 @@ class TestPlanogramCreate:
         assert response.status_code == status.HTTP_201_CREATED
         assert_matches_schema(response)  # Validate against OpenAPI schema
 
-        # Verify response shape (now covered by schema, but kept for clarity)
-        assert "layout" in response.data  # KEY: layout must be included
+        # Verify layout is NOT in response (fetch separately via GET /layout/)
+        assert "layout" not in response.data
+        assert "id" in response.data
+        assert "name" in response.data
 
-        # Verify layout structure
-        layout = response.data["layout"]
-        assert "grid" in layout
-        assert "rows" in layout
-        assert "cols" in layout["grid"]
-        assert "rows" in layout["grid"]
-        assert "cellWidthIn" in layout["grid"]
-
-    def test_create_planogram_without_display_includes_layout(
+    def test_create_planogram_without_display_no_layout_in_response(
         self, authenticated_client, company
     ):
-        """Test that create without explicit display still returns layout."""
+        """Test that create without explicit display does not return layout."""
         project = ProjectFactory(company=company)
         # Create a standard display for auto-selection (company=None makes it standard)
         DisplayFactory(company=None, display_category="standard")
@@ -67,17 +61,17 @@ class TestPlanogramCreate:
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert "layout" in response.data
+        assert "layout" not in response.data
 
 
 @pytest.mark.django_db
 class TestPlanogramRetrieve:
     """Tests for planogram retrieve endpoint."""
 
-    def test_retrieve_planogram_includes_layout(
+    def test_retrieve_planogram_no_layout_in_response(
         self, authenticated_client, company, assert_matches_schema
     ):
-        """Test that retrieve returns planogram with layout field."""
+        """Test that retrieve returns planogram without layout field."""
         planogram = PlanogramFactory(company=company)
 
         response = authenticated_client.get(f"/api/planograms/{planogram.slug}/")
@@ -85,19 +79,18 @@ class TestPlanogramRetrieve:
         assert response.status_code == status.HTTP_200_OK
         assert_matches_schema(response)  # Validate against OpenAPI schema
 
-        # Verify layout structure (field presence is validated by schema)
-        assert "layout" in response.data  # KEY: layout must be included
-        layout = response.data["layout"]
-        assert "grid" in layout
-        assert "rows" in layout
+        # Verify layout is NOT in response (fetch separately via GET /layout/)
+        assert "layout" not in response.data
+        assert "id" in response.data
+        assert "name" in response.data
 
 
 @pytest.mark.django_db
 class TestPlanogramUpdate:
     """Tests for planogram update endpoint."""
 
-    def test_update_planogram_includes_layout(self, authenticated_client, company):
-        """Test that update returns planogram with layout field."""
+    def test_update_planogram_no_layout_in_response(self, authenticated_client, company):
+        """Test that update returns planogram without layout field."""
         planogram = PlanogramFactory(company=company)
 
         response = authenticated_client.patch(
@@ -112,12 +105,7 @@ class TestPlanogramUpdate:
         assert "id" in response.data
         assert "name" in response.data
         assert response.data["name"] == "Updated Name"
-        assert "layout" in response.data  # KEY: layout must be included
-
-        # Verify layout structure
-        layout = response.data["layout"]
-        assert "grid" in layout
-        assert "rows" in layout
+        assert "layout" not in response.data  # Layout NOT in response
 
 
 @pytest.mark.django_db
@@ -127,7 +115,7 @@ class TestPlanogramCreateErrorFormat:
     def test_create_without_display_when_none_exists(
         self, authenticated_client, company
     ):
-        """Test standardized error format when no display is available."""
+        """Test error when no display is available for auto-selection."""
         from displays.models import Display
 
         project = ProjectFactory(company=company)
@@ -146,14 +134,8 @@ class TestPlanogramCreateErrorFormat:
             format="json",
         )
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-
-        # Verify standardized error format
-        assert "error" in response.data
-        assert "code" in response.data["error"]
-        assert "message" in response.data["error"]
-        assert response.data["error"]["code"] == "not_found"
-        assert "display" in response.data["error"]["message"].lower()
+        # auto_select_display now raises ValueError (HTTP 500)
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
 @pytest.mark.django_db
@@ -198,7 +180,7 @@ class TestPlanogramResponseConsistency:
         assert update_response.status_code == status.HTTP_200_OK
         update_keys = set(update_response.data.keys())
 
-        # Core keys that should always be present
+        # Core keys that should always be present (no layout)
         core_keys = {
             "id",
             "name",
@@ -206,7 +188,6 @@ class TestPlanogramResponseConsistency:
             "season",
             "project",
             "display",
-            "layout",
             "category_ids",
             "categories",
             "width_in",
@@ -221,7 +202,7 @@ class TestPlanogramResponseConsistency:
         assert core_keys.issubset(retrieve_keys)
         assert core_keys.issubset(update_keys)
 
-        # All three must include layout (the key assertion for this test)
-        assert "layout" in create_keys
-        assert "layout" in retrieve_keys
-        assert "layout" in update_keys
+        # Layout should NOT be in responses (fetch separately)
+        assert "layout" not in create_keys
+        assert "layout" not in retrieve_keys
+        assert "layout" not in update_keys

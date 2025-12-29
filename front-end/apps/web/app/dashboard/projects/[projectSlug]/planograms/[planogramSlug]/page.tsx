@@ -1,129 +1,96 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-import { useEffect } from 'react';
-import { usePlanogramStore, usePlanogramData } from '@/features/planogram';
-import { Grid, ThreeJSView, ProductSidebar, AvailableProductsSidebar, PlanogramNameField, PlanogramFormFields, PlanogramCategoriesSelector, PlanogramActions, PlanogramDeleteButton, PlanogramHeader, PlanogramFormProvider } from '@/features/planogram/components';
-import { Card, CardContent } from '@/components/ui/card';
+import { Menu, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  usePlanogramQuery,
+  PlanogramDetailForm,
+  ProductSidebar,
+  AddProductsSidebar,
+  usePlanogramStore,
+  Grid,
+} from '@/features/planogram';
 
-const KonvaGridWrapper = dynamic(
-  () => import('@/features/planogram/components/konva-grid-wrapper').then(mod => mod.KonvaGridWrapper),
-  { ssr: false }
-);
-
-function PlanogramDetailContent() {
+export default function PlanogramPage() {
   const params = useParams();
   const planogramSlug = params?.planogramSlug as string;
+  const projectSlug = params?.projectSlug as string;
 
-  // Get state from consolidated store
-  const gridData = usePlanogramStore.use.gridData();
-  const rowLayouts = usePlanogramStore.use.rowLayouts();
-  const sidebarOpen = usePlanogramStore.use.sidebarOpen();
-  const availableProductsSidebarOpen = usePlanogramStore.use.availableProductsSidebarOpen();
+  const { data: planogram, isLoading, error } = usePlanogramQuery(planogramSlug);
+  const toggleSidebar = usePlanogramStore((state) => state.toggleSidebar);
+  const toggleAddProductsSidebar = usePlanogramStore((state) => state.toggleAddProductsSidebar);
+  const addProductsSidebarOpen = usePlanogramStore((state) => state.addProductsSidebarOpen);
 
-  // Use custom hooks
-  const { planogramData, planogramLoading } = usePlanogramData(planogramSlug);
-
-  // Initialize Zustand form state from planogram data (for backwards compatibility with canvas)
-  const initializeForm = usePlanogramStore.use.initializeForm();
-
-  useEffect(() => {
-    if (planogramData?.planogram) {
-      initializeForm({
-        name: planogramData.planogram.name,
-        display_id: planogramData.planogram.display?.toString(),
-        season: planogramData.planogram.season,
-        shelf_count: planogramData.planogram.shelf_count,
-        width_in: parseFloat(planogramData.planogram.width_in),
-        height_in: parseFloat(planogramData.planogram.height_in),
-        category_ids: Array.isArray(planogramData.planogram.category_ids) ? planogramData.planogram.category_ids : [],
-      });
-    }
-  }, [planogramData, initializeForm]);
-
-  // Loading state
-  if (planogramLoading) {
+  if (isLoading) {
     return (
-      <div className='flex justify-center items-center py-12'>
-        <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600'></div>
+      <div className='space-y-4'>
+        <div className='h-8 w-64 bg-muted animate-pulse rounded' />
+        <div className='h-96 bg-muted animate-pulse rounded' />
       </div>
     );
   }
 
-  // Error state
-  if (!planogramData) {
+  if (error) {
     return (
-      <div className='bg-card rounded-lg border border-border p-6'>
-        <p className='text-muted-foreground'>Planogram not found</p>
+      <div className='text-destructive'>
+        <h2 className='text-xl font-semibold mb-2'>Error Loading Planogram</h2>
+        <p>{error.message}</p>
       </div>
     );
   }
 
-  const planogram = planogramData.planogram;
+  if (!planogram) {
+    return (
+      <div className='text-muted-foreground'>
+        <p>Planogram not found</p>
+      </div>
+    );
+  }
 
   return (
-    <div className='relative'>
-      {/* Sidebar - Fixed, overlays navbar */}
-      {sidebarOpen && <ProductSidebar />}
+    <>
+      <ProductSidebar />
+      {addProductsSidebarOpen && <AddProductsSidebar />}
 
-      {/* Available Products Sidebar - Fixed, on right side */}
-      {availableProductsSidebarOpen && <AvailableProductsSidebar />}
-
-      {/* Main Content - aligned with navbar */}
-      <div className='transition-all duration-300'>
-        <div className='max-w-7xl mx-auto px-6 md:px-0 py-8'>
-          <PlanogramHeader planogram={planogram} />
-
-          {/* Horizontal Form at top */}
-          {planogram && (
-            <PlanogramFormProvider
-              defaultValues={{
-                name: planogram.name,
-                season: planogram.season || 'summer',
-                selectedDisplay: planogram.display?.toString() || '',
-                shelfCount: planogram.shelf_count || 1,
-                selectedCategoryIds: Array.isArray(planogram.category_ids) ? planogram.category_ids : [],
-              }}
-            >
-              <Card className='mb-8'>
-                <CardContent className='p-6'>
-                  <div className='space-y-4'>
-                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4'>
-                      <PlanogramNameField />
-                      <PlanogramFormFields />
-                    </div>
-                    <PlanogramCategoriesSelector />
-                  </div>
-                  <PlanogramActions />
-                </CardContent>
-              </Card>
-            </PlanogramFormProvider>
-          )}
-
-          <div className='space-y-6'>
-            {gridData ? (
-              <>
-                <Grid />
-                <KonvaGridWrapper />
-                {Object.keys(rowLayouts).length > 0 && <ThreeJSView gridData={gridData} rowLayouts={rowLayouts} />}
-              </>
-            ) : (
-              <Card>
-                <CardContent className='p-6'>
-                  <p className='text-muted-foreground'>No layout data available for this planogram.</p>
-                </CardContent>
-              </Card>
-            )}
+      <div className='space-y-6'>
+        <div className='flex items-start justify-between'>
+          <div>
+            <h1 className='text-3xl font-bold mb-2'>{planogram.name}</h1>
+            <p className='text-muted-foreground'>
+              Project: {planogram.project_name}
+            </p>
           </div>
-
-          <PlanogramDeleteButton />
+          <div className='flex gap-2'>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={toggleAddProductsSidebar}
+              className='gap-2'
+            >
+              <Plus className='h-4 w-4' />
+              Add Products
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={toggleSidebar}
+              className='gap-2'
+            >
+              <Menu className='h-4 w-4' />
+              Browse Products
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
-  );
-}
 
-export default function PlanogramDetailPage() {
-  return <PlanogramDetailContent />;
+        <PlanogramDetailForm
+          planogramSlug={planogramSlug}
+          projectSlug={projectSlug}
+          planogram={planogram}
+        />
+
+        <Grid planogramSlug={planogramSlug} />
+      </div>
+    </>
+  );
 }

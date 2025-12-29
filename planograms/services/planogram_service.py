@@ -13,8 +13,27 @@ from planograms.services.validation import parse_planogram_params
 logger = logging.getLogger(__name__)
 
 
-def get_or_compute_layout(planogram: Planogram) -> dict[str, Any] | None:
-    """Get saved layout or compute new one.
+def get_saved_layout(planogram: Planogram) -> dict[str, Any] | None:
+    """Get saved layout from database.
+
+    Args:
+        planogram: Planogram instance
+
+    Returns:
+        Layout dictionary or None if no layout exists or conversion fails
+    """
+    if not planogram.layout:
+        return None
+
+    try:
+        return _convert_saved_layout_to_response(planogram)
+    except Exception as e:
+        logger.error(f"Error converting saved layout: {str(e)}")
+        return None
+
+
+def compute_layout(planogram: Planogram) -> dict[str, Any] | None:
+    """Compute fresh layout for planogram.
 
     Args:
         planogram: Planogram instance
@@ -22,12 +41,6 @@ def get_or_compute_layout(planogram: Planogram) -> dict[str, Any] | None:
     Returns:
         Layout dictionary or None if computation fails
     """
-    if planogram.preserve_layout and planogram.layout:
-        try:
-            return _convert_saved_layout_to_response(planogram)
-        except Exception as e:
-            logger.error(f"Error using saved layout: {str(e)}")
-
     try:
         return _compute_new_layout(planogram)
     except Exception as e:
@@ -38,6 +51,34 @@ def get_or_compute_layout(planogram: Planogram) -> dict[str, Any] | None:
 def _convert_saved_layout_to_response(planogram: Planogram) -> dict[str, Any]:
     """Convert saved layout format to response format."""
     saved_layout = planogram.layout
+
+    # If saved layout already has the correct structure (grid + rows), ensure grid has all fields
+    if isinstance(saved_layout, dict) and "grid" in saved_layout and "rows" in saved_layout:
+        grid = saved_layout.get("grid", {})
+
+        # Ensure grid has normalizedWidthIn and normalizedHeightIn
+        if "normalizedWidthIn" not in grid or "normalizedHeightIn" not in grid:
+            params = parse_planogram_params(
+                planogram.width_in,
+                planogram.height_in,
+                planogram.shelf_count,
+                planogram.season,
+                planogram.category_ids,
+            )
+
+            grid_geometry = compute_grid_geometry(
+                shelf_width_in=params["shelf_width"],
+                shelf_height_in=params["shelf_height"],
+                row_count=params["row_count"],
+            )
+
+            # Merge the computed fields into the existing grid
+            grid["normalizedWidthIn"] = grid_geometry["normalizedWidthIn"]
+            grid["normalizedHeightIn"] = grid_geometry["normalizedHeightIn"]
+
+        return {"grid": grid, "rows": saved_layout["rows"]}
+
+    # Otherwise, convert old format (dict of row_id -> items) to new format
     rows = []
 
     for row_id, items in saved_layout.items():
@@ -111,14 +152,17 @@ def _compute_new_layout(planogram: Planogram) -> dict[str, Any]:
     )
 
 
-def auto_select_display(company: Any) -> Display | None:
+def auto_select_display(company: Any) -> Display:
     """Auto-select display: latest custom display or first standard display.
 
     Args:
         company: Company instance
 
     Returns:
-        Display instance or None if no display found
+        Display instance
+
+    Raises:
+        ValueError: If no display is available for auto-selection
     """
     custom_displays = Display.objects.filter(
         company=company, display_category="custom"
@@ -134,7 +178,9 @@ def auto_select_display(company: Any) -> Display | None:
     if standard_displays.exists():
         return standard_displays.first()
 
-    return None
+    raise ValueError(
+        "No displays available for auto-selection. Please create at least one display."
+    )
 
 
 def get_default_depth() -> Decimal:

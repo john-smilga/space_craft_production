@@ -1,5 +1,5 @@
-import { StoreForm } from '@/features/stores';
+import { CreateStoreForm } from '@/features/stores';
 
 export default function CreateStorePage() {
-  return <StoreForm mode='create' />;
+  return <CreateStoreForm />;
 }

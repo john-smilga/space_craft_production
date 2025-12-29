@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { PageLoader } from '@/components/PageLoader';
+import { ErrorState } from '@/components/ErrorState';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -36,15 +38,11 @@ export function DisplayDetail({ displaySlug }: DisplayDetailProps) {
   };
 
   if (isLoading) {
-    return <div className='text-center py-8'>Loading...</div>;
+    return <PageLoader message='Loading display details...' />;
   }
 
   if (error && !display) {
-    return (
-      <Alert variant='destructive' className='mb-4'>
-        <AlertDescription>{error.message}</AlertDescription>
-      </Alert>
-    );
+    return <ErrorState error={error} />;
   }
 
   return (

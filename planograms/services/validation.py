@@ -64,12 +64,4 @@ def parse_planogram_params(width_in, height_in, shelf_count, season, category_id
         "category_ids": category_ids,
     }
 
-    # Log validated parameters
-    logger.info("Planogram parameters (with defaults applied):")
-    logger.info(f"  shelf_width: {shelf_width}")
-    logger.info(f"  shelf_height: {shelf_height}")
-    logger.info(f"  row_count: {row_count}")
-    logger.info(f"  season: {season}")
-    logger.info(f"  category_ids: {category_ids}")
-
     return params

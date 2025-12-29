@@ -42,8 +42,4 @@ def get_products_for_season_and_categories(season, category_ids):
         # Add products to the category
         products_by_category[category_slug] = products
 
-    logger.info(f"Retrieved products for {len(products_by_category)} categories")
-    for cat, items in products_by_category.items():
-        logger.info(f"  {cat}: {len(items)} items")
-
     return products_by_category

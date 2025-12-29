@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PageLoader } from '@/components/PageLoader';
+import { ErrorState } from '@/components/ErrorState';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -34,7 +36,7 @@ export function ProjectDetail({ projectSlug }: ProjectDetailProps) {
   const { data: project, isLoading, error } = useProjectQuery(projectSlug);
 
   const { data: planogramsData } = useQuery({
-    queryKey: ['planograms', 'project', projectSlug],
+    queryKey: ['planograms', 'list', 'project', projectSlug],
     queryFn: async (): Promise<PlanogramsResponse> => {
       const response = await api.get(`/projects/${projectSlug}/planograms/`);
       return ProjectPlanogramsResponseSchema.parse(response.data);
@@ -61,17 +63,12 @@ export function ProjectDetail({ projectSlug }: ProjectDetailProps) {
   };
 
   if (isLoading) {
-    return <div className='text-center py-8'>Loading...</div>;
+    return <PageLoader message='Loading project details...' />;
   }
 
   if (error && !project) {
     return (
-      <Alert variant='destructive' className='mb-4'>
-        <AlertDescription>{error.message}</AlertDescription>
-        <Button onClick={() => router.push('/dashboard/projects')} variant='outline' className='mt-4'>
-          Back to Projects
-        </Button>
-      </Alert>
+      <ErrorState error={error} onBack={() => router.push('/dashboard/projects')} />
     );
   }
 

@@ -34,7 +34,7 @@ export function usePaginatedQuery<T>(
  */
 export function useAppMutation<TData, TVariables = void>(
   mutationFn: (variables: TVariables) => Promise<TData>,
-  options: MutationOptions<TData> = {}
+  options: MutationOptions<TData, TVariables> = {}
 ) {
   const queryClient = useQueryClient();
   const {
@@ -46,7 +46,7 @@ export function useAppMutation<TData, TVariables = void>(
 
   return useMutation<TData, Error, TVariables>({
     mutationFn,
-    onSuccess: async (data) => {
+    onSuccess: async (data, variables) => {
       for (const queryKey of invalidateQueries) {
         await queryClient.invalidateQueries({ queryKey });
       }
@@ -56,7 +56,7 @@ export function useAppMutation<TData, TVariables = void>(
       }
 
       if (customOnSuccess) {
-        await customOnSuccess(data);
+        await customOnSuccess(data, variables);
       }
     },
     onError: (error) => {

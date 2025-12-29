@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { schemas } from '@/lib/generated/api-schemas';
-import type { GridResponse } from '@/features/planogram/types';
+import type { GridResponse } from '@/features/planogram-old/types';
 
 type PlanogramType = z.infer<typeof schemas.Planogram>;
 

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminOnly } from '@/components/AdminOnly';
 import EmptyState from '@/components/EmptyState';
+import { PageLoader } from '@/components/PageLoader';
+import { ErrorState } from '@/components/ErrorState';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -46,17 +48,12 @@ export function StoreDetail({ storeSlug }: StoreDetailProps) {
   };
 
   if (isLoading) {
-    return <div className='text-center py-8'>Loading...</div>;
+    return <PageLoader message='Loading store details...' />;
   }
 
   if (error && !store) {
     return (
-      <Alert variant='destructive' className='mb-4'>
-        <AlertDescription>{error.message}</AlertDescription>
-        <Button onClick={() => router.push('/dashboard/stores')} variant='outline' className='mt-4'>
-          Back to Stores
-        </Button>
-      </Alert>
+      <ErrorState error={error} onBack={() => router.push('/dashboard/stores')} />
     );
   }
 

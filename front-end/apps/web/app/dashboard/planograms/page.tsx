@@ -1,7 +1,9 @@
 'use client';
 
-import { usePlanogramsQuery, PlanogramCard } from '@/features/planogram';
+import { usePlanogramsQuery, PlanogramCard } from '@/features/planogram-old';
 import EmptyState from '@/components/EmptyState';
+import { PageLoader } from '@/components/PageLoader';
+import { ErrorState } from '@/components/ErrorState';
 import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -10,15 +12,11 @@ export default function PlanogramsPage() {
   const planograms = data || [];
   
   if (isLoading) {
-    return <div className='text-center py-8'>Loading...</div>;
+    return <PageLoader />;
   }
 
   if (error) {
-    return (
-      <Alert variant='destructive' className='mb-4'>
-        <AlertDescription>{(error as Error).message || 'Failed to load planograms'}</AlertDescription>
-      </Alert>
-    );
+    return <ErrorState error={error} />;
   }
 
   return (

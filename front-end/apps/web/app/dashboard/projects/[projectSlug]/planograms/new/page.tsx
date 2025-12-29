@@ -5,8 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useProjectQuery } from '@/features/projects';
-import { useCreatePlanogramMutation } from '@/features/planogram';
-import { ProjectDisplay } from '@/features/planogram/components';
+import { useCreatePlanogramMutation } from '@/features/planogram-old';
+import { ProjectDisplay } from '@/features/planogram-old/components';
 import { Button } from '@/components/ui/button';
 import { FormInput } from '@/components/ui/form-input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,12 +48,11 @@ export default function CreatePlanogramPage() {
       {
         name: data.name,
         project: project.id,
-        // Provide minimal required defaults - user can edit later
-        season: 'summer',
-        width_in: '48',
-        height_in: '60',
-        shelf_count: 4,
-        category_ids: [1], // Default to Beef category
+        // Backend will provide all defaults:
+        // - display: auto-selected (latest custom or first standard)
+        // - season: summer
+        // - category_ids: [1] (Beef)
+        // - dimensions: from auto-selected display
       },
       {
         onSuccess: (result) => {

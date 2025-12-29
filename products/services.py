@@ -670,3 +670,48 @@ def get_product_by_id(
                 }
 
     return None
+
+
+def get_products_by_ids(
+    product_ids: list[int], season: str = "summer"
+) -> dict[int, dict[str, Any]]:
+    """
+    Get multiple products by IDs with seasonal metrics.
+
+    Args:
+        product_ids: List of product IDs
+        season: Season to use for metrics
+
+    Returns:
+        Dict mapping product_id -> product data with all metrics and category merged
+    """
+    all_products_by_path = _flatten_products_by_category(PRODUCTS_BY_CATEGORY)
+
+    result = {}
+    product_ids_set = set(product_ids)
+
+    for category_path, products in all_products_by_path.items():
+        for product in products:
+            product_id = product.get("id")
+            if product_id in product_ids_set:
+                # Get base metrics
+                base_metrics = PRODUCT_BASE_METRICS.get(product_id, {})
+
+                # Get seasonal metrics
+                seasonal_metrics = PRODUCT_SEASONAL_METRICS.get(product_id, {}).get(
+                    season, {}
+                )
+
+                # Merge and add category info
+                result[product_id] = {
+                    **product,
+                    **base_metrics,
+                    **seasonal_metrics,
+                    "category": category_path,
+                }
+
+                # Early exit if we found all products
+                if len(result) == len(product_ids):
+                    return result
+
+    return result

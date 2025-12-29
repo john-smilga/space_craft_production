@@ -107,11 +107,6 @@ const getSegmentLabel = (segment: string, index: number, segments: string[]): st
   // Handle known route labels
   const label = routeLabels[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
 
-  // Development warning for missing route labels
-  if (process.env.NODE_ENV === 'development' && !routeLabels[segment] && !isDynamicSegment(segment)) {
-    console.warn(`[Breadcrumbs] Missing route label for segment: "${segment}". ` + `Add it to routeLabels in @/components/Breadcrumbs.tsx. ` + `Current path: /${segments.join('/')}`);
-  }
-
   return label;
 };
 

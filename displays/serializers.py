@@ -12,10 +12,16 @@ class DisplaySerializer(serializers.ModelSerializer):
     """Output serializer for Display model."""
 
     slug = serializers.CharField(read_only=True)
-    created_by_username = serializers.CharField(
-        source="created_by.username", read_only=True
-    )
-    company_name = serializers.CharField(source="company.name", read_only=True)
+    created_by_username = serializers.SerializerMethodField()
+    company_name = serializers.SerializerMethodField()
+
+    def get_created_by_username(self, obj):
+        """Get username of creator, or empty string if null."""
+        return obj.created_by.username if obj.created_by else ""
+
+    def get_company_name(self, obj):
+        """Get company name, or empty string if null (standard displays)."""
+        return obj.company.name if obj.company else ""
 
     class Meta:
         model = Display

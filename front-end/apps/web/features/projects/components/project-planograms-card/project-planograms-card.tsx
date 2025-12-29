@@ -4,7 +4,7 @@ import { schemas } from '@/lib/generated/api-schemas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import EmptyState from '@/components/EmptyState';
-import { PlanogramCard } from '@/features/planogram';
+import { PlanogramCard } from '@/features/planogram-old';
 
 type PlanogramListType = z.infer<typeof schemas.PlanogramList>;
 

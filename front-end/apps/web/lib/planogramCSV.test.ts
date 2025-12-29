@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generatePlanogramCSV } from './planogramCSV';
-import type { GridResponse } from '@/features/planogram/types';
+import type { GridResponse } from '@/features/planogram-old/types';
 import type { schemas } from '@/lib/generated/api-schemas';
 import type { z } from 'zod';
 

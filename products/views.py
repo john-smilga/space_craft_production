@@ -239,9 +239,7 @@ def get_children_by_category_id(request, category_id=None):
             logger.error(f"Invalid category_id: {category_id}")
             return Response({"error": "Invalid category_id"}, status=400)
 
-    logger.info(f"Getting children for category_id: {cat_id}")
     result = get_children_by_category_id(cat_id)
-    logger.info(f"Result: {result}")
     return Response(result)
 
 

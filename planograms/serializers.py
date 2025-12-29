@@ -91,6 +91,8 @@ class GridConfigSerializer(serializers.Serializer):
     cols = serializers.IntegerField()
     rows = serializers.IntegerField()
     cellWidthIn = serializers.FloatField()
+    normalizedWidthIn = serializers.FloatField()
+    normalizedHeightIn = serializers.FloatField()
 
 
 class LayoutSerializer(serializers.Serializer):
@@ -110,17 +112,16 @@ class PlanogramSerializer(serializers.ModelSerializer):
     created_by_username = serializers.CharField(
         source="created_by.username", read_only=True
     )
-    updated_by_username = serializers.SerializerMethodField()
+    updated_by_username = serializers.CharField(
+        source="updated_by.username", read_only=True
+    )
     company_name = serializers.CharField(source="company.name", read_only=True)
+    category_ids = serializers.ListField(
+        child=serializers.IntegerField(), read_only=True
+    )
     categories = extend_schema_field(
         CategorySerializer(many=True)
     )(serializers.SerializerMethodField())
-    # layout field is write-only, not included in response
-    layout = LayoutSerializer(allow_null=True, required=False, write_only=True)
-
-    def get_updated_by_username(self, obj: Planogram) -> str:
-        """Get username of user who last updated, or empty string if never updated."""
-        return obj.updated_by.username if obj.updated_by else ""
 
     def get_categories(self, obj: Planogram) -> list[dict[str, Any]]:
         """Derive category names from category_ids."""
@@ -149,8 +150,6 @@ class PlanogramSerializer(serializers.ModelSerializer):
             "shelf_spacing",
             "category_ids",
             "categories",
-            "layout",
-            "preserve_layout",
             "created_by",
             "created_by_username",
             "updated_by",
@@ -166,41 +165,9 @@ class PlanogramSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "company",
+            "depth_in",
+            "shelf_spacing",
         ]
-
-
-
-class PlanogramDetailSerializer(serializers.Serializer):
-    """Response serializer for planogram detail with computed layout."""
-
-    # Include all fields from PlanogramSerializer
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    slug = serializers.CharField()
-    season = serializers.CharField()
-    project = serializers.IntegerField()
-    project_name = serializers.CharField()
-    project_slug = serializers.CharField()
-    display = serializers.IntegerField(allow_null=True)
-    display_name = serializers.CharField()
-    company = serializers.IntegerField()
-    company_name = serializers.CharField()
-    width_in = serializers.DecimalField(max_digits=10, decimal_places=2)
-    height_in = serializers.DecimalField(max_digits=10, decimal_places=2)
-    depth_in = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True)
-    shelf_count = serializers.IntegerField()
-    shelf_spacing = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True)
-    category_ids = serializers.JSONField()
-    categories = CategorySerializer(many=True)
-    preserve_layout = serializers.BooleanField()
-    created_by = serializers.IntegerField(allow_null=True)
-    created_by_username = serializers.CharField()
-    updated_by = serializers.IntegerField(allow_null=True)
-    updated_by_username = serializers.CharField()
-    created_at = serializers.DateTimeField()
-    updated_at = serializers.DateTimeField()
-    # Add layout field for response
-    layout = LayoutSerializer(allow_null=True, required=False)
 
 
 class PlanogramListSerializer(serializers.ModelSerializer):
@@ -210,6 +177,9 @@ class PlanogramListSerializer(serializers.ModelSerializer):
     project_name = serializers.CharField(source="project.name", read_only=True)
     project_slug = serializers.CharField(source="project.slug", read_only=True)
     display_name = serializers.CharField(source="display.name", read_only=True)
+    category_ids = serializers.ListField(
+        child=serializers.IntegerField(), read_only=True
+    )
     categories = extend_schema_field(
         CategorySerializer(many=True)
     )(serializers.SerializerMethodField())
@@ -233,7 +203,6 @@ class PlanogramListSerializer(serializers.ModelSerializer):
             "shelf_count",
             "category_ids",
             "categories",
-            "preserve_layout",
             "created_at",
             "updated_at",
         ]
@@ -243,19 +212,24 @@ class PlanogramListSerializer(serializers.ModelSerializer):
 class PlanogramCreateSerializer(serializers.ModelSerializer):
     """Input serializer for planogram creation with validation."""
 
-    category_ids = CategoryIdsField()
+    category_ids = serializers.ListField(
+        child=serializers.IntegerField(), required=False, allow_empty=True
+    )
     project = serializers.PrimaryKeyRelatedField(queryset=Project.objects.none())
     display = serializers.PrimaryKeyRelatedField(
-        queryset=Display.objects.none(), required=False, allow_null=True
+        queryset=Display.objects.none(), required=False
+    )
+    season = serializers.ChoiceField(
+        choices=["spring", "summer", "fall", "winter"], required=False
     )
     # Make dimension fields optional - view will use display defaults
     width_in = serializers.DecimalField(
-        max_digits=10, decimal_places=2, required=False, allow_null=True
+        max_digits=10, decimal_places=2, required=False
     )
     height_in = serializers.DecimalField(
-        max_digits=10, decimal_places=2, required=False, allow_null=True
+        max_digits=10, decimal_places=2, required=False
     )
-    shelf_count = serializers.IntegerField(required=False, allow_null=True)
+    shelf_count = serializers.IntegerField(required=False)
 
     class Meta:
         model = Planogram
@@ -340,7 +314,7 @@ class PlanogramUpdateSerializer(serializers.ModelSerializer):
 
     category_ids = CategoryIdsField(required=False)
     display = serializers.PrimaryKeyRelatedField(
-        queryset=Display.objects.none(), required=False, allow_null=True
+        queryset=Display.objects.none(), required=False
     )
 
     class Meta:
@@ -355,7 +329,6 @@ class PlanogramUpdateSerializer(serializers.ModelSerializer):
             "shelf_count",
             "shelf_spacing",
             "category_ids",
-            "preserve_layout",
         ]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -416,7 +389,26 @@ class PlanogramLayoutSerializer(serializers.Serializer):
     """Input serializer for layout save."""
 
     layout = LayoutSerializer(required=True)
-    preserve_layout = serializers.BooleanField(default=True)
+
+
+class AddProductItemSerializer(serializers.Serializer):
+    """Serializer for individual product item in add products request."""
+
+    id = serializers.IntegerField(min_value=1)
+    quantity = serializers.IntegerField(min_value=1)
+
+
+class AddProductsRequestSerializer(serializers.Serializer):
+    """Serializer for add products to layout request."""
+
+    row_id = serializers.IntegerField(min_value=0)
+    products = AddProductItemSerializer(many=True)
+
+    def validate_products(self, value: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Validate that products list is not empty."""
+        if not value:
+            raise serializers.ValidationError("Products list cannot be empty.")
+        return value
 
 
 class AIOverviewResponseSerializer(serializers.Serializer):

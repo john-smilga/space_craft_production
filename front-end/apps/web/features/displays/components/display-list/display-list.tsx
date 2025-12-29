@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import EmptyState from '@/components/EmptyState';
+import { PageLoader } from '@/components/PageLoader';
+import { ErrorState } from '@/components/ErrorState';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useDisplaysQuery } from '../../queries';
 import { DisplayCard } from '../display-card/display-card';
 
@@ -12,15 +13,11 @@ export function DisplayList() {
   const displays = data || [];
 
   if (isLoading) {
-    return <div className='text-center py-8'>Loading...</div>;
+    return <PageLoader />;
   }
 
   if (error) {
-    return (
-      <Alert variant='destructive' className='mb-4'>
-        <AlertDescription>{error.message}</AlertDescription>
-      </Alert>
-    );
+    return <ErrorState error={error} />;
   }
 
   return (

@@ -36,7 +36,10 @@ class Display(models.Model):
     depth_in = models.DecimalField(max_digits=10, decimal_places=2)
     shelf_count = models.IntegerField()
     shelf_spacing = models.DecimalField(
-        max_digits=10, decimal_places=2, null=True, blank=True
+        max_digits=10,
+        decimal_places=2,
+        default=12.00,
+        help_text="Vertical spacing between shelves in inches",
     )
     display_category = models.CharField(
         max_length=20,

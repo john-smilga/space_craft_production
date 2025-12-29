@@ -19,19 +19,8 @@ class RequestLoggingMiddleware(MiddlewareMixin):
         if not getattr(settings, "ENABLE_REQUEST_LOGGING", False):
             return None
 
-        global _startup_config_logged
-        if not _startup_config_logged:
-            startup_logger.info(
-                f"CORS Configuration: CORS_ALLOWED_ORIGINS={getattr(settings, 'CORS_ALLOWED_ORIGINS', [])}"
-            )
-            _startup_config_logged = True
-
         if request.path.startswith(("/static/", "/admin/static/")):
             return None
-
-        logger.debug(
-            f"Request: {request.method} {request.path} from {self.get_client_ip(request)}"
-        )
 
         return None
 
@@ -42,10 +31,6 @@ class RequestLoggingMiddleware(MiddlewareMixin):
 
         if request.path.startswith(("/static/", "/admin/static/")):
             return response
-
-        logger.debug(
-            f"Response: {request.method} {request.path} - Status {response.status_code}"
-        )
 
         return response
 

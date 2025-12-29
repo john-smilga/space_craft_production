@@ -1,6 +1,7 @@
 """Views for planograms app."""
 
 import logging
+from decimal import Decimal
 from typing import Any
 
 from drf_spectacular.utils import extend_schema
@@ -15,9 +16,10 @@ from common.mixins import CompanyFilterMixin, SlugLookupMixin
 from common.viewsets import BaseViewSet
 from planograms.models import Planogram
 from planograms.serializers import (
+    AddProductsRequestSerializer,
     AIOverviewResponseSerializer,
+    LayoutSerializer,
     PlanogramCreateSerializer,
-    PlanogramDetailSerializer,
     PlanogramLayoutSerializer,
     PlanogramListSerializer,
     PlanogramSerializer,
@@ -26,8 +28,9 @@ from planograms.serializers import (
 from planograms.services.ai_service import generate_ai_overview
 from planograms.services.planogram_service import (
     auto_select_display,
+    compute_layout,
     get_default_depth,
-    get_or_compute_layout,
+    get_saved_layout,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,24 +62,19 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         return queryset.order_by("-created_at")
 
     @extend_schema(
-        responses={200: PlanogramDetailSerializer},
-        description="Retrieve planogram with layout.",
+        responses={200: PlanogramSerializer},
+        description="Retrieve planogram details (no layout).",
     )
     def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """Retrieve planogram with layout."""
+        """Retrieve planogram details."""
         instance = self.get_object()
-
         serializer = self.get_serializer(instance)
-        planogram_data = serializer.data
-
-        layout = get_or_compute_layout(instance)
-
-        return Response({**planogram_data, "layout": layout})
+        return Response(serializer.data)
 
     @extend_schema(
         request=PlanogramCreateSerializer,
         responses={201: PlanogramSerializer},
-        description="Create a new planogram with optional display selection and auto-generated layout.",
+        description="Create a new planogram with optional display selection.",
     )
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Create a new planogram."""
@@ -88,12 +86,15 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         display = serializer.validated_data.get("display")
 
         if not display:
-            display = auto_select_display(request.user.company)
-            if not display:
-                raise NotFoundError(
-                    "No display found. Please ensure at least one standard display exists."
+            try:
+                display = auto_select_display(request.user.company)
+            except ValueError as e:
+                return Response(
+                    {"error": str(e)},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
+        # Get values from request or fall back to display defaults
         width_in = serializer.validated_data.get("width_in", display.width_in)
         height_in = serializer.validated_data.get("height_in", display.height_in)
         depth_in = serializer.validated_data.get("depth_in", display.depth_in)
@@ -102,33 +103,50 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
             "shelf_spacing", display.shelf_spacing
         )
 
+        # Default season to summer if not provided
+        season = serializer.validated_data.get("season", "summer")
+
+        # Default category_ids to first category (Beef) if not provided
+        category_ids = serializer.validated_data.get("category_ids")
+        if not category_ids or len(category_ids) == 0:
+            category_ids = [1]  # Default to Beef category
+
         if depth_in is None:
             depth_in = get_default_depth()
+
+        if shelf_spacing is None:
+            shelf_spacing = display.shelf_spacing if display.shelf_spacing else get_default_depth()
 
         planogram = serializer.save(
             company=request.user.company,
             created_by=request.user,
+            updated_by=request.user,
             display=display,
             width_in=width_in,
             height_in=height_in,
             depth_in=depth_in,
             shelf_count=shelf_count,
             shelf_spacing=shelf_spacing,
+            season=season,
+            category_ids=category_ids,
         )
 
-        output_serializer = PlanogramSerializer(planogram)
-        planogram_data = output_serializer.data
-        layout = get_or_compute_layout(planogram)
+        # Generate and save layout immediately after creation
+        fresh_layout = compute_layout(planogram)
+        if fresh_layout:
+            planogram.layout = fresh_layout
+            planogram.save(update_fields=["layout"])
 
-        return Response({**planogram_data, "layout": layout}, status=status.HTTP_201_CREATED)
+        output_serializer = PlanogramSerializer(planogram)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
     @extend_schema(
         request=PlanogramUpdateSerializer,
         responses={200: PlanogramSerializer},
-        description="Update planogram.",
+        description="Update planogram. Always regenerates and saves layout, overwriting manual changes.",
     )
     def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """Update planogram."""
+        """Update planogram and regenerate layout."""
         instance = self.get_object()
         serializer = self.get_serializer(
             instance, data=request.data, partial=kwargs.get("partial", False),
@@ -139,20 +157,45 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         # Check if display changed and update dimensions from new display
         new_display = serializer.validated_data.get("display")
         if new_display and new_display != instance.display:
-            # Update dimensions from new display
+            # Update dimensions from new display (with fallback defaults for safety)
             serializer.validated_data["width_in"] = new_display.width_in
             serializer.validated_data["height_in"] = new_display.height_in
-            serializer.validated_data["depth_in"] = new_display.depth_in
+            serializer.validated_data["depth_in"] = new_display.depth_in or Decimal("24.00")
             serializer.validated_data["shelf_count"] = new_display.shelf_count
-            serializer.validated_data["shelf_spacing"] = new_display.shelf_spacing
+            serializer.validated_data["shelf_spacing"] = new_display.shelf_spacing or Decimal("12.00")
 
         planogram = serializer.save(updated_by=request.user)
 
-        output_serializer = PlanogramSerializer(planogram)
-        planogram_data = output_serializer.data
-        layout = get_or_compute_layout(planogram)
+        # Always regenerate layout after update
+        fresh_layout = compute_layout(planogram)
+        if fresh_layout:
+            # Save regenerated layout to database (overwrites manual changes)
+            planogram.layout = fresh_layout
+            planogram.save(update_fields=["layout"])
 
-        return Response({**planogram_data, "layout": layout})
+        output_serializer = PlanogramSerializer(planogram)
+        return Response(output_serializer.data)
+
+    @extend_schema(
+        responses={200: LayoutSerializer},
+        description="Get planogram layout.",
+    )
+    @action(detail=True, methods=["get"], url_path="layout")
+    def get_layout(self, request: Request, slug: str = None) -> Response:
+        """Get planogram layout."""
+        instance = self.get_object()
+
+        # Get saved layout
+        layout = get_saved_layout(instance)
+
+        # If no layout exists, this is an error state
+        if not layout:
+            return Response(
+                {"error": "Layout not found. Please regenerate the planogram."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(layout)
 
     @extend_schema(
         request=PlanogramLayoutSerializer,
@@ -168,9 +211,6 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         serializer.is_valid(raise_exception=True)
 
         instance.layout = serializer.validated_data["layout"]
-        instance.preserve_layout = serializer.validated_data.get(
-            "preserve_layout", True
-        )
         instance.updated_by = request.user
         instance.save()
 
@@ -178,6 +218,60 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         return Response(output_serializer.data)
 
     @extend_schema(
+        request=AddProductsRequestSerializer,
+        responses={200: LayoutSerializer},
+        description="Add products to planogram layout at specified row.",
+    )
+    @action(detail=True, methods=["post"], url_path="layout/add-products")
+    def add_products(self, request: Request, slug: str = None) -> Response:
+        """Add products to planogram layout."""
+        instance = self.get_object()
+
+        # Validate request
+        serializer = AddProductsRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        row_id = serializer.validated_data["row_id"]
+        products_to_add = serializer.validated_data["products"]
+
+        # Get current layout
+        layout = get_saved_layout(instance)
+        if not layout:
+            return Response(
+                {"error": "Layout not found. Please regenerate the planogram."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Validate row_id is within bounds
+        rows = layout.get("rows", [])
+        if row_id < 0 or row_id >= len(rows):
+            return Response(
+                {"error": f"Invalid row_id. Must be between 0 and {len(rows) - 1}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Extract product IDs
+        product_ids = [item["id"] for item in products_to_add]
+
+        # Fetch product data
+        from products.services import get_products_by_ids
+        product_data = get_products_by_ids(product_ids, season=instance.season)
+
+        # Add products to layout
+        from planograms.services.grid_service import add_products_to_layout
+        updated_layout = add_products_to_layout(
+            layout, row_id, products_to_add, product_data
+        )
+
+        # Save updated layout
+        instance.layout = updated_layout
+        instance.updated_by = request.user
+        instance.save(update_fields=["layout", "updated_by"])
+
+        return Response(updated_layout)
+
+    @extend_schema(
+        request=None,  # No request body needed
         responses={200: AIOverviewResponseSerializer},
         description="Generate AI-powered overview of the planogram layout.",
     )
@@ -191,7 +285,10 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
             planogram_data = serializer.data
             planogram_data["season_display"] = instance.get_season_display()
 
-            layout = get_or_compute_layout(instance)
+            # Try to get saved layout first, otherwise compute fresh
+            layout = get_saved_layout(instance)
+            if not layout:
+                layout = compute_layout(instance)
 
             if not layout:
                 return Response(

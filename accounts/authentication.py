@@ -23,32 +23,14 @@ class CookieJWTAuthentication(JWTAuthentication):
             )
             return None
 
-        logger.info(
-            f"JWT token found in cookies. "
-            f"Cookie name: {cookie_name}, "
-            f"Token length: {len(token)}, "
-            f"Token preview: {token[:20]}..."
-        )
         return f"Bearer {token}".encode()
 
     def authenticate(self, request):
         """Override to add logging and handle missing tokens gracefully"""
-        logger.info(
-            f"CookieJWTAuthentication.authenticate called for "
-            f"path: {request.path}, "
-            f"method: {request.method}, "
-            f"origin: {request.META.get('HTTP_ORIGIN', 'No Origin')}"
-        )
-
         try:
             result = super().authenticate(request)
             if result:
                 user, token = result
-                logger.info(
-                    f"Authentication successful. "
-                    f"User: {user.username} (id: {user.id}), "
-                    f"Path: {request.path}"
-                )
             else:
                 logger.warning(
                     f"Authentication returned None. "

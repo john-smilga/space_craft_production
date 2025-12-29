@@ -15,10 +15,12 @@ class ProjectSerializer(serializers.ModelSerializer):
     store_name = serializers.CharField(source="store.name", read_only=True)
     store_code = serializers.CharField(source="store.store_code", read_only=True)
     store_slug = serializers.CharField(source="store.slug", read_only=True)
-    created_by_username = serializers.CharField(
-        source="created_by.username", read_only=True
-    )
+    created_by_username = serializers.SerializerMethodField()
     company_name = serializers.CharField(source="company.name", read_only=True)
+
+    def get_created_by_username(self, obj):
+        """Get username of creator, or empty string if null."""
+        return obj.created_by.username if obj.created_by else ""
 
     class Meta:
         model = Project

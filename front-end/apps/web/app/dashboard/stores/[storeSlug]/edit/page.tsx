@@ -1,11 +1,11 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { StoreForm } from '@/features/stores';
+import { EditStoreForm } from '@/features/stores';
 
 export default function EditStorePage() {
   const params = useParams();
   const storeSlug = params?.storeSlug as string;
 
-  return <StoreForm mode='edit' storeSlug={storeSlug} />;
+  return <EditStoreForm storeSlug={storeSlug} />;
 }

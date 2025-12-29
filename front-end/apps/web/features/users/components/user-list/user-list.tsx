@@ -3,8 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useRequireAdmin } from '@/features/auth';
 import EmptyState from '@/components/EmptyState';
+import { PageLoader } from '@/components/PageLoader';
+import { ErrorState } from '@/components/ErrorState';
 import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatDate } from '@/lib/utils';
 import { useUsersQuery } from '../../queries';
 
@@ -18,17 +19,19 @@ export function UserList() {
     router.push(`/dashboard/users/${userSlug}`);
   };
 
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
+  if (error) {
+    return <ErrorState error={error} />;
+  }
+
   return (
     <>
       <h1 className='text-3xl font-bold mb-8'>Users</h1>
 
-      {isLoading ? (
-        <div className='text-center py-8'>Loading...</div>
-      ) : error ? (
-        <Alert variant='destructive' className='mb-4'>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
-      ) : users.length === 0 ? (
+      {users.length === 0 ? (
         <EmptyState message='No users found' />
       ) : (
         <Card>

@@ -162,7 +162,6 @@ class PlanogramFactory(DjangoModelFactory):
 
     category_ids = factory.List([1, 2, 3])
     layout = factory.Dict({})
-    preserve_layout = False
 
     created_by = factory.SubFactory(
         UserFactory, company=factory.SelfAttribute("..company")

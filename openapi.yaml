@@ -450,8 +450,7 @@ paths:
           description: ''
     post:
       operationId: planograms_create
-      description: Create a new planogram with optional display selection and auto-generated
-        layout.
+      description: Create a new planogram with optional display selection.
       tags:
       - planograms
       requestBody:
@@ -470,7 +469,7 @@ paths:
   /api/planograms/{slug}/:
     get:
       operationId: planograms_retrieve
-      description: Retrieve planogram with layout.
+      description: Retrieve planogram details (no layout).
       parameters:
       - in: path
         name: slug
@@ -484,11 +483,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlanogramDetail'
+                $ref: '#/components/schemas/Planogram'
           description: ''
     put:
       operationId: planograms_update
-      description: Update planogram.
+      description: Update planogram. Always regenerates and saves layout, overwriting
+        manual changes.
       parameters:
       - in: path
         name: slug
@@ -559,12 +559,6 @@ paths:
         required: true
       tags:
       - planograms
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PlanogramRequest'
-        required: true
       responses:
         '200':
           content:
@@ -573,6 +567,24 @@ paths:
                 $ref: '#/components/schemas/AIOverviewResponse'
           description: ''
   /api/planograms/{slug}/layout/:
+    get:
+      operationId: planograms_layout_retrieve
+      description: Get planogram layout.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - planograms
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Layout'
+          description: ''
     post:
       operationId: planograms_layout_create
       description: Save planogram layout and return updated planogram data.
@@ -596,6 +608,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Planogram'
+          description: ''
+  /api/planograms/{slug}/layout/add-products/:
+    post:
+      operationId: planograms_layout_add_products_create
+      description: Add products to planogram layout at specified row.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - planograms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddProductsRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Layout'
           description: ''
   /api/products/by-categories/:
     get:
@@ -1053,6 +1090,33 @@ paths:
           description: ''
 components:
   schemas:
+    AddProductItem:
+      type: object
+      description: Serializer for individual product item in add products request.
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        quantity:
+          type: integer
+          minimum: 1
+      required:
+      - id
+      - quantity
+    AddProductsRequest:
+      type: object
+      description: Serializer for add products to layout request.
+      properties:
+        row_id:
+          type: integer
+          minimum: 0
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/AddProductItem'
+      required:
+      - products
+      - row_id
     AIOverviewResponse:
       type: object
       description: Output serializer for AI overview response.
@@ -1198,7 +1262,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
+          description: Vertical spacing between shelves in inches
         display_category:
           allOf:
           - $ref: '#/components/schemas/DisplayCategoryEnum'
@@ -1284,7 +1348,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
+          description: Vertical spacing between shelves in inches
       required:
       - depth_in
       - height_in
@@ -1384,7 +1448,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
+          description: Vertical spacing between shelves in inches
       required:
       - depth_in
       - height_in
@@ -1423,7 +1487,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
+          description: Vertical spacing between shelves in inches
       required:
       - depth_in
       - height_in
@@ -1442,9 +1506,17 @@ components:
         cellWidthIn:
           type: number
           format: double
+        normalizedWidthIn:
+          type: number
+          format: double
+        normalizedHeightIn:
+          type: number
+          format: double
       required:
       - cellWidthIn
       - cols
+      - normalizedHeightIn
+      - normalizedWidthIn
       - rows
     GridConfigRequest:
       type: object
@@ -1457,9 +1529,17 @@ components:
         cellWidthIn:
           type: number
           format: double
+        normalizedWidthIn:
+          type: number
+          format: double
+        normalizedHeightIn:
+          type: number
+          format: double
       required:
       - cellWidthIn
       - cols
+      - normalizedHeightIn
+      - normalizedWidthIn
       - rows
     Layout:
       type: object
@@ -1849,7 +1929,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
+          description: Vertical spacing between shelves in inches
     PatchedPlanogramUpdateRequest:
       type: object
       description: Input serializer for planogram updates.
@@ -1859,10 +1939,9 @@ components:
           minLength: 1
           maxLength: 255
         season:
-          $ref: '#/components/schemas/SeasonEnum'
+          $ref: '#/components/schemas/SeasonC9aEnum'
         display:
           type: integer
-          nullable: true
         width_in:
           type: string
           format: decimal
@@ -1877,7 +1956,6 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
           description: Display depth in inches
         shelf_count:
           type: integer
@@ -1889,16 +1967,12 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
           description: Shelf spacing in inches
         category_ids:
           type: array
           items:
             type: integer
           description: List of category IDs
-        preserve_layout:
-          type: boolean
-          description: If True, use saved layout instead of regenerating
     PatchedProjectUpdateRequest:
       type: object
       description: Input serializer for project updates.
@@ -1978,7 +2052,7 @@ components:
           type: string
           readOnly: true
         season:
-          $ref: '#/components/schemas/SeasonEnum'
+          $ref: '#/components/schemas/SeasonC9aEnum'
         project:
           type: integer
         project_name:
@@ -1989,8 +2063,8 @@ components:
           readOnly: true
         display:
           type: integer
-          nullable: true
-          description: Optional reference to display used for dimensions
+          description: Reference to display used for dimensions (auto-selected on
+            creation)
         display_name:
           type: string
           readOnly: true
@@ -2014,7 +2088,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
+          readOnly: true
           description: Display depth in inches
         shelf_count:
           type: integer
@@ -2026,10 +2100,13 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
+          readOnly: true
           description: Shelf spacing in inches
         category_ids:
-          description: List of selected category IDs
+          type: array
+          items:
+            type: integer
+          readOnly: true
         categories:
           type: array
           items:
@@ -2037,24 +2114,17 @@ components:
             additionalProperties: {}
           description: Derive category names from category_ids.
           readOnly: true
-        preserve_layout:
-          type: boolean
-          description: If True, use saved layout instead of regenerating
         created_by:
           type: integer
           readOnly: true
-          nullable: true
         created_by_username:
           type: string
           readOnly: true
         updated_by:
           type: integer
           readOnly: true
-          nullable: true
         updated_by_username:
           type: string
-          description: Get username of user who last updated, or empty string if never
-            updated.
           readOnly: true
         created_at:
           type: string
@@ -2064,149 +2134,6 @@ components:
           type: string
           format: date-time
           readOnly: true
-      required:
-      - categories
-      - company
-      - company_name
-      - created_at
-      - created_by
-      - created_by_username
-      - display_name
-      - height_in
-      - id
-      - name
-      - project
-      - project_name
-      - project_slug
-      - shelf_count
-      - slug
-      - updated_at
-      - updated_by
-      - updated_by_username
-      - width_in
-    PlanogramCreateRequest:
-      type: object
-      description: Input serializer for planogram creation with validation.
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 255
-        season:
-          $ref: '#/components/schemas/SeasonEnum'
-        project:
-          type: integer
-        display:
-          type: integer
-          nullable: true
-        width_in:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
-        height_in:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
-        depth_in:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
-          description: Display depth in inches
-        shelf_count:
-          type: integer
-          nullable: true
-        shelf_spacing:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
-          description: Shelf spacing in inches
-        category_ids:
-          type: array
-          items:
-            type: integer
-          description: List of category IDs
-      required:
-      - category_ids
-      - name
-      - project
-    PlanogramDetail:
-      type: object
-      description: Response serializer for planogram detail with computed layout.
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        slug:
-          type: string
-        season:
-          type: string
-        project:
-          type: integer
-        project_name:
-          type: string
-        project_slug:
-          type: string
-        display:
-          type: integer
-          nullable: true
-        display_name:
-          type: string
-        company:
-          type: integer
-        company_name:
-          type: string
-        width_in:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-        height_in:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-        depth_in:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
-        shelf_count:
-          type: integer
-        shelf_spacing:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
-        category_ids: {}
-        categories:
-          type: array
-          items:
-            $ref: '#/components/schemas/Category'
-        preserve_layout:
-          type: boolean
-        created_by:
-          type: integer
-          nullable: true
-        created_by_username:
-          type: string
-        updated_by:
-          type: integer
-          nullable: true
-        updated_by_username:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        layout:
-          allOf:
-          - $ref: '#/components/schemas/Layout'
-          nullable: true
       required:
       - categories
       - category_ids
@@ -2221,11 +2148,9 @@ components:
       - height_in
       - id
       - name
-      - preserve_layout
       - project
       - project_name
       - project_slug
-      - season
       - shelf_count
       - shelf_spacing
       - slug
@@ -2233,15 +2158,65 @@ components:
       - updated_by
       - updated_by_username
       - width_in
+    PlanogramCreateRequest:
+      type: object
+      description: Input serializer for planogram creation with validation.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        season:
+          $ref: '#/components/schemas/PlanogramCreateSeasonEnum'
+        project:
+          type: integer
+        display:
+          type: integer
+        width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        depth_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Display depth in inches
+        shelf_count:
+          type: integer
+        shelf_spacing:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Shelf spacing in inches
+        category_ids:
+          type: array
+          items:
+            type: integer
+      required:
+      - name
+      - project
+    PlanogramCreateSeasonEnum:
+      enum:
+      - spring
+      - summer
+      - fall
+      - winter
+      type: string
+      description: |-
+        * `spring` - spring
+        * `summer` - summer
+        * `fall` - fall
+        * `winter` - winter
     PlanogramLayoutRequest:
       type: object
       description: Input serializer for layout save.
       properties:
         layout:
           $ref: '#/components/schemas/LayoutRequest'
-        preserve_layout:
-          type: boolean
-          default: true
       required:
       - layout
     PlanogramList:
@@ -2258,7 +2233,7 @@ components:
           type: string
           readOnly: true
         season:
-          $ref: '#/components/schemas/SeasonEnum'
+          $ref: '#/components/schemas/SeasonC9aEnum'
         project_name:
           type: string
           readOnly: true
@@ -2275,7 +2250,10 @@ components:
           format: int64
           description: Number of shelves
         category_ids:
-          description: List of selected category IDs
+          type: array
+          items:
+            type: integer
+          readOnly: true
         categories:
           type: array
           items:
@@ -2283,9 +2261,6 @@ components:
             additionalProperties: {}
           description: Derive category names from category_ids.
           readOnly: true
-        preserve_layout:
-          type: boolean
-          description: If True, use saved layout instead of regenerating
         created_at:
           type: string
           format: date-time
@@ -2296,6 +2271,7 @@ components:
           readOnly: true
       required:
       - categories
+      - category_ids
       - created_at
       - display_name
       - id
@@ -2305,66 +2281,6 @@ components:
       - shelf_count
       - slug
       - updated_at
-    PlanogramRequest:
-      type: object
-      description: Output serializer for Planogram model.
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 255
-        season:
-          $ref: '#/components/schemas/SeasonEnum'
-        project:
-          type: integer
-        display:
-          type: integer
-          nullable: true
-          description: Optional reference to display used for dimensions
-        width_in:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          description: Display width in inches
-        height_in:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          description: Display height in inches
-        depth_in:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
-          description: Display depth in inches
-        shelf_count:
-          type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
-          description: Number of shelves
-        shelf_spacing:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
-          description: Shelf spacing in inches
-        category_ids:
-          description: List of selected category IDs
-        layout:
-          allOf:
-          - $ref: '#/components/schemas/LayoutRequest'
-          writeOnly: true
-          nullable: true
-        preserve_layout:
-          type: boolean
-          description: If True, use saved layout instead of regenerating
-      required:
-      - height_in
-      - name
-      - project
-      - shelf_count
-      - width_in
     PlanogramUpdate:
       type: object
       description: Input serializer for planogram updates.
@@ -2373,10 +2289,9 @@ components:
           type: string
           maxLength: 255
         season:
-          $ref: '#/components/schemas/SeasonEnum'
+          $ref: '#/components/schemas/SeasonC9aEnum'
         display:
           type: integer
-          nullable: true
         width_in:
           type: string
           format: decimal
@@ -2391,7 +2306,6 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
           description: Display depth in inches
         shelf_count:
           type: integer
@@ -2403,16 +2317,12 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
           description: Shelf spacing in inches
         category_ids:
           type: array
           items:
             type: integer
           description: List of category IDs
-        preserve_layout:
-          type: boolean
-          description: If True, use saved layout instead of regenerating
       required:
       - height_in
       - name
@@ -2427,10 +2337,9 @@ components:
           minLength: 1
           maxLength: 255
         season:
-          $ref: '#/components/schemas/SeasonEnum'
+          $ref: '#/components/schemas/SeasonC9aEnum'
         display:
           type: integer
-          nullable: true
         width_in:
           type: string
           format: decimal
@@ -2445,7 +2354,6 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
           description: Display depth in inches
         shelf_count:
           type: integer
@@ -2457,16 +2365,12 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
           description: Shelf spacing in inches
         category_ids:
           type: array
           items:
             type: integer
           description: List of category IDs
-        preserve_layout:
-          type: boolean
-          description: If True, use saved layout instead of regenerating
       required:
       - height_in
       - name
@@ -2665,7 +2569,7 @@ components:
       description: |-
         * `admin` - Admin
         * `member` - Member
-    SeasonEnum:
+    SeasonC9aEnum:
       enum:
       - spring
       - summer

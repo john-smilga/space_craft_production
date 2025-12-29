@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
@@ -23,22 +25,18 @@ class Planogram(models.Model):
     )
     display = models.ForeignKey(
         "displays.Display",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        on_delete=models.PROTECT,
         related_name="planograms",
-        help_text="Optional reference to display used for dimensions",
+        help_text="Reference to display used for dimensions (auto-selected on creation)",
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
+        on_delete=models.PROTECT,
         related_name="created_planograms",
     )
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
+        on_delete=models.PROTECT,
         related_name="updated_planograms",
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -54,16 +52,14 @@ class Planogram(models.Model):
     depth_in = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        null=True,
-        blank=True,
+        default=Decimal("24.00"),
         help_text="Display depth in inches",
     )
     shelf_count = models.IntegerField(help_text="Number of shelves")
     shelf_spacing = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        null=True,
-        blank=True,
+        default=Decimal("12.00"),
         help_text="Shelf spacing in inches",
     )
 
@@ -77,12 +73,8 @@ class Planogram(models.Model):
     # Format: {row_id: [LayoutItem, ...], ...}
     layout = models.JSONField(
         default=dict,
-        null=True,
         blank=True,
         help_text="Stored layout data from frontend",
-    )
-    preserve_layout = models.BooleanField(
-        default=False, help_text="If True, use saved layout instead of regenerating"
     )
 
     class Meta:
