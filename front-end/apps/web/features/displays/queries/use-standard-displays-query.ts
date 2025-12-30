@@ -11,8 +11,8 @@ export function useStandardDisplaysQuery() {
     queryKey: ['standard-displays'],
     queryFn: async (): Promise<{ standards: DisplayType[] }> => {
       const response = await api.get('/displays/standards/');
-      const validatedResponse = schemas.PaginatedDisplayList.parse(response.data);
-      return { standards: validatedResponse.results };
+      const validatedResponse = z.array(schemas.Display).parse(response.data);
+      return { standards: validatedResponse };
     },
   });
 }

@@ -10,6 +10,8 @@ import {
   Grid,
   PlanogramHeader,
 } from '@/features/planogram';
+import { DeleteButton } from '@/components/ui/delete-button';
+import { useDeletePlanogramMutation } from '@/features/planogram/queries';
 
 export default function PlanogramPage() {
   const params = useParams();
@@ -18,6 +20,7 @@ export default function PlanogramPage() {
 
   const { data: planogram, isLoading, error } = usePlanogramQuery(planogramSlug);
   const addProductsSidebarOpen = usePlanogramStore((state) => state.addProductsSidebarOpen);
+  const deleteMutation = useDeletePlanogramMutation(planogramSlug);
 
   if (isLoading) {
     return (
@@ -53,7 +56,6 @@ export default function PlanogramPage() {
       <div className='space-y-6'>
         <PlanogramHeader
           planogramSlug={planogramSlug}
-          projectSlug={projectSlug}
           planogramName={planogram.name}
           projectName={planogram.project_name}
         />
@@ -65,6 +67,16 @@ export default function PlanogramPage() {
         />
 
         <Grid planogramSlug={planogramSlug} />
+
+        <div className='pb-6 flex justify-end mt-12'>
+          <DeleteButton
+            onDelete={deleteMutation}
+            redirectPath={`/dashboard/projects/${projectSlug}`}
+            resourceName='Planogram'
+            size='default'
+            showIcon={true}
+          />
+        </div>
       </div>
     </>
   );

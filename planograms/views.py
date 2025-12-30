@@ -143,7 +143,7 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
     @extend_schema(
         request=PlanogramUpdateSerializer,
         responses={200: PlanogramSerializer},
-        description="Update planogram. Regenerates layout only if category_ids, shelf_count, or display changed.",
+        description="Update planogram. Regenerates layout if category_ids, shelf_count, or display changed, or if force_regenerate is true.",
     )
     def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Update planogram and conditionally regenerate layout."""
@@ -159,6 +159,9 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
             context={"company": request.user.company}
         )
         serializer.is_valid(raise_exception=True)
+
+        # Extract force_regenerate flag before saving (it's write_only)
+        force_regenerate = serializer.validated_data.pop("force_regenerate", False)
 
         # Check if display changed and update dimensions from new display
         new_display = serializer.validated_data.get("display")
@@ -179,8 +182,8 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
             planogram.display != original_display
         )
 
-        # Only regenerate layout if layout-affecting fields changed
-        if layout_fields_changed:
+        # Regenerate layout if layout-affecting fields changed OR force_regenerate is True
+        if layout_fields_changed or force_regenerate:
             fresh_layout = compute_layout(planogram)
             if fresh_layout:
                 # Save regenerated layout to database (overwrites manual changes)

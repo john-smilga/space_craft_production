@@ -349,6 +349,7 @@ const PlanogramUpdateRequest = z
       .regex(/^-?\d{0,8}(?:\.\d{0,2})?$/)
       .optional(),
     category_ids: z.array(z.number().int()).optional(),
+    force_regenerate: z.boolean().optional().default(false),
   })
   .strict();
 const PatchedPlanogramUpdateRequest = z
@@ -366,6 +367,7 @@ const PatchedPlanogramUpdateRequest = z
       .lte(9223372036854776000),
     shelf_spacing: z.string().regex(/^-?\d{0,8}(?:\.\d{0,2})?$/),
     category_ids: z.array(z.number().int()),
+    force_regenerate: z.boolean().default(false),
   })
   .partial()
   .strict();
@@ -1112,7 +1114,7 @@ const endpoints = makeApi([
     method: "put",
     path: "/api/planograms/:slug/",
     alias: "planograms_update",
-    description: `Update planogram. Always regenerates and saves layout, overwriting manual changes.`,
+    description: `Update planogram. Regenerates layout if category_ids, shelf_count, or display changed, or if force_regenerate is true.`,
     requestFormat: "json",
     parameters: [
       {

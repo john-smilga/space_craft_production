@@ -11,8 +11,8 @@ export function useDisplayTypesQuery() {
     queryKey: ['display-types'],
     queryFn: async (): Promise<{ types: DisplayTypeType[] }> => {
       const response = await api.get('/displays/types/');
-      const validatedResponse = schemas.PaginatedDisplayTypeList.parse(response.data);
-      return { types: validatedResponse.results };
+      const validatedResponse = z.array(schemas.DisplayType).parse(response.data);
+      return { types: validatedResponse };
     },
   });
 }

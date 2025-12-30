@@ -316,6 +316,12 @@ class PlanogramUpdateSerializer(serializers.ModelSerializer):
     display = serializers.PrimaryKeyRelatedField(
         queryset=Display.objects.none(), required=False
     )
+    force_regenerate = serializers.BooleanField(
+        required=False,
+        default=False,
+        write_only=True,
+        help_text="Force regeneration of layout even if layout-affecting fields haven't changed"
+    )
 
     class Meta:
         model = Planogram
@@ -329,6 +335,7 @@ class PlanogramUpdateSerializer(serializers.ModelSerializer):
             "shelf_count",
             "shelf_spacing",
             "category_ids",
+            "force_regenerate",
         ]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

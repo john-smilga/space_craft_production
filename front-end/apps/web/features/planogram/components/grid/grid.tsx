@@ -32,7 +32,8 @@ export function Grid({ planogramSlug }: GridProps) {
   }, [layout]);
 
   // Saving state for UI feedback
-  const [isSaving, setIsSaving] = useState(false);
+  type SaveStatus = 'idle' | 'saving' | 'deleting' | 'saved' | 'error';
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
 
   // Save layout mutation
   const saveLayoutMutation = useSaveLayoutMutation();
@@ -40,8 +41,6 @@ export function Grid({ planogramSlug }: GridProps) {
   // Debounced save function
   const debouncedSave = useDebouncedCallback(
     (layoutToSave: Layout) => {
-      setIsSaving(true);
-
       saveLayoutMutation.mutate(
         {
           slug: planogramSlug,
@@ -51,8 +50,19 @@ export function Grid({ planogramSlug }: GridProps) {
           },
         },
         {
-          onSettled: () => {
-            setIsSaving(false);
+          onSuccess: () => {
+            setSaveStatus('saved');
+            // Keep "Saved ✓" visible for 2 seconds before hiding
+            setTimeout(() => {
+              setSaveStatus('idle');
+            }, 2000);
+          },
+          onError: () => {
+            setSaveStatus('error');
+            // Keep error visible for 3 seconds before hiding
+            setTimeout(() => {
+              setSaveStatus('idle');
+            }, 3000);
           },
         }
       );
@@ -89,6 +99,7 @@ export function Grid({ planogramSlug }: GridProps) {
     };
 
     setLocalLayout(updatedLayout);
+    setSaveStatus('saving'); // Show "Saving..." immediately
     debouncedSave(updatedLayout);
   };
 
@@ -112,6 +123,7 @@ export function Grid({ planogramSlug }: GridProps) {
     };
 
     setLocalLayout(updatedLayout);
+    setSaveStatus('deleting'); // Show "Deleting..." immediately
     debouncedSave(updatedLayout);
   };
 
@@ -143,9 +155,27 @@ export function Grid({ planogramSlug }: GridProps) {
     <div className='bg-card p-6 rounded-lg shadow-md'>
       <div className='flex items-center justify-between mb-4'>
         <h2 className='text-xl font-bold'>Shelf Layout</h2>
-        {isSaving && (
-          <span className='text-sm text-muted-foreground animate-pulse'>
+        {saveStatus === 'saving' && (
+          <span className='text-sm text-muted-foreground animate-pulse font-medium'>
             Saving...
+          </span>
+        )}
+        {saveStatus === 'deleting' && (
+          <span className='text-sm text-muted-foreground animate-pulse font-medium'>
+            Deleting...
+          </span>
+        )}
+        {saveStatus === 'saved' && (
+          <span className='text-sm text-green-600 dark:text-green-500 font-medium flex items-center gap-1'>
+            <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+            </svg>
+            Layout saved
+          </span>
+        )}
+        {saveStatus === 'error' && (
+          <span className='text-sm text-destructive font-medium'>
+            Failed to save
           </span>
         )}
       </div>
