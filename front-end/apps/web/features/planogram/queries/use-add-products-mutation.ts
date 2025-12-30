@@ -6,7 +6,7 @@ import { useAppMutation } from '@/lib/react-query/hooks';
 import { schemas } from '@/lib/generated/api-schemas';
 
 type Layout = z.infer<typeof schemas.Layout>;
-type AddProductsRequest = z.infer<typeof schemas.AddProductsRequest>;
+type AddProductsRequest = z.infer<typeof schemas.AddProductsRequestRequest>;
 
 type AddProductsVariables = {
   slug: string;

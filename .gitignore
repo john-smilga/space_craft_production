@@ -54,6 +54,10 @@ front-end/apps/**/.next/
 *.sqlite3
 db.sqlite3
 
+# Logs
+logs/*.log
+!logs/.gitkeep
+
 # OS
 .DS_Store
 Thumbs.db

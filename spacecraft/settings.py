@@ -235,53 +235,90 @@ LOGGING = {
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
-            "format": "{levelname} {asctime} {module} {message}",
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
             "style": "{",
         },
         "simple": {
             "format": "{levelname} {message}",
             "style": "{",
         },
+        "detailed": {
+            "format": "[{asctime}] {levelname} {name} - {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
     },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            "formatter": "detailed",
+            "level": "DEBUG" if DEBUG else "INFO",
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "django.log",
+            "maxBytes": 1024 * 1024 * 10,  # 10 MB
+            "backupCount": 5,
             "formatter": "verbose",
+            "level": "DEBUG" if DEBUG else "INFO",
+        },
+        "error_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "errors.log",
+            "maxBytes": 1024 * 1024 * 10,  # 10 MB
+            "backupCount": 5,
+            "formatter": "verbose",
+            "level": "ERROR",
         },
     },
     "root": {
-        "handlers": ["console"],
-        "level": "INFO",
+        "handlers": ["console", "file"],
+        "level": "DEBUG" if DEBUG else "INFO",
     },
     "loggers": {
-        "planograms": {
-            "handlers": ["console"],
+        "django": {
+            "handlers": ["console", "file"],
             "level": "INFO",
-            "propagate": False,
-        },
-        "accounts": {
-            "handlers": ["console"],
-            "level": "INFO",  # Changed from DEBUG to INFO for production
             "propagate": False,
         },
         "django.request": {
-            "handlers": ["console"],
-            "level": "INFO",  # Changed from DEBUG to INFO for production
+            "handlers": ["console", "error_file"],
+            "level": "ERROR",
             "propagate": False,
         },
-        "spacecraft.requests": {  # New logger for request middleware
+        "django.server": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
-        "spacecraft.startup": {  # New logger for startup config
+        "planograms": {
+            "handlers": ["console", "file", "error_file"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        "accounts": {
+            "handlers": ["console", "file"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        "products": {
+            "handlers": ["console", "file", "error_file"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        "spacecraft.requests": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
-        "corsheaders": {  # Log CORS middleware activity
+        "spacecraft.startup": {
             "handlers": ["console"],
             "level": "INFO",
+            "propagate": False,
+        },
+        "corsheaders": {
+            "handlers": ["console"],
+            "level": "WARNING",
             "propagate": False,
         },
     },

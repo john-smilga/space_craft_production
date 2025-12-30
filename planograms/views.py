@@ -143,11 +143,17 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
     @extend_schema(
         request=PlanogramUpdateSerializer,
         responses={200: PlanogramSerializer},
-        description="Update planogram. Always regenerates and saves layout, overwriting manual changes.",
+        description="Update planogram. Regenerates layout only if category_ids, shelf_count, or display changed.",
     )
     def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """Update planogram and regenerate layout."""
+        """Update planogram and conditionally regenerate layout."""
         instance = self.get_object()
+
+        # Track original values of layout-affecting fields
+        original_category_ids = instance.category_ids
+        original_shelf_count = instance.shelf_count
+        original_display = instance.display
+
         serializer = self.get_serializer(
             instance, data=request.data, partial=kwargs.get("partial", False),
             context={"company": request.user.company}
@@ -166,12 +172,20 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
 
         planogram = serializer.save(updated_by=request.user)
 
-        # Always regenerate layout after update
-        fresh_layout = compute_layout(planogram)
-        if fresh_layout:
-            # Save regenerated layout to database (overwrites manual changes)
-            planogram.layout = fresh_layout
-            planogram.save(update_fields=["layout"])
+        # Check if layout-affecting fields changed
+        layout_fields_changed = (
+            planogram.category_ids != original_category_ids or
+            planogram.shelf_count != original_shelf_count or
+            planogram.display != original_display
+        )
+
+        # Only regenerate layout if layout-affecting fields changed
+        if layout_fields_changed:
+            fresh_layout = compute_layout(planogram)
+            if fresh_layout:
+                # Save regenerated layout to database (overwrites manual changes)
+                planogram.layout = fresh_layout
+                planogram.save(update_fields=["layout"])
 
         output_serializer = PlanogramSerializer(planogram)
         return Response(output_serializer.data)
@@ -202,7 +216,7 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
         responses={200: PlanogramSerializer},
         description="Save planogram layout and return updated planogram data.",
     )
-    @action(detail=True, methods=["post"], url_path="layout")
+    @action(detail=True, methods=["post"], url_path="save-layout")
     def save_layout(self, request: Request, slug: str = None) -> Response:
         """Save planogram layout."""
         instance = self.get_object()
@@ -301,12 +315,13 @@ class PlanogramViewSet(CompanyFilterMixin, SlugLookupMixin, BaseViewSet):
             return Response({"overview": overview})
 
         except ValueError as e:
+            logger.error(f"ValueError in AI overview: {str(e)}", exc_info=True)
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         except Exception as e:
-            logger.error(f"Error generating AI overview: {str(e)}")
+            logger.error(f"Error generating AI overview: {str(e)}", exc_info=True)
             return Response(
                 {"error": "There was an error. Please try later."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

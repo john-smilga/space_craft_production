@@ -434,6 +434,15 @@ const LayoutRow = z
 const Layout = z
   .object({ grid: GridConfig, rows: z.array(LayoutRow) })
   .strict();
+const AddProductItemRequest = z
+  .object({ id: z.number().int().gte(1), quantity: z.number().int().gte(1) })
+  .strict();
+const AddProductsRequestRequest = z
+  .object({
+    row_id: z.number().int().gte(0),
+    products: z.array(AddProductItemRequest),
+  })
+  .strict();
 const GridConfigRequest = z
   .object({
     cols: z.number().int(),
@@ -476,15 +485,6 @@ const LayoutRequest = z
   .object({ grid: GridConfigRequest, rows: z.array(LayoutRowRequest) })
   .strict();
 const PlanogramLayoutRequest = z.object({ layout: LayoutRequest }).strict();
-const AddProductItem = z
-  .object({ id: z.number().int().gte(1), quantity: z.number().int().gte(1) })
-  .strict();
-const AddProductsRequest = z
-  .object({
-    row_id: z.number().int().gte(0),
-    products: z.array(AddProductItem),
-  })
-  .strict();
 const ProjectList = z
   .object({
     id: z.number().int(),
@@ -703,14 +703,14 @@ export const schemas = {
   LayoutItem,
   LayoutRow,
   Layout,
+  AddProductItemRequest,
+  AddProductsRequestRequest,
   GridConfigRequest,
   LayoutItemMetaRequest,
   LayoutItemRequest,
   LayoutRowRequest,
   LayoutRequest,
   PlanogramLayoutRequest,
-  AddProductItem,
-  AddProductsRequest,
   ProjectList,
   PaginatedProjectListList,
   ProjectCreateRequest,
@@ -1195,8 +1195,28 @@ const endpoints = makeApi([
   },
   {
     method: "post",
-    path: "/api/planograms/:slug/layout/",
-    alias: "planograms_layout_create",
+    path: "/api/planograms/:slug/layout/add-products/",
+    alias: "planograms_layout_add_products_create",
+    description: `Add products to planogram layout at specified row.`,
+    requestFormat: "json",
+    parameters: [
+      {
+        name: "body",
+        type: "Body",
+        schema: AddProductsRequestRequest,
+      },
+      {
+        name: "slug",
+        type: "Path",
+        schema: z.string(),
+      },
+    ],
+    response: Layout,
+  },
+  {
+    method: "post",
+    path: "/api/planograms/:slug/save-layout/",
+    alias: "planograms_save_layout_create",
     description: `Save planogram layout and return updated planogram data.`,
     requestFormat: "json",
     parameters: [
@@ -1212,26 +1232,6 @@ const endpoints = makeApi([
       },
     ],
     response: Planogram,
-  },
-  {
-    method: "post",
-    path: "/api/planograms/:slug/layout/add-products/",
-    alias: "planograms_layout_add_products_create",
-    description: `Add products to planogram layout at specified row.`,
-    requestFormat: "json",
-    parameters: [
-      {
-        name: "body",
-        type: "Body",
-        schema: AddProductsRequest,
-      },
-      {
-        name: "slug",
-        type: "Path",
-        schema: z.string(),
-      },
-    ],
-    response: Layout,
   },
   {
     method: "get",

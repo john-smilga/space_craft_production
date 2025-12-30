@@ -363,6 +363,65 @@ def layout_by_score(
     }
 
 
+def find_gaps_in_row(
+    row_items: list[dict[str, Any]],
+    target_row_id: int,
+    cols: int
+) -> list[dict[str, Any]]:
+    """
+    Find all gaps in a row and its sub-rows.
+
+    Args:
+        row_items: List of items in the target row
+        target_row_id: The base row ID
+        cols: Total number of columns in the grid
+
+    Returns:
+        List of gaps sorted by y (row level), then x (position)
+        Each gap: {x: start_position, width: gap_width, y: row_level}
+    """
+    items_by_y: dict[int, list[dict[str, Any]]] = {}
+    max_y = target_row_id
+
+    for item in row_items:
+        y_level = item["y"]
+        if y_level not in items_by_y:
+            items_by_y[y_level] = []
+        items_by_y[y_level].append(item)
+        if y_level > max_y:
+            max_y = y_level
+
+    all_gaps = []
+
+    for y_level in range(target_row_id, max_y + 1):
+        items_at_level = items_by_y.get(y_level, [])
+
+        if not items_at_level:
+            all_gaps.append({"x": 0, "width": cols, "y": y_level})
+            continue
+
+        items_at_level.sort(key=lambda item: item["x"])
+
+        current_x = 0
+        for item in items_at_level:
+            item_start = item["x"]
+            item_end = item["x"] + item["w"]
+
+            if current_x < item_start:
+                gap_width = item_start - current_x
+                all_gaps.append({"x": current_x, "width": gap_width, "y": y_level})
+
+            current_x = max(current_x, item_end)
+
+        if current_x < cols:
+            gap_width = cols - current_x
+            all_gaps.append({"x": current_x, "width": gap_width, "y": y_level})
+
+    all_gaps.sort(key=lambda gap: (gap["y"], gap["x"]))
+
+    return all_gaps
+
+
 def add_products_to_layout(
     layout: dict[str, Any],
     target_row_id: int,
@@ -435,12 +494,95 @@ def add_products_to_layout(
         if item["y"] > max_y:
             max_y = item["y"]
 
-    # Place all items starting from rightmost position of target row
+    # LOG: Initial state
+    logger.info(
+        f"add_products_to_layout: target_row={target_row_id}, "
+        f"products_to_place={len(items_to_place)}, "
+        f"current_items_in_row={len(row_items)}"
+    )
+
+    # PHASE 1: Fill gaps
+    gaps = find_gaps_in_row(row_items, target_row_id, cols)
+    logger.info(f"Found {len(gaps)} gaps in row {target_row_id}: {gaps}")
+
+    items_placed_in_gaps = []
+    remaining_items = []
+
+    for product_id in items_to_place:
+        product = product_data.get(product_id)
+        if not product:
+            logger.warning(f"Product {product_id} not found in product_data, skipping")
+            continue
+
+        w_cells = width_cells_for(product)
+        if w_cells <= 0:
+            logger.warning(f"Product {product_id} has invalid width, skipping")
+            continue
+
+        # Try to fit in first available gap
+        placed = False
+        for gap in gaps:
+            if w_cells <= gap["width"]:
+                counter += 1
+
+                # Extract category and color
+                category_path = product.get("category", "")
+                if " > " in category_path:
+                    category_slug = category_path.split(" > ")[-1]
+                elif "/" in category_path:
+                    category_slug = category_path.split("/")[-1]
+                else:
+                    category_slug = category_path
+
+                color = get_category_color(category_slug)
+
+                new_item = {
+                    "i": f"{product_id}-{target_row_id}-{timestamp}-{counter}",
+                    "x": gap["x"],
+                    "y": gap["y"],
+                    "w": w_cells,
+                    "h": 1,
+                    "meta": {
+                        "id": product_id,
+                        "name": product.get("name"),
+                        "category": category_path,
+                        "color": color,
+                        "score": product.get("overall_score", 0.0),
+                        "pack_width_in": product.get("pack_width_in"),
+                        "pack_height_in": product.get("pack_height_in"),
+                    },
+                }
+                row_items.append(new_item)
+                items_placed_in_gaps.append(product_id)
+
+                logger.debug(
+                    f"Placed product {product_id} (w={w_cells}) in gap at "
+                    f"x={gap['x']}, y={gap['y']}"
+                )
+
+                # Update gap: shrink it or remove it
+                gap["x"] += w_cells
+                gap["width"] -= w_cells
+                if gap["width"] <= 0:
+                    gaps.remove(gap)
+
+                placed = True
+                break
+
+        if not placed:
+            remaining_items.append(product_id)
+
+    logger.info(
+        f"Phase 1 complete: {len(items_placed_in_gaps)} products placed in gaps, "
+        f"{len(remaining_items)} remaining"
+    )
+
+    # PHASE 2: Place remaining items from rightmost position
     # When row is full, wrap to next sub-row starting from left (x=0)
     current_x = rightmost_x
     current_y = target_row_id
 
-    for product_id in items_to_place:
+    for product_id in remaining_items:
         product = product_data.get(product_id)
         if not product:
             logger.warning(f"Product {product_id} not found in product_data, skipping")
@@ -489,5 +631,12 @@ def add_products_to_layout(
         }
         row_items.append(new_item)
         current_x += w_cells
+
+    # LOG: Summary
+    logger.info(
+        f"add_products_to_layout complete: "
+        f"placed {len(items_placed_in_gaps)} in gaps, "
+        f"placed {len(remaining_items)} from rightmost position"
+    )
 
     return layout

@@ -58,10 +58,9 @@ def _format_planogram_data_for_ai(
     )
     lines.append("\nDimensions:")
 
-    display_data = planogram_data.get("display", {})
-    lines.append(f"  - Width: {display_data.get('width_in', 'N/A')} inches")
-    lines.append(f"  - Height: {display_data.get('height_in', 'N/A')} inches")
-    lines.append(f"  - Depth: {display_data.get('depth_in', 'N/A')} inches")
+    lines.append(f"  - Width: {planogram_data.get('width_in', 'N/A')} inches")
+    lines.append(f"  - Height: {planogram_data.get('height_in', 'N/A')} inches")
+    lines.append(f"  - Depth: {planogram_data.get('depth_in', 'N/A')} inches")
     lines.append(f"  - Shelf Count: {planogram_data.get('shelf_count', 'N/A')}")
 
     if planogram_data.get("categories"):

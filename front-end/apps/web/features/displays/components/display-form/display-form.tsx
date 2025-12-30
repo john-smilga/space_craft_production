@@ -89,7 +89,7 @@ export function DisplayForm() {
         height_in: data.height_in,
         depth_in: data.depth_in,
         shelf_count: parseInt(data.shelf_count),
-        shelf_spacing: data.shelf_spacing || null,
+        shelf_spacing: data.shelf_spacing || undefined,
       },
       {
         onSuccess: (result) => {

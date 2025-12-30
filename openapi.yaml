@@ -585,8 +585,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/Layout'
           description: ''
+  /api/planograms/{slug}/layout/add-products/:
     post:
-      operationId: planograms_layout_create
+      operationId: planograms_layout_add_products_create
+      description: Add products to planogram layout at specified row.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - planograms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddProductsRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Layout'
+          description: ''
+  /api/planograms/{slug}/save-layout/:
+    post:
+      operationId: planograms_save_layout_create
       description: Save planogram layout and return updated planogram data.
       parameters:
       - in: path
@@ -608,31 +634,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Planogram'
-          description: ''
-  /api/planograms/{slug}/layout/add-products/:
-    post:
-      operationId: planograms_layout_add_products_create
-      description: Add products to planogram layout at specified row.
-      parameters:
-      - in: path
-        name: slug
-        schema:
-          type: string
-        required: true
-      tags:
-      - planograms
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddProductsRequest'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Layout'
           description: ''
   /api/products/by-categories/:
     get:
@@ -1090,7 +1091,15 @@ paths:
           description: ''
 components:
   schemas:
-    AddProductItem:
+    AIOverviewResponse:
+      type: object
+      description: Output serializer for AI overview response.
+      properties:
+        overview:
+          type: string
+      required:
+      - overview
+    AddProductItemRequest:
       type: object
       description: Serializer for individual product item in add products request.
       properties:
@@ -1103,7 +1112,7 @@ components:
       required:
       - id
       - quantity
-    AddProductsRequest:
+    AddProductsRequestRequest:
       type: object
       description: Serializer for add products to layout request.
       properties:
@@ -1113,18 +1122,10 @@ components:
         products:
           type: array
           items:
-            $ref: '#/components/schemas/AddProductItem'
+            $ref: '#/components/schemas/AddProductItemRequest'
       required:
       - products
       - row_id
-    AIOverviewResponse:
-      type: object
-      description: Output serializer for AI overview response.
-      properties:
-        overview:
-          type: string
-      required:
-      - overview
     Category:
       type: object
       description: Serializer for category data.

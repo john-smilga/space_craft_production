@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { generatePlanogramCSV } from './planogramCSV';
-import type { GridResponse } from '@/features/planogram-old/types';
-import type { schemas } from '@/lib/generated/api-schemas';
+import { schemas } from '@/lib/generated/api-schemas';
 import type { z } from 'zod';
 
 type PlanogramType = z.infer<typeof schemas.Planogram>;
+type LayoutType = z.infer<typeof schemas.Layout>;
 
 describe('generatePlanogramCSV', () => {
   it('should return error message when planogram is null', () => {
@@ -59,7 +59,7 @@ describe('generatePlanogramCSV', () => {
       shelf_spacing: 14,
     } as unknown as PlanogramType;
 
-    const layout: GridResponse = {
+    const layout: LayoutType = {
       rows: [
         {
           id: 1,
@@ -99,7 +99,7 @@ describe('generatePlanogramCSV', () => {
           ],
         },
       ],
-      grid: { cols: 10, rows: 6, cellWidthIn: 4 },
+      grid: { cols: 10, rows: 6, cellWidthIn: 4, normalizedWidthIn: 40, normalizedHeightIn: 24 },
     };
 
     const result = generatePlanogramCSV(planogram, layout);
@@ -123,7 +123,7 @@ describe('generatePlanogramCSV', () => {
       shelf_spacing: 10,
     } as unknown as PlanogramType;
 
-    const layout: GridResponse = {
+    const layout: LayoutType = {
       rows: [
         {
           id: 1,
@@ -148,7 +148,7 @@ describe('generatePlanogramCSV', () => {
           ],
         },
       ],
-      grid: { cols: 10, rows: 4, cellWidthIn: 5 },
+      grid: { cols: 10, rows: 4, cellWidthIn: 5, normalizedWidthIn: 50, normalizedHeightIn: 20 },
     };
 
     const result = generatePlanogramCSV(planogram, layout);
@@ -195,7 +195,7 @@ describe('generatePlanogramCSV', () => {
       shelf_spacing: 8,
     } as unknown as PlanogramType;
 
-    const layout: GridResponse = {
+    const layout: LayoutType = {
       rows: [
         {
           id: 1,
@@ -220,7 +220,7 @@ describe('generatePlanogramCSV', () => {
           ],
         },
       ],
-      grid: { cols: 8, rows: 3, cellWidthIn: 5 },
+      grid: { cols: 8, rows: 3, cellWidthIn: 5, normalizedWidthIn: 40, normalizedHeightIn: 15 },
     };
 
     const result = generatePlanogramCSV(planogram, layout);
@@ -242,7 +242,7 @@ describe('generatePlanogramCSV', () => {
       shelf_spacing: 9,
     } as unknown as PlanogramType;
 
-    const layout: GridResponse = {
+    const layout: LayoutType = {
       rows: [
         {
           id: 2,
@@ -267,7 +267,7 @@ describe('generatePlanogramCSV', () => {
           ],
         },
       ],
-      grid: { cols: 9, rows: 4, cellWidthIn: 5 },
+      grid: { cols: 9, rows: 4, cellWidthIn: 5, normalizedWidthIn: 45, normalizedHeightIn: 20 },
     };
 
     const result = generatePlanogramCSV(planogram, layout);
@@ -289,9 +289,9 @@ describe('generatePlanogramCSV', () => {
       shelf_spacing: 11,
     } as unknown as PlanogramType;
 
-    const layout: GridResponse = {
+    const layout: LayoutType = {
       rows: [],
-      grid: { cols: 10, rows: 5, cellWidthIn: 5 },
+      grid: { cols: 10, rows: 5, cellWidthIn: 5, normalizedWidthIn: 50, normalizedHeightIn: 25 },
     };
 
     const result = generatePlanogramCSV(planogram, layout);

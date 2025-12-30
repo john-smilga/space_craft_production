@@ -2,7 +2,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import api from '@/lib/axios';
-import { schemas } from '@/lib/generated/api-schemas';
 
 const LeafCategorySchema = z.object({
   id: z.number().int(),

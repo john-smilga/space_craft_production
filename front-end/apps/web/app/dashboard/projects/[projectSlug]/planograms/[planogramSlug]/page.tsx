@@ -1,8 +1,6 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { Menu, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
   usePlanogramQuery,
   PlanogramDetailForm,
@@ -10,6 +8,7 @@ import {
   AddProductsSidebar,
   usePlanogramStore,
   Grid,
+  PlanogramHeader,
 } from '@/features/planogram';
 
 export default function PlanogramPage() {
@@ -18,8 +17,6 @@ export default function PlanogramPage() {
   const projectSlug = params?.projectSlug as string;
 
   const { data: planogram, isLoading, error } = usePlanogramQuery(planogramSlug);
-  const toggleSidebar = usePlanogramStore((state) => state.toggleSidebar);
-  const toggleAddProductsSidebar = usePlanogramStore((state) => state.toggleAddProductsSidebar);
   const addProductsSidebarOpen = usePlanogramStore((state) => state.addProductsSidebarOpen);
 
   if (isLoading) {
@@ -54,34 +51,12 @@ export default function PlanogramPage() {
       {addProductsSidebarOpen && <AddProductsSidebar />}
 
       <div className='space-y-6'>
-        <div className='flex items-start justify-between'>
-          <div>
-            <h1 className='text-3xl font-bold mb-2'>{planogram.name}</h1>
-            <p className='text-muted-foreground'>
-              Project: {planogram.project_name}
-            </p>
-          </div>
-          <div className='flex gap-2'>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={toggleAddProductsSidebar}
-              className='gap-2'
-            >
-              <Plus className='h-4 w-4' />
-              Add Products
-            </Button>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={toggleSidebar}
-              className='gap-2'
-            >
-              <Menu className='h-4 w-4' />
-              Browse Products
-            </Button>
-          </div>
-        </div>
+        <PlanogramHeader
+          planogramSlug={planogramSlug}
+          projectSlug={projectSlug}
+          planogramName={planogram.name}
+          projectName={planogram.project_name}
+        />
 
         <PlanogramDetailForm
           planogramSlug={planogramSlug}
