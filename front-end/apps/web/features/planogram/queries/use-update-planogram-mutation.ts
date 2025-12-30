@@ -35,9 +35,9 @@ export function useUpdatePlanogramMutation() {
           queryClient.removeQueries({ queryKey: ['planograms', 'layout', variables.slug] });
         }
 
-        // Invalidate queries with the new slug
-        await queryClient.invalidateQueries({ queryKey: ['planograms', 'detail', data.slug] });
-        await queryClient.invalidateQueries({ queryKey: ['planograms', 'layout', data.slug] });
+        // Force refetch both queries to get the latest data from the server
+        await queryClient.refetchQueries({ queryKey: ['planograms', 'detail', data.slug] });
+        await queryClient.refetchQueries({ queryKey: ['planograms', 'layout', data.slug] });
       },
     }
   );

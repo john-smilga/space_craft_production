@@ -16,7 +16,7 @@ export function useLayoutQuery(planogramSlug: string | null) {
     queryKey: ['planograms', 'layout', planogramSlug],
     queryFn: () => fetchLayout(planogramSlug!),
     enabled: !!planogramSlug,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0, // Always refetch when needed (layout can change frequently)
     retry: 1,
   });
 }

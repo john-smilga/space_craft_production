@@ -18,7 +18,7 @@ type GridProps = {
 };
 
 export function Grid({ planogramSlug }: GridProps) {
-  const { data: layout, isLoading, error } = useLayoutQuery(planogramSlug);
+  const { data: layout, isLoading, error, dataUpdatedAt } = useLayoutQuery(planogramSlug);
 
   // Local layout state for optimistic updates
   const [localLayout, setLocalLayout] = useState<Layout | null>(null);
@@ -29,7 +29,7 @@ export function Grid({ planogramSlug }: GridProps) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Syncing server state to local state for optimistic updates
       setLocalLayout(layout);
     }
-  }, [layout]);
+  }, [layout, dataUpdatedAt]); // dataUpdatedAt ensures effect runs on every refetch, even if data is structurally identical
 
   // Saving state for UI feedback
   type SaveStatus = 'idle' | 'saving' | 'deleting' | 'saved' | 'error';
