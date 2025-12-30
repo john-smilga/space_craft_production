@@ -1,4 +1,6 @@
 export { usePlanogramQuery } from './use-planogram-query';
+export { usePlanogramsQuery } from './use-planograms-query';
+export { useCreatePlanogramMutation } from './use-create-planogram-mutation';
 export { useUpdatePlanogramMutation } from './use-update-planogram-mutation';
 export { useLeafCategoriesQuery } from './use-leaf-categories-query';
 export { useCategoryPathQuery } from './use-category-path-query';
