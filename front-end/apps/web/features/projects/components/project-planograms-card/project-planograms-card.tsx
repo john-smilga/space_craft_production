@@ -4,7 +4,6 @@ import { schemas } from '@/lib/generated/api-schemas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import EmptyState from '@/components/EmptyState';
-import { PlanogramCard } from '@/features/planogram-old';
 
 type PlanogramListType = z.infer<typeof schemas.PlanogramList>;
 
@@ -28,21 +27,28 @@ export function ProjectPlanogramsCard({ projectSlug, planograms }: ProjectPlanog
         {planograms.length > 0 ? (
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
             {planograms.map((planogram) => (
-              <PlanogramCard
-                key={planogram.id}
-                name={planogram.name}
-                slug={planogram.slug}
-                project_name={planogram.project_name}
-                project_slug={projectSlug}
-                display_name={planogram.display_name}
-                seasonDisplay={planogram.season || ''}
-                categories={planogram.categories}
-                category_ids={
-                  Array.isArray(planogram.category_ids)
-                    ? (planogram.category_ids as number[])
-                    : []
-                }
-              />
+              <Card key={planogram.id} className='hover:shadow-lg transition-shadow'>
+                <CardHeader>
+                  <CardTitle className='text-lg'>
+                    <Link
+                      href={`/dashboard/projects/${projectSlug}/planograms/${planogram.slug}`}
+                      className='hover:text-primary'
+                    >
+                      {planogram.name}
+                    </Link>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className='text-sm space-y-1'>
+                    {planogram.display_name && (
+                      <p className='text-muted-foreground'>Display: {planogram.display_name}</p>
+                    )}
+                    {planogram.season && (
+                      <p className='text-muted-foreground'>Season: {planogram.season}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         ) : (
