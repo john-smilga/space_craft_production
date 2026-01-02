@@ -7,7 +7,7 @@ import {
   ProductSidebar,
   AddProductsSidebar,
   usePlanogramStore,
-  Grid,
+  GridKonva,
   PlanogramHeader,
 } from '@/features/planogram';
 import { DeleteButton } from '@/components/ui/delete-button';
@@ -66,8 +66,8 @@ export default function PlanogramPage() {
           planogram={planogram}
         />
 
-        <Grid planogramSlug={planogramSlug} />
-
+        {/* <Grid planogramSlug={planogramSlug} /> */}
+        <GridKonva planogramSlug={planogramSlug} />
         <div className='pb-6 flex justify-end mt-12'>
           <DeleteButton
             onDelete={deleteMutation}

@@ -6,7 +6,7 @@ export { AddProductsSidebar } from './components/add-products-sidebar';
 export { PlanogramHeader } from './components/header';
 export { ProjectDisplay } from './components/project-display';
 export { PlanogramCard } from './components/planogram-card';
-
+export { GridKonva } from './components/grid-konva';
 // Queries
 export { usePlanogramQuery } from './queries/use-planogram-query';
 export { usePlanogramsQuery } from './queries/use-planograms-query';
