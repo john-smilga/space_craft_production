@@ -1,6 +1,7 @@
 'use client';
 import { useUpdatePlanogramMutation, useSaveLayoutMutation, useDeletePlanogramMutation } from '../queries';
-import type { PlanogramDetailResponse, Planogram, LayoutItem } from '../types';
+import type { PlanogramDetailResponse, Planogram, Season } from '../types';
+import type { Layout } from '../components/grid-konva/utils/types';
 import { usePlanogramStore } from '../store';
 
 export function usePlanogramForm(
@@ -22,11 +23,10 @@ export function usePlanogramForm(
   const setSelectedCategoryIds = usePlanogramStore.use.setSelectedCategoryIds();
   const updateMutation = useUpdatePlanogramMutation();
   const saveLayoutMutation = useSaveLayoutMutation();
-  const deleteMutation = useDeletePlanogramMutation();
+  const deleteMutation = useDeletePlanogramMutation(planogramSlug);
 
   // Save layout handler
-  const handleSaveLayout = async (layout: Record<number, LayoutItem[]>) => {
-
+  const handleSaveLayout = async (layout: Layout) => {
     if (!planogramData?.planogram) {
       return;
     }
@@ -35,8 +35,10 @@ export function usePlanogramForm(
       // Save only the layout with items - no other planogram fields
       await saveLayoutMutation.mutateAsync({
         slug: planogramSlug,
-        layout,
-        preserve_layout: true,
+        layout: {
+          grid: layout.grid,
+          rows: layout.rows,
+        },
       });
 
       await refetchPlanogram();
@@ -56,67 +58,43 @@ export function usePlanogramForm(
       return;
     }
 
-    const updates: Record<string, unknown> = {};
-
-    // Include name if it changed
-    if (name.trim() !== planogramData.planogram.name) {
-      updates.name = name.trim();
-    }
-
-    // Only include fields that have changed
-    // Note: Display cannot be changed after creation per API limitations
-    if (season && season !== planogramData.planogram.season) {
-      updates.season = season;
-    }
-    if (shelfCount > 0 && shelfCount !== (planogramData.planogram.shelf_count ?? 1)) {
-      updates.shelf_count = shelfCount;
-    }
-    if (selectedCategoryIds.length > 0) {
-      const currentIds = Array.isArray(planogramData.planogram.category_ids) ? planogramData.planogram.category_ids : [];
-      if (JSON.stringify(selectedCategoryIds.sort()) !== JSON.stringify(currentIds.sort())) {
-        updates.category_ids = selectedCategoryIds;
-      }
-    }
-
-    // Always set preserve_layout to false when regenerating
-    updates.preserve_layout = false;
-
-    // Only make request if there are changes
-    if (Object.keys(updates).length > 0) {
-      try {
-        const result = await updateMutation.mutateAsync({
-          slug: planogramSlug,
+    try {
+      const result = await updateMutation.mutateAsync({
+        slug: planogramSlug,
+        data: {
           name: name.trim(),
           width_in: widthIn.toString(),
           height_in: heightIn.toString(),
-          shelf_count: shelfCount > 0 ? shelfCount : (planogramData!.planogram.shelf_count ?? 1),
-          ...updates,
-        });
-        if (result) {
-          const updatedPlanogram = result;
+          shelf_count: shelfCount > 0 ? shelfCount : (planogramData.planogram.shelf_count ?? 1),
+          season: (season || planogramData.planogram.season) as Season,
+          category_ids: selectedCategoryIds.length > 0 ? selectedCategoryIds : planogramData.planogram.category_ids,
+          force_regenerate: true,
+        },
+      });
+      if (result) {
+        const updatedPlanogram = result;
 
-          // Update state directly from the response
-          if (updatedPlanogram.name) {
-            setName(updatedPlanogram.name);
-          }
-          if (updatedPlanogram.season) {
-            setSeason(updatedPlanogram.season);
-          }
-          // Always update shelf_count, default to 1 if missing
-          setShelfCount(updatedPlanogram.shelf_count && updatedPlanogram.shelf_count > 0 ? updatedPlanogram.shelf_count : 1);
-          if (Array.isArray(updatedPlanogram.category_ids)) {
-            setSelectedCategoryIds(updatedPlanogram.category_ids);
-          }
-
-          // Refetch to get latest state (including display and slug)
-          await refetchPlanogram();
-          
-          // Refetch available products after regeneration (in case season or categories changed)
-          await fetchAvailableProducts();
+        // Update state directly from the response
+        if (updatedPlanogram.name) {
+          setName(updatedPlanogram.name);
         }
-      } catch {
-        // Error handled by mutation
+        if (updatedPlanogram.season) {
+          setSeason(updatedPlanogram.season);
+        }
+        // Always update shelf_count, default to 1 if missing
+        setShelfCount(updatedPlanogram.shelf_count && updatedPlanogram.shelf_count > 0 ? updatedPlanogram.shelf_count : 1);
+        if (Array.isArray(updatedPlanogram.category_ids)) {
+          setSelectedCategoryIds(updatedPlanogram.category_ids);
+        }
+
+        // Refetch to get latest state (including display and slug)
+        await refetchPlanogram();
+
+        // Refetch available products after regeneration (in case season or categories changed)
+        await fetchAvailableProducts();
       }
+    } catch {
+      // Error handled by mutation
     }
   };
 
@@ -130,11 +108,13 @@ export function usePlanogramForm(
         // Just update the UI state
         const result = await updateMutation.mutateAsync({
           slug: planogramSlug,
-          name: planogramData.planogram.name,
-          width_in: planogramData.planogram.width_in,
-          height_in: planogramData.planogram.height_in,
-          shelf_count: planogramData.planogram.shelf_count,
-          preserve_layout: false,
+          data: {
+            name: planogramData.planogram.name,
+            width_in: planogramData.planogram.width_in,
+            height_in: planogramData.planogram.height_in,
+            shelf_count: planogramData.planogram.shelf_count,
+            force_regenerate: true,
+          },
         });
         if (result) {
           const updatedPlanogram = result;

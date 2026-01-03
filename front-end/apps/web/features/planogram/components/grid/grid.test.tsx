@@ -4,7 +4,7 @@ import { Grid } from './grid';
 
 describe('Grid', () => {
   it.skip('should render correctly', () => {
-    render(<Grid />);
+    render(<Grid planogramSlug="test-slug" />);
     expect(screen).toBeDefined();
   });
 });

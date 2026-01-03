@@ -1,17 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Layout } from '../utils/types';
 
 export function useLayoutState(
   layout: Layout | undefined,
   dataUpdatedAt: number
 ): [Layout | null, (layout: Layout) => void] {
-  const [localLayout, setLocalLayout] = useState<Layout | null>(null);
+  const [state, setState] = useState<{
+    layout: Layout | null;
+    lastUpdatedAt: number;
+  }>({
+    layout: layout ?? null,
+    lastUpdatedAt: dataUpdatedAt,
+  });
 
-  useEffect(() => {
-    if (layout) {
-      setLocalLayout(layout);
-    }
-  }, [layout, dataUpdatedAt]);
+  // Reset layout when dataUpdatedAt changes
+  if (state.lastUpdatedAt !== dataUpdatedAt) {
+    setState({
+      layout: layout ?? null,
+      lastUpdatedAt: dataUpdatedAt,
+    });
+  }
 
-  return [localLayout, setLocalLayout];
+  const setLayout = (newLayout: Layout) => {
+    setState((prev) => ({
+      ...prev,
+      layout: newLayout,
+    }));
+  };
+
+  return [state.layout, setLayout];
 }

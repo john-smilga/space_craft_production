@@ -19,7 +19,7 @@ export function AvailableProductsSidebar() {
   const availableProductsSidebarExpanded = usePlanogramStore.use.availableProductsSidebarExpanded();
   const toggleAvailableProductsSidebarExpand = usePlanogramStore.use.toggleAvailableProductsSidebarExpand();
   const gridData = usePlanogramStore.use.gridData();
-  const { handleAddSelectedItems } = usePlanogramLayout();
+  const { handleAddSelectedItems } = usePlanogramLayout(availableItems);
 
   const formatScore = (score: number) => {
     return (score * 100).toFixed(0);

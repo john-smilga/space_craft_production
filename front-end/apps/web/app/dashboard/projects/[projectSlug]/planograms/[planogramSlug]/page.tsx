@@ -19,7 +19,7 @@ export default function PlanogramPage() {
   const projectSlug = params?.projectSlug as string;
 
   const { data: planogram, isLoading, error } = usePlanogramQuery(planogramSlug);
-  const addProductsSidebarOpen = usePlanogramStore((state) => state.addProductsSidebarOpen);
+  const availableProductsSidebarOpen = usePlanogramStore.use.availableProductsSidebarOpen();
   const deleteMutation = useDeletePlanogramMutation(planogramSlug);
 
   if (isLoading) {
@@ -51,7 +51,7 @@ export default function PlanogramPage() {
   return (
     <>
       <ProductSidebar />
-      {addProductsSidebarOpen && <AddProductsSidebar />}
+      {availableProductsSidebarOpen && <AddProductsSidebar />}
 
       <div className='space-y-6'>
         <PlanogramHeader

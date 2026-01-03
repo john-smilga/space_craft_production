@@ -23,7 +23,7 @@ export function PlanogramDeleteButton() {
     }
 
     try {
-      await deleteMutation.mutateAsync({ slug: planogramSlug });
+      await deleteMutation.mutateAsync();
       router.push(`/dashboard/projects/${projectSlug}`);
     } catch {
       setDeleteConfirm(false);

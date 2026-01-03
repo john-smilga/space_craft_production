@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { schemas } from '@/lib/generated/api-schemas';
+import type { GridResponse } from '@/features/planogram/types';
 
 type PlanogramType = z.infer<typeof schemas.Planogram>;
-type LayoutType = z.infer<typeof schemas.Layout>;
 
-export function generatePlanogramCSV(planogram: PlanogramType | null | undefined, layout: LayoutType | null): string {
+export function generatePlanogramCSV(planogram: PlanogramType | null | undefined, layout: GridResponse | null): string {
   if (!planogram) {
     return 'No planogram data available';
   }

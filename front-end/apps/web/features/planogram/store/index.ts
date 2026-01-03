@@ -1,1 +1,1 @@
-export { usePlanogramStore } from './usePlanogramStore';
+export { usePlanogramStore } from './planogram-slice';

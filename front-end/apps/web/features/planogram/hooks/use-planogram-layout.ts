@@ -19,14 +19,14 @@ export function usePlanogramLayout(availableItems: AvailableItem[]) {
   const gridData = usePlanogramStore.use.gridData();
   const rowLayouts = usePlanogramStore.use.rowLayouts();
   const setRowLayouts = usePlanogramStore.use.setRowLayouts();
-  const selectedItems = usePlanogramStore.use.selectedItems();
+  const selectedAvailableItems = usePlanogramStore.use.selectedAvailableItems();
   const targetRowId = usePlanogramStore.use.targetRowId();
-  const clearSelectedItems = usePlanogramStore.use.clearSelectedItems();
-  const closeAvailableProducts = usePlanogramStore.use.closeAvailableProducts();
+  const clearSelectedAvailableItems = usePlanogramStore.use.clearSelectedAvailableItems();
+  const closeAvailableProductsSidebar = usePlanogramStore.use.closeAvailableProductsSidebar();
 
   // Handle adding selected items to a row
   const handleAddSelectedItems = () => {
-    if (!gridData || targetRowId === null || selectedItems.size === 0) {
+    if (!gridData || targetRowId === null || selectedAvailableItems.size === 0) {
       return;
     }
 
@@ -34,7 +34,7 @@ export function usePlanogramLayout(availableItems: AvailableItem[]) {
     const newItems: LayoutItem[] = [];
 
     // Loop through each selected item and its quantity
-    selectedItems.forEach((quantity, itemId) => {
+    selectedAvailableItems.forEach((quantity, itemId) => {
       const item = availableItems.find((i) => i.id === itemId);
       if (!item) {
         return;
@@ -138,8 +138,8 @@ export function usePlanogramLayout(availableItems: AvailableItem[]) {
       setRowLayouts(updated);
 
       // Clear selections and close sidebar
-      clearSelectedItems();
-      closeAvailableProducts();
+      clearSelectedAvailableItems();
+      closeAvailableProductsSidebar();
     }
   };
 

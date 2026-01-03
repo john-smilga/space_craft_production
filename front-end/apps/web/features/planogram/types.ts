@@ -5,7 +5,7 @@ import { schemas } from '@/lib/generated/api-schemas';
 export type Planogram = z.infer<typeof schemas.Planogram>;
 export type CreatePlanogramInput = z.infer<typeof schemas.PlanogramCreateRequest>;
 export type UpdatePlanogramInput = z.infer<typeof schemas.PlanogramUpdateRequest>;
-export type Season = z.infer<typeof schemas.SeasonEnum>;
+export type Season = z.infer<typeof schemas.SeasonC9aEnum>;
 
 export interface PlanogramDetailResponse {
   planogram: Planogram;
@@ -41,7 +41,13 @@ export interface AvailableItem {
 }
 
 export interface GridResponse {
-  grid: { cols: number; rows: number; cellWidthIn: number };
+  grid: {
+    cols: number;
+    rows: number;
+    cellWidthIn: number;
+    normalizedWidthIn?: number;
+    normalizedHeightIn?: number;
+  };
   rows: Array<{
     id: number;
     category: string | null;

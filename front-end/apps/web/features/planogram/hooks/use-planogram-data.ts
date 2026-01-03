@@ -51,7 +51,7 @@ const PlanogramDetailResponseSchema = schemas.Planogram.extend({
 
 export function usePlanogramData(planogramSlug: string | null) {
   const initializeForm = usePlanogramStore.use.initializeForm();
-  const initializeFromResponse = usePlanogramStore.use.initializeFromResponse();
+  const initializeLayouts = usePlanogramStore.use.initializeLayouts();
 
   // Fetch planogram data
   const planogramQuery = useQuery({
@@ -133,9 +133,9 @@ export function usePlanogramData(planogramSlug: string | null) {
   // Initialize grid layouts from planogram data
   useEffect(() => {
     if (planogramQuery.data?.layout) {
-      initializeFromResponse(planogramQuery.data.layout);
+      initializeLayouts(planogramQuery.data.layout);
     }
-  }, [planogramQuery.data?.layout, initializeFromResponse]);
+  }, [planogramQuery.data?.layout, initializeLayouts]);
 
   return {
     planogramData: planogramQuery.data,
